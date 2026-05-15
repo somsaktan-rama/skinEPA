@@ -80,188 +80,183 @@
 
 <script>
     // ** ใส่ URL ของ Google Apps Script ของคุณที่นี่ **
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw0cXCqTIftkNLy4FwOBKYvwALyew2PYwe7zxarx78rHHBgHv_h-RW2mDyema-wRafy/exec';
-    
-    let currentUser = null;
-    let currentEvalContext = null;
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0cXCqTIftkNLy4FwOBKYvwALyew2PYwe7zxarx78rHHBgHv_h-RW2mDyema-wRafy/exec'; 
 
-    function showView(viewId) {
-        document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
-        document.getElementById(viewId).classList.remove('hidden');
+    let epaEvalDescs = []; 
+
+    document.addEventListener("DOMContentLoaded", function() {
+      Swal.fire({
+        title: 'กำลังโหลดข้อมูล...',
+        allowEscapeKey: false,
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      // ดึงข้อมูลผ่าน Web App URL แทน google.script.run
+      fetch(SCRIPT_URL + '?action=getLists')
+        .then(response => response.json())
+        .then(data => {
+          onInitialLoadSuccess(data);
+        })
+        .catch(error => {
+          onInitialLoadError(error);
+        });
+    });
+
+    function onInitialLoadSuccess(data) {
+      Swal.close(); 
+      const select = document.getElementById('resultSelect');
+      data.epaLevels.forEach(level => {
+        if (level) {
+          let opt = document.createElement('option');
+          opt.value = level;
+          opt.textContent = level;
+          select.appendChild(opt);
+        }
+      });
+      epaEvalDescs = data.evalDescs; 
     }
 
-    async function apiCall(payload) {
-        try {
-            const response = await fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            return await response.json();
-        } catch (error) {
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
-            console.error(error);
-        }
+    function onInitialLoadError(error) {
+      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: ' + error.message, 'error');
     }
 
-    async function login() {
-        const mdid = document.getElementById('mdid-input').value;
-        if (!mdid) return alert('กรุณาระบุ MDID');
-        
-        document.querySelector('#view-login button').innerText = 'กำลังตรวจสอบ...';
-        const res = await apiCall({ action: 'login', mdid: mdid });
-        document.querySelector('#view-login button').innerText = 'เข้าสู่ระบบ';
-
-        if (res && res.success) {
-            currentUser = res.user;
-            document.getElementById('user-name').innerText = currentUser.name;
-            document.getElementById('user-group').innerText = currentUser.group;
-            
-            if (currentUser.role === 'resident') {
-                document.getElementById('btn-create-epa').classList.remove('hidden');
-            }
-            showView('view-menu');
-        } else {
-            alert(res.message);
-        }
+    function processLogin() {
+      const mdid = document.getElementById('mdidInput').value;
+      if (mdid.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'แจ้งเตือน', text: 'กรุณาระบุ MDID เพื่อเข้าสู่ระบบ' });
+        return;
+      }
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'เข้าสู่ระบบสำเร็จ',
+        showConfirmButton: false,
+        timer: 1000
+      }).then(() => {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('evalSection').style.display = 'block';
+        window.scrollTo(0, 0); 
+      });
     }
 
     function logout() {
-        currentUser = null;
-        document.getElementById('mdid-input').value = '';
-        showView('view-login');
+      document.getElementById('mdidInput').value = '';
+      document.getElementById('currentEpaId').value = '';
+      document.getElementById('resultSelect').value = '';
+      document.getElementById('reasonSection').style.display = 'none';
+      
+      document.getElementById('evalSection').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'block';
     }
 
-    // --- ส่วนการสร้าง EPA (Resident) ---
-    async function loadCreateEPA() {
-        showView('view-epa-create');
-        const res = await apiCall({ action: 'get_form_data', group: currentUser.group, institute: currentUser.institute });
-        
-        if (res.success) {
-            const epaSelect = document.getElementById('select-epa');
-            epaSelect.innerHTML = res.epas.map(e => `<option value="${e.epaid}">${e.epaid}: ${e.epa_desc}</option>`).join('');
-            
-            const instSelect = document.getElementById('select-instructor');
-            instSelect.innerHTML = res.instructors.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+    function renderCheckboxes() {
+      const currentEpaId = document.getElementById('currentEpaId').value.trim().toUpperCase();
+      const container = document.getElementById('reasonCheckboxes');
+      container.innerHTML = ''; 
+
+      if (currentEpaId === "") {
+        container.innerHTML = '<span class="text-muted small">กรุณาระบุรหัส EPA ด้านบนเพื่อโหลดเหตุผล...</span>';
+        return;
+      }
+
+      const filtered = epaEvalDescs.filter(item => item.epaid.toUpperCase() === currentEpaId);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<span class="text-muted small">ไม่พบรายการเหตุผลสำหรับรหัส "${currentEpaId}"</span>`;
+        return;
+      }
+
+      filtered.forEach((item, index) => {
+        let div = document.createElement('div');
+        div.className = 'form-check mb-2';
+        let chkId = 'chk_' + index;
+        div.innerHTML = `
+          <input class="form-check-input eval-reason-chk" type="checkbox" value="${item.desc}" id="${chkId}">
+          <label class="form-check-label" for="${chkId}">
+            ${item.desc}
+          </label>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function toggleReasonSection() {
+      const result = document.getElementById('resultSelect').value;
+      const reasonSection = document.getElementById('reasonSection');
+      
+      if (result.includes("Level 1") || result.includes("Level 2") || result.includes("Not Entrustable") || result === "Fail") {
+        reasonSection.style.display = 'block';
+      } else {
+        reasonSection.style.display = 'none';
+        document.querySelectorAll('.eval-reason-chk').forEach(cb => cb.checked = false);
+      }
+    }
+
+    function submitData() {
+      const mdid = document.getElementById('mdidInput').value;
+      const epaId = document.getElementById('currentEpaId').value;
+      const result = document.getElementById('resultSelect').value;
+      
+      if (!epaId) {
+        Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาระบุรหัส EPA' });
+        return;
+      }
+      if (!result) {
+        Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาเลือกระดับ Result' });
+        return;
+      }
+
+      let selectedReasons = [];
+      document.querySelectorAll('.eval-reason-chk:checked').forEach(cb => {
+        selectedReasons.push(cb.value);
+      });
+
+      if (document.getElementById('reasonSection').style.display === 'block' && selectedReasons.length === 0) {
+        Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณาเลือกเหตุผลที่ไม่ผ่านอย่างน้อย 1 ข้อ' });
+        return;
+      }
+
+      const payload = {
+        mdid: mdid,
+        epaId: epaId,
+        result: result,
+        reasons: selectedReasons.join(', ')
+      };
+
+      Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      // ส่งข้อมูลผ่าน API ด้วยวิธี POST
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        // ส่งเป็น plain text เพื่อหลีกเลี่ยงปัญหา CORS preflight
+        body: JSON.stringify({ action: 'saveEval', data: payload }),
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8",
         }
-    }
-
-    async function submitEPA() {
-        const epaSelect = document.getElementById('select-epa');
-        const instSelect = document.getElementById('select-instructor');
-        
-        const payload = {
-            epaid: epaSelect.value,
-            epa_desc: epaSelect.options[epaSelect.selectedIndex].text.split(': ')[1],
-            resident_id: currentUser.mdid,
-            name: currentUser.name,
-            institute: currentUser.institute,
-            group: currentUser.group,
-            instructor_id: instSelect.value
-        };
-
-        const res = await apiCall({ action: 'save_epa', payload: payload });
-        if (res.success) {
-            alert('บันทึกข้อมูลเรียบร้อย');
-            showView('view-epa');
-        }
-    }
-
-    // --- ส่วนประวัติและประเมิน ---
-    async function loadHistory() {
-        showView('view-epa-history');
-        document.getElementById('history-list').innerHTML = '<p>กำลังโหลดข้อมูล...</p>';
-        const res = await apiCall({ action: 'get_history', mdid: currentUser.mdid, role: currentUser.role });
-        
-        if (res.success) {
-            const listDiv = document.getElementById('history-list');
-            listDiv.innerHTML = '';
-            res.history.forEach(item => {
-                let statusHtml = '';
-                if (!item.time_approve) {
-                    statusHtml = `<span class="pending">[รอดำเนินการ]</span>`;
-                } else {
-                    // Logic คำนวณ Pass/Fail
-                    let isR2 = item.group.toLowerCase().includes('2');
-                    let score = parseInt(item.result);
-                    let isPass = isR2 ? score >= 3 : score >= 4;
-                    
-                    if (isPass) statusHtml = `<span class="pass">[PASS: ${score}]</span>`;
-                    else statusHtml = `<span class="fail">[FAIL: ${score}] - ${item.reason}</span>`;
-                }
-
-                let card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <p><strong>${item.epaid}</strong>: ${item.epa_desc}</p>
-                    <p>แพทย์: ${item.resident_name}</p>
-                    <p>สถานะ: ${statusHtml}</p>
-                `;
-                
-                // หากเป็น Instructor และรายการยังไม่ approve ให้คลิกประเมินได้
-                if (currentUser.role === 'instructor' && !item.time_approve) {
-                    let btn = document.createElement('button');
-                    btn.innerText = 'ประเมินรายการนี้';
-                    btn.onclick = () => openEvaluate(item);
-                    card.appendChild(btn);
-                }
-                listDiv.appendChild(card);
-            });
-        }
-    }
-
-    async function openEvaluate(item) {
-        currentEvalContext = item;
-        document.getElementById('eval-epa-desc').innerText = `กำลังประเมิน: ${item.resident_name} (${item.epaid})`;
-        document.getElementById('eval-score').value = '';
-        document.getElementById('reason-section').classList.add('hidden');
-        showView('view-epa-evaluate');
-        
-        // ดึงเหตุผลรอไว้เลย
-        const res = await apiCall({ action: 'get_eval_reasons', epaid: item.epaid });
-        if (res.success) {
-            const reasonSelect = document.getElementById('select-reason');
-            reasonSelect.innerHTML = res.reasons.map(r => `<option value="${r}">${r}</option>`).join('');
-        }
-    }
-
-    function checkReasonNeeded() {
-        let score = parseInt(document.getElementById('eval-score').value);
-        let isR2 = currentEvalContext.group.toLowerCase().includes('2');
-        let isFail = isR2 ? score <= 2 : score <= 3;
-        
-        if (isFail) {
-            document.getElementById('reason-section').classList.remove('hidden');
+      })
+      .then(response => response.json())
+      .then(resultData => {
+        if (resultData.status === 'success') {
+          Swal.fire('สำเร็จ!', 'บันทึกผลการประเมินเรียบร้อยแล้ว', 'success').then(() => {
+            document.getElementById('currentEpaId').value = '';
+            document.getElementById('resultSelect').value = '';
+            renderCheckboxes();
+            toggleReasonSection();
+          });
         } else {
-            document.getElementById('reason-section').classList.add('hidden');
+          Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์', 'error');
         }
+      })
+      .catch(error => {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถส่งข้อมูลได้: ' + error.message, 'error');
+      });
     }
+  </script>
 
-    async function submitEvaluation() {
-        let score = parseInt(document.getElementById('eval-score').value);
-        if (!score || score < 1 || score > 5) return alert('กรุณาระบุคะแนน 1-5');
-
-        let isR2 = currentEvalContext.group.toLowerCase().includes('2');
-        let isFail = isR2 ? score <= 2 : score <= 3;
-        
-        let reason = "";
-        if (isFail) {
-            const selectedOptions = Array.from(document.getElementById('select-reason').selectedOptions);
-            if (selectedOptions.length === 0) return alert('กรุณาเลือกเหตุผลที่ไม่ผ่าน');
-            reason = selectedOptions.map(opt => opt.value).join(', ');
-        }
-
-        const res = await apiCall({ 
-            action: 'save_evaluation', 
-            rowId: currentEvalContext.rowId, 
-            resultScore: score, 
-            reason: reason 
-        });
-
-        if (res.success) {
-            alert('บันทึกการประเมินเรียบร้อย');
-            loadHistory(); // โหลดประวัติใหม่
-        }
-    }
-</script>
 </body>
 </html>
