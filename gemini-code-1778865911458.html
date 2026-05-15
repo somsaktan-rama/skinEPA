@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPA Skin App</title>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button.btn-danger { background-color: #f44336; }
+        button.btn-secondary { background-color: #9e9e9e; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+        .pending { color: orange; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    
+    <div id="view-login">
+        <h2 style="text-align: center;">เข้าสู่ระบบ</h2>
+        <input type="number" id="mdid-input" placeholder="ระบุ MDID (ตัวเลขไม่เกิน 5 หลัก)" oninput="if(this.value.length > 5) this.value = this.value.slice(0, 5);" />
+        <button onclick="login()">เข้าสู่ระบบ</button>
+    </div>
+
+    <div id="view-menu" class="hidden">
+        <h2>สวัสดี <span id="user-name"></span></h2>
+        <p>สถานะ: <span id="user-group"></span></p>
+        <button onclick="showView('view-epa')">1. EPA</button>
+        <button class="btn-secondary" onclick="alert('เมนู Activity กำลังพัฒนา')">2. Activity</button>
+        <button class="btn-danger" onclick="logout()">ออกจากโปรแกรม</button>
+    </div>
+
+    <div id="view-epa" class="hidden">
+        <h2>ระบบ EPA</h2>
+        <button id="btn-create-epa" onclick="loadCreateEPA()" class="hidden">สร้างรายการใหม่</button>
+        <button onclick="loadHistory()">ประวัติ / ประเมิน EPA</button>
+        <button class="btn-secondary" onclick="showView('view-menu')">กลับหน้าหลัก</button>
+    </div>
+
+    <div id="view-epa-create" class="hidden">
+        <h2>สร้างรายการ EPA ใหม่</h2>
+        <label>เลือก EPA</label>
+        <select id="select-epa"></select>
+        
+        <label>เลือก Instructor</label>
+        <select id="select-instructor"></select>
+        
+        <button onclick="submitEPA()">Save ข้อมูล</button>
+        <button class="btn-danger" onclick="showView('view-epa')">ยกเลิก</button>
+    </div>
+
+    <div id="view-epa-history" class="hidden">
+        <h2>รายการ EPA</h2>
+        <div id="history-list"></div>
+        <button class="btn-secondary" onclick="showView('view-epa')">กลับ</button>
+    </div>
+
+    <div id="view-epa-evaluate" class="hidden">
+        <h2>ประเมิน EPA</h2>
+        <p id="eval-epa-desc"></p>
+        <label>ผลการประเมิน (1-5)</label>
+        <input type="number" id="eval-score" min="1" max="5" onchange="checkReasonNeeded()">
+        
+        <div id="reason-section" class="hidden">
+            <label>เหตุผลที่ไม่ผ่าน (เลือกได้หลายข้อ)</label>
+            <select id="select-reason" multiple size="4"></select>
+        </div>
+        
+        <button onclick="submitEvaluation()">Save ประเมิน</button>
+        <button class="btn-danger" onclick="showView('view-epa-history')">ยกเลิก</button>
+    </div>
+
+</div>
+
+<script>
+    // ** ใส่ URL ของ Google Apps Script ของคุณที่นี่ **
+    const GAS_URL = 'YOUR_WEB_APP_URL_HERE';
+    
+    let currentUser = null;
+    let currentEvalContext = null;
+
+    function showView(viewId) {
+        document.querySelectorAll('#app > div').forEach(div => div.classList.add('hidden'));
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    async function apiCall(payload) {
+        try {
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            return await response.json();
+        } catch (error) {
+            alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+            console.error(error);
+        }
+    }
+
+    async function login() {
+        const mdid = document.getElementById('mdid-input').value;
+        if (!mdid) return alert('กรุณาระบุ MDID');
+        
+        document.querySelector('#view-login button').innerText = 'กำลังตรวจสอบ...';
+        const res = await apiCall({ action: 'login', mdid: mdid });
+        document.querySelector('#view-login button').innerText = 'เข้าสู่ระบบ';
+
+        if (res && res.success) {
+            currentUser = res.user;
+            document.getElementById('user-name').innerText = currentUser.name;
+            document.getElementById('user-group').innerText = currentUser.group;
+            
+            if (currentUser.role === 'resident') {
+                document.getElementById('btn-create-epa').classList.remove('hidden');
+            }
+            showView('view-menu');
+        } else {
+            alert(res.message);
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('mdid-input').value = '';
+        showView('view-login');
+    }
+
+    // --- ส่วนการสร้าง EPA (Resident) ---
+    async function loadCreateEPA() {
+        showView('view-epa-create');
+        const res = await apiCall({ action: 'get_form_data', group: currentUser.group, institute: currentUser.institute });
+        
+        if (res.success) {
+            const epaSelect = document.getElementById('select-epa');
+            epaSelect.innerHTML = res.epas.map(e => `<option value="${e.epaid}">${e.epaid}: ${e.epa_desc}</option>`).join('');
+            
+            const instSelect = document.getElementById('select-instructor');
+            instSelect.innerHTML = res.instructors.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+        }
+    }
+
+    async function submitEPA() {
+        const epaSelect = document.getElementById('select-epa');
+        const instSelect = document.getElementById('select-instructor');
+        
+        const payload = {
+            epaid: epaSelect.value,
+            epa_desc: epaSelect.options[epaSelect.selectedIndex].text.split(': ')[1],
+            resident_id: currentUser.mdid,
+            name: currentUser.name,
+            institute: currentUser.institute,
+            group: currentUser.group,
+            instructor_id: instSelect.value
+        };
+
+        const res = await apiCall({ action: 'save_epa', payload: payload });
+        if (res.success) {
+            alert('บันทึกข้อมูลเรียบร้อย');
+            showView('view-epa');
+        }
+    }
+
+    // --- ส่วนประวัติและประเมิน ---
+    async function loadHistory() {
+        showView('view-epa-history');
+        document.getElementById('history-list').innerHTML = '<p>กำลังโหลดข้อมูล...</p>';
+        const res = await apiCall({ action: 'get_history', mdid: currentUser.mdid, role: currentUser.role });
+        
+        if (res.success) {
+            const listDiv = document.getElementById('history-list');
+            listDiv.innerHTML = '';
+            res.history.forEach(item => {
+                let statusHtml = '';
+                if (!item.time_approve) {
+                    statusHtml = `<span class="pending">[รอดำเนินการ]</span>`;
+                } else {
+                    // Logic คำนวณ Pass/Fail
+                    let isR2 = item.group.toLowerCase().includes('2');
+                    let score = parseInt(item.result);
+                    let isPass = isR2 ? score >= 3 : score >= 4;
+                    
+                    if (isPass) statusHtml = `<span class="pass">[PASS: ${score}]</span>`;
+                    else statusHtml = `<span class="fail">[FAIL: ${score}] - ${item.reason}</span>`;
+                }
+
+                let card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <p><strong>${item.epaid}</strong>: ${item.epa_desc}</p>
+                    <p>แพทย์: ${item.resident_name}</p>
+                    <p>สถานะ: ${statusHtml}</p>
+                `;
+                
+                // หากเป็น Instructor และรายการยังไม่ approve ให้คลิกประเมินได้
+                if (currentUser.role === 'instructor' && !item.time_approve) {
+                    let btn = document.createElement('button');
+                    btn.innerText = 'ประเมินรายการนี้';
+                    btn.onclick = () => openEvaluate(item);
+                    card.appendChild(btn);
+                }
+                listDiv.appendChild(card);
+            });
+        }
+    }
+
+    async function openEvaluate(item) {
+        currentEvalContext = item;
+        document.getElementById('eval-epa-desc').innerText = `กำลังประเมิน: ${item.resident_name} (${item.epaid})`;
+        document.getElementById('eval-score').value = '';
+        document.getElementById('reason-section').classList.add('hidden');
+        showView('view-epa-evaluate');
+        
+        // ดึงเหตุผลรอไว้เลย
+        const res = await apiCall({ action: 'get_eval_reasons', epaid: item.epaid });
+        if (res.success) {
+            const reasonSelect = document.getElementById('select-reason');
+            reasonSelect.innerHTML = res.reasons.map(r => `<option value="${r}">${r}</option>`).join('');
+        }
+    }
+
+    function checkReasonNeeded() {
+        let score = parseInt(document.getElementById('eval-score').value);
+        let isR2 = currentEvalContext.group.toLowerCase().includes('2');
+        let isFail = isR2 ? score <= 2 : score <= 3;
+        
+        if (isFail) {
+            document.getElementById('reason-section').classList.remove('hidden');
+        } else {
+            document.getElementById('reason-section').classList.add('hidden');
+        }
+    }
+
+    async function submitEvaluation() {
+        let score = parseInt(document.getElementById('eval-score').value);
+        if (!score || score < 1 || score > 5) return alert('กรุณาระบุคะแนน 1-5');
+
+        let isR2 = currentEvalContext.group.toLowerCase().includes('2');
+        let isFail = isR2 ? score <= 2 : score <= 3;
+        
+        let reason = "";
+        if (isFail) {
+            const selectedOptions = Array.from(document.getElementById('select-reason').selectedOptions);
+            if (selectedOptions.length === 0) return alert('กรุณาเลือกเหตุผลที่ไม่ผ่าน');
+            reason = selectedOptions.map(opt => opt.value).join(', ');
+        }
+
+        const res = await apiCall({ 
+            action: 'save_evaluation', 
+            rowId: currentEvalContext.rowId, 
+            resultScore: score, 
+            reason: reason 
+        });
+
+        if (res.success) {
+            alert('บันทึกการประเมินเรียบร้อย');
+            loadHistory(); // โหลดประวัติใหม่
+        }
+    }
+</script>
+</body>
+</html>
