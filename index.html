@@ -165,29 +165,58 @@ const app = {
         }
     },
 
-    // ================== Resident Flow ==================
+// ================== Resident Flow ==================
+    residentContext: null, // เก็บข้อมูลไว้ใช้ตอนเปลี่ยน Dropdown
+
     loadResidentForm: async () => {
         const data = await app.api({ action: 'get_resident_data', user: app.user });
         if (data) {
-            document.getElementById('sel-epaid').innerHTML = data.epas.map(e => `<option value="${e.id}">${e.id}: ${e.desc}</option>`).join('');
-            document.getElementById('sel-instructor').innerHTML = data.instructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
+            app.residentContext = data; // เก็บข้อมูลทั้งหมดไว้ในตัวแปร
+            
+            const selEpa = document.getElementById('sel-epaid');
+            // ใส่ onchange ให้เมื่อเปลี่ยน EPA จะไปอัปเดตรายชื่ออาจารย์
+            selEpa.innerHTML = '<option value="">-- เลือกรายการ EPA --</option>' + 
+                               data.epas.map(e => `<option value="${e.id}">${e.id}: ${e.desc}</option>`).join('');
+            
+            selEpa.setAttribute('onchange', 'app.filterInstructors()');
+            
+            document.getElementById('sel-instructor').innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>';
             document.getElementById('txt-epanote').value = '';
             app.showView('view-resident-epa');
         }
     },
 
-    saveEpa: async () => {
-        const selEpa = document.getElementById('sel-epaid');
-        const payload = {
-            epaid: selEpa.value,
-            epa_desc: selEpa.options[selEpa.selectedIndex].text,
-            epa_note: document.getElementById('txt-epanote').value,
-            instructor_mdid: document.getElementById('sel-instructor').value,
-            user: app.user
-        };
-        const res = await app.api({ action: 'save_epa', payload: payload }, 'กำลังบันทึก...');
-        if(res) {
-            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
+    filterInstructors: () => {
+        const selEpaId = document.getElementById('sel-epaid').value;
+        const selInstructor = document.getElementById('sel-instructor');
+        
+        if (!selEpaId) {
+            selInstructor.innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>';
+            return;
+        }
+
+        // ดึงข้อมูลโควต้าของ EPA ที่เลือก
+        const epaInfo = app.residentContext.epas.find(e => e.id === selEpaId);
+        const maxEval = epaInfo.maxEval;
+        const passedData = app.residentContext.passedCounts[selEpaId] || {};
+
+        let availableInstructors = [];
+
+        // เช็คอาจารย์ทีละคนว่าประเมินผ่านเกินโควต้าหรือยัง
+        app.residentContext.instructors.forEach(inst => {
+            let passCount = passedData[inst.mdid] || 0;
+            if (passCount < maxEval) {
+                availableInstructors.push(inst);
+            }
+        });
+
+        // อัปเดต Dropdown อาจารย์
+        if (availableInstructors.length === 0) {
+             selInstructor.innerHTML = '<option value="">-- โควต้าอาจารย์ทุกท่านเต็มแล้ว --</option>';
+             selInstructor.disabled = true;
+        } else {
+             selInstructor.disabled = false;
+             selInstructor.innerHTML = availableInstructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
         }
     },
 
@@ -274,35 +303,73 @@ const app = {
         }
     },
 
-    // ================== Staff Flow ==================
+// ================== Staff Flow ==================
     loadDashboard: async () => {
-        const data = await app.api({ action: 'get_dashboard_data', user: app.user }, 'กำลังดึงข้อมูลกราฟ...');
-        if(data) {
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user }, 'กำลังดึงข้อมูล Dashboard...');
+        if(res && res.success) {
             app.showView('view-staff-dashboard');
-            const ctx = document.getElementById('epaChart').getContext('2d');
+            const container = document.getElementById('dashboard-content');
             
-            if(app.chartInstance) app.chartInstance.destroy();
-            
-            app.chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'จำนวน EPA ที่ผ่านเกณฑ์',
-                        data: data.data,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-                }
-            });
+            if(res.data.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่มีข้อมูล Resident ในสถาบันนี้</p>';
+                return;
+            }
+
+            container.innerHTML = res.data.map(r => `
+                <div class="border rounded-lg shadow-sm bg-white overflow-hidden">
+                    <div class="bg-blue-50 hover:bg-blue-100 p-4 font-bold cursor-pointer flex justify-between items-center transition-colors" onclick="app.toggleResidentDetails('${r.mdid}')">
+                        <span class="text-blue-900">🧑‍⚕️ ${r.name} <span class="bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded ml-2">${r.level}</span></span>
+                        <span class="text-sm text-blue-600" id="icon-${r.mdid}">▼ เปิดดู</span>
+                    </div>
+                    
+                    <div id="details-${r.mdid}" class="hidden p-3 text-xs sm:text-sm bg-white border-t">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-700">
+                                    <th class="p-2 border-b">รายการ (EPA/ACT)</th>
+                                    <th class="p-2 border-b text-center">เป้าหมาย</th>
+                                    <th class="p-2 border-b text-center">ผ่าน</th>
+                                    <th class="p-2 border-b text-center">ไม่ผ่าน</th>
+                                    <th class="p-2 border-b text-center">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${r.items.length === 0 ? `<tr><td colspan="5" class="p-2 text-center text-gray-500">ไม่มีรายการที่ต้องทำในชั้นปีนี้</td></tr>` : 
+                                r.items.map(item => `
+                                    <tr class="border-b hover:bg-gray-50">
+                                        <td class="p-2 break-words">
+                                            <span class="font-bold text-gray-800">${item.id}</span><br>
+                                            <span class="text-gray-500 text-xs">${item.desc}</span>
+                                        </td>
+                                        <td class="p-2 text-center font-bold">${item.target}</td>
+                                        <td class="p-2 text-center text-green-600 font-bold">${item.pass}</td>
+                                        <td class="p-2 text-center text-red-500">${item.fail}</td>
+                                        <td class="p-2 text-center">
+                                            ${item.is_completed 
+                                                ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap">✅ ครบถ้วน</span>' 
+                                                : '<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap">⏳ รอเก็บเคส</span>'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `).join('');
+        }
+    },
+
+    toggleResidentDetails: (mdid) => {
+        const detailsDiv = document.getElementById(`details-${mdid}`);
+        const iconSpan = document.getElementById(`icon-${mdid}`);
+        if (detailsDiv.classList.contains('hidden')) {
+            detailsDiv.classList.remove('hidden');
+            iconSpan.innerText = '▲ ปิด';
+        } else {
+            detailsDiv.classList.add('hidden');
+            iconSpan.innerText = '▼ เปิดดู';
         }
     }
-};
-</script>
+    </script>
 </body>
 </html>
