@@ -19,8 +19,10 @@
         <div id="view-login">
             <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker</h2>
             <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสประจำตัว)</label>
-                <input type="number" id="mdid-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุ MDID">
+                <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสประจำตัว 5 หลัก)</label>
+                <input type="text" inputmode="numeric" pattern="\d*" maxlength="5" id="mdid-input" 
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5);"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring focus:border-blue-300 text-center text-lg tracking-widest" placeholder="12345">
             </div>
             <button onclick="app.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none transition">เข้าสู่ระบบ</button>
         </div>
@@ -35,20 +37,19 @@
         </div>
 
         <div id="view-resident-epa" class="hidden">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">สร้างรายการ EPA</h2>
+            <h2 class="text-xl font-bold mb-4 text-gray-800">📝 สร้างรายการ EPA</h2>
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-bold mb-1 text-gray-700">เลือก EPA</label>
-                    <select id="sel-epaid" class="w-full border rounded p-2 focus:ring focus:border-blue-300 bg-gray-50"></select>
+                    <select id="sel-epaid" class="w-full border rounded p-2 bg-gray-50"></select>
                 </div>
                 <div>
                     <label class="block text-sm font-bold mb-1 text-gray-700">ผู้ประเมิน (Instructor)</label>
-                    <select id="sel-instructor" class="w-full border rounded p-2 focus:ring bg-gray-50"></select>
-                    <p class="text-xs text-red-500 mt-1">*รายชื่ออาจารย์จะกรองอัตโนมัติตามโควต้าของแต่ละ EPA</p>
+                    <select id="sel-instructor" class="w-full border rounded p-2 bg-gray-50"></select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold mb-1 text-gray-700">Note (บันทึกเพิ่มเติม)</label>
-                    <textarea id="txt-epanote" class="w-full border rounded p-2 focus:ring bg-gray-50" rows="2" placeholder="ระบุรายละเอียด (ถ้ามี)"></textarea>
+                    <label class="block text-sm font-bold mb-1 text-gray-700">Note</label>
+                    <textarea id="txt-epanote" class="w-full border rounded p-2 bg-gray-50" rows="2"></textarea>
                 </div>
                 <div class="flex space-x-2 pt-4">
                     <button onclick="app.saveEpa()" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded font-bold transition">บันทึกส่ง</button>
@@ -57,44 +58,67 @@
             </div>
         </div>
 
+        <div id="view-staff-activity" class="hidden">
+            <h2 class="text-xl font-bold mb-4 text-orange-700">📌 บันทึก Activity ให้ Resident</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">เลือก Resident</label>
+                    <select id="act-res" class="w-full border rounded p-2 bg-gray-50"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">เลือกประเภท Activity</label>
+                    <select id="act-id" class="w-full border rounded p-2 bg-gray-50"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">หัวข้อกิจกรรม (Topic)</label>
+                    <input type="text" id="act-topic" class="w-full border rounded p-2 bg-gray-50" placeholder="ระบุหัวข้อ...">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">อาจารย์ผู้สอน (Instructor)</label>
+                    <select id="act-inst" class="w-full border rounded p-2 bg-gray-50"></select>
+                </div>
+                <div class="flex space-x-2 pt-4">
+                    <button onclick="app.saveActivity()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded font-bold transition">บันทึกกิจกรรม</button>
+                    <button onclick="app.showView('view-menu')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold transition">กลับ</button>
+                </div>
+            </div>
+        </div>
+
         <div id="view-instructor-list" class="hidden">
             <h2 class="text-xl font-bold mb-4 text-purple-800">✅ รายการรอประเมิน</h2>
             <div id="task-container" class="space-y-3 mb-4 max-h-96 overflow-y-auto pr-1"></div>
-            <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold transition">กลับหน้าหลัก</button>
+            <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
         <div id="view-eval-form" class="hidden">
-            <h2 class="text-xl font-bold mb-2 text-gray-800">ประเมิน <span id="eval-res-name" class="text-blue-600"></span></h2>
+            <h2 class="text-xl font-bold mb-2">ประเมิน <span id="eval-res-name" class="text-blue-600"></span></h2>
             <div class="bg-blue-50 border border-blue-200 p-3 rounded mb-4">
                 <p class="text-sm font-semibold text-blue-900" id="eval-epa-desc"></p>
                 <p class="text-sm mt-1">เกณฑ์ผ่าน: <span class="font-bold text-red-600">Level <span id="eval-min-level"></span></span></p>
                 <p class="text-sm italic text-gray-600 mt-1" id="eval-note"></p>
             </div>
-
             <div class="mb-4">
-                <label class="block text-sm font-bold mb-1 text-gray-700">ผลคะแนน (1-5)</label>
                 <select id="eval-score" class="w-full border rounded p-2 text-lg focus:ring" onchange="app.checkEvalScore()">
-                    <option value="">-- เลือกคะแนน --</option>
-                    <option value="1">1 (ทำไม่ได้เลย)</option><option value="2">2 (ต้องช่วยมาก)</option>
-                    <option value="3">3 (ต้องช่วยเล็กน้อย)</option><option value="4">4 (ทำได้เอง)</option>
-                    <option value="5">5 (สอนคนอื่นได้)</option>
+                    <option value="">-- เลือกคะแนน (1-5) --</option>
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                 </select>
             </div>
-
             <div id="eval-reason-section" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded">
-                <label class="block text-sm font-bold text-red-700 mb-2">ระบุเหตุผลที่ไม่ผ่าน (เลือกได้หลายข้อ)</label>
+                <label class="block text-sm font-bold text-red-700 mb-2">ระบุเหตุผลที่ไม่ผ่าน</label>
                 <div id="reason-checkboxes" class="space-y-2 text-sm text-gray-800"></div>
             </div>
-
             <div class="flex space-x-2">
-                <button onclick="app.submitEvaluation()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold transition">ยืนยันผล</button>
-                <button onclick="app.showView('view-instructor-list')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold transition">ยกเลิก</button>
+                <button onclick="app.submitEvaluation()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold">ยืนยันผล</button>
+                <button onclick="app.showView('view-instructor-list')" class="flex-1 bg-gray-400 text-white py-2 rounded font-bold">ยกเลิก</button>
             </div>
         </div>
 
         <div id="view-staff-dashboard" class="hidden">
-            <h2 class="text-xl font-bold mb-4 text-blue-800">📊 Dashboard: ความคืบหน้า</h2>
-            <div id="dashboard-content" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-blue-800">📊 Dashboard</h2>
+                <button onclick="app.exportCSV()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export Excel</button>
+            </div>
+            <div id="dashboard-content" class="space-y-4 max-h-[65vh] overflow-y-auto pr-2"></div>
             <button onclick="app.showView('view-menu')" class="w-full mt-6 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold transition">กลับหน้าหลัก</button>
         </div>
 
@@ -102,12 +126,11 @@
 
 <script>
 // ==========================================
-// 🔴 ใส่ URL ของ Web App จาก Google Script ที่นี่
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz6JYcQSn2-nc-7HC4aQS0cXsXSjopokajRmgwD7UbIKXUXWeomZ7qv5greIcAiJ5Sm/exec'; 
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbza-oMk7rbXLgXmDQ0umaDeZPiHUnsMB2_4OAnPs9HoYh3K5rzlvCst9wknRYti0TO-/exec'; 
 // ==========================================
 
 const app = {
-    user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null,
+    user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null,
 
     showView: (id) => {
         document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
@@ -130,7 +153,7 @@ const app = {
 
     login: async () => {
         const mdid = document.getElementById('mdid-input').value;
-        if (!mdid) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID', 'warning');
+        if (mdid.length !== 5) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 5 หลัก', 'warning');
         const data = await app.api({ action: 'login', mdid: mdid }, 'ตรวจสอบข้อมูล...');
         if (data) {
             app.user = data.user;
@@ -142,11 +165,7 @@ const app = {
         }
     },
 
-    logout: () => {
-        app.user = null;
-        document.getElementById('mdid-input').value = '';
-        app.showView('view-login');
-    },
+    logout: () => { app.user = null; document.getElementById('mdid-input').value = ''; app.showView('view-login'); },
 
     renderMenu: () => {
         const container = document.getElementById('menu-buttons');
@@ -159,10 +178,12 @@ const app = {
             container.innerHTML += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">✅ รอประเมิน (Instructor)</button>`;
         }
         if (role.includes('staff')) {
+            container.innerHTML += `<button onclick="app.loadStaffActivityForm()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 บันทึก Activity (Staff)</button>`;
             container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูความคืบหน้า (Dashboard)</button>`;
         }
     },
 
+    // --- Resident Flow ---
     loadResidentForm: async () => {
         const data = await app.api({ action: 'get_resident_data', user: app.user });
         if (data) {
@@ -184,16 +205,10 @@ const app = {
 
         const epaInfo = app.residentContext.epas.find(e => e.id === selEpaId);
         const passedData = app.residentContext.passedCounts[selEpaId] || {};
-        let available = [];
-
-        app.residentContext.instructors.forEach(inst => {
-            let passCount = passedData[inst.mdid] || 0;
-            if (passCount < epaInfo.maxEval) available.push(inst);
-        });
+        let available = app.residentContext.instructors.filter(inst => (passedData[inst.mdid] || 0) < epaInfo.maxEval);
 
         if (available.length === 0) {
-             selInst.innerHTML = '<option value="">-- ❌ โควต้าอาจารย์ทุกท่านเต็มแล้ว --</option>';
-             selInst.disabled = true;
+             selInst.innerHTML = '<option value="">-- ❌ โควต้าอาจารย์เต็มแล้ว --</option>'; selInst.disabled = true;
         } else {
              selInst.disabled = false;
              selInst.innerHTML = available.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
@@ -201,55 +216,58 @@ const app = {
     },
 
     saveEpa: async () => {
-        const selEpa = document.getElementById('sel-epaid');
-        const selInst = document.getElementById('sel-instructor');
-        if(!selEpa.value || !selInst.value) return Swal.fire('ผิดพลาด', 'กรุณาเลือกข้อมูลให้ครบถ้วน', 'warning');
-
-        const payload = {
-            epaid: selEpa.value, epa_desc: selEpa.options[selEpa.selectedIndex].text,
-            epa_note: document.getElementById('txt-epanote').value,
-            instructor_mdid: selInst.value, user: app.user
-        };
-        const res = await app.api({ action: 'save_epa', payload: payload }, 'บันทึกข้อมูล...');
+        const selEpa = document.getElementById('sel-epaid'), selInst = document.getElementById('sel-instructor');
+        if(!selEpa.value || !selInst.value) return Swal.fire('ผิดพลาด', 'กรุณาเลือกให้ครบ', 'warning');
+        const payload = { epaid: selEpa.value, epa_desc: selEpa.options[selEpa.selectedIndex].text, epa_note: document.getElementById('txt-epanote').value, instructor_mdid: selInst.value, user: app.user };
+        const res = await app.api({ action: 'save_epa', payload: payload });
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
     },
 
+    // --- Staff Activity Flow ---
+    loadStaffActivityForm: async () => {
+        const data = await app.api({ action: 'get_activity_form_data', user: app.user });
+        if(data) {
+            document.getElementById('act-res').innerHTML = '<option value="">-- เลือก Resident --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
+            document.getElementById('act-id').innerHTML = '<option value="">-- เลือก Activity --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join('');
+            document.getElementById('act-inst').innerHTML = '<option value="">-- เลือก Instructor --</option>' + data.instructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
+            document.getElementById('act-topic').value = '';
+            app.showView('view-staff-activity');
+        }
+    },
+
+    saveActivity: async () => {
+        const resEl = document.getElementById('act-res'), actEl = document.getElementById('act-id'), instEl = document.getElementById('act-inst'), topicEl = document.getElementById('act-topic');
+        if(!resEl.value || !actEl.value) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือก Resident และประเภท Activity', 'warning');
+        
+        const payload = {
+            user: app.user,
+            res_mdid: resEl.value, res_name: resEl.options[resEl.selectedIndex].text,
+            act_id: actEl.value, description: actEl.options[actEl.selectedIndex].text,
+            topic: topicEl.value, inst_mdid: instEl.value
+        };
+        const res = await app.api({ action: 'save_activity', payload: payload });
+        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
+    },
+
+    // --- Evaluation Flow ---
     loadInstructorTasks: async () => {
-        const data = await app.api({ action: 'get_eval_tasks', user: app.user }, 'โหลดรายการ...');
+        const data = await app.api({ action: 'get_eval_tasks', user: app.user });
         if (data) {
             const container = document.getElementById('task-container');
-            if(data.tasks.length === 0) container.innerHTML = '<p class="text-gray-500 text-center py-6">🎉 ไม่มีรายการค้างประเมิน</p>';
-            else {
-                container.innerHTML = data.tasks.map(t => `
-                    <div class="border p-4 rounded-lg shadow-sm bg-white cursor-pointer hover:bg-purple-50 transition border-l-4 border-l-purple-500" onclick='app.openEvalForm(${JSON.stringify(t).replace(/'/g, "&apos;")})'>
-                        <div class="font-bold text-gray-800">${t.resident_name} <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded ml-1">${t.resident_level}</span></div>
-                        <div class="text-sm text-purple-700 mt-1 font-semibold">${t.epaid}: ${t.epa_desc}</div>
-                    </div>
-                `).join('');
-            }
+            if(data.tasks.length === 0) container.innerHTML = '<p class="text-gray-500 text-center py-6">ไม่มีรายการค้างประเมิน</p>';
+            else container.innerHTML = data.tasks.map(t => `<div class="border p-4 rounded bg-white cursor-pointer hover:bg-purple-50" onclick='app.openEvalForm(${JSON.stringify(t).replace(/'/g, "&apos;")})'><strong>${t.resident_name}</strong> (${t.resident_level})<br><span class="text-sm">${t.epaid}: ${t.epa_desc}</span></div>`).join('');
             app.showView('view-instructor-list');
         }
     },
 
     openEvalForm: async (task) => {
         app.currentEvalTask = task;
-        document.getElementById('eval-res-name').innerText = task.resident_name;
-        document.getElementById('eval-epa-desc').innerText = `${task.epaid}: ${task.epa_desc}`;
-        document.getElementById('eval-note').innerText = task.epa_note ? `Note: ${task.epa_note}` : '';
-        document.getElementById('eval-score').value = '';
-        document.getElementById('eval-reason-section').classList.add('hidden');
-        
+        document.getElementById('eval-res-name').innerText = task.resident_name; document.getElementById('eval-epa-desc').innerText = `${task.epaid}: ${task.epa_desc}`; document.getElementById('eval-note').innerText = task.epa_note ? `Note: ${task.epa_note}` : '';
+        document.getElementById('eval-score').value = ''; document.getElementById('eval-reason-section').classList.add('hidden');
         const data = await app.api({ action: 'get_eval_criteria', epaid: task.epaid, resident_level: task.resident_level });
         if(data) {
-            app.currentEvalCriteria = data;
-            document.getElementById('eval-min-level').innerText = data.minLevel;
-            const checksDiv = document.getElementById('reason-checkboxes');
-            checksDiv.innerHTML = data.reasons.map(r => `
-                <label class="flex items-start space-x-2 cursor-pointer p-1 hover:bg-red-100 rounded">
-                    <input type="checkbox" value="${r.desc}" class="mt-1 reason-cb">
-                    <span>${r.desc}</span>
-                </label>
-            `).join('');
+            app.currentEvalCriteria = data; document.getElementById('eval-min-level').innerText = data.minLevel;
+            document.getElementById('reason-checkboxes').innerHTML = data.reasons.map(r => `<label class="flex items-start"><input type="checkbox" value="${r.desc}" class="mt-1 reason-cb mr-2"><span>${r.desc}</span></label>`).join('');
             app.showView('view-eval-form');
         }
     },
@@ -258,35 +276,30 @@ const app = {
         const score = parseInt(document.getElementById('eval-score').value);
         if(!score) return;
         const minLvl = parseInt(app.currentEvalCriteria.minLevel);
-        const sec = document.getElementById('eval-reason-section');
-        
-        if(score < minLvl) {
-            sec.classList.remove('hidden');
-            Swal.fire('ประเมินไม่ผ่าน', `เกณฑ์ของระดับนี้คือ Level ${minLvl}<br>กรุณาระบุเหตุผลเพื่อเป็น Feedback`, 'info');
-        } else sec.classList.add('hidden');
+        if(score < minLvl) { document.getElementById('eval-reason-section').classList.remove('hidden'); }
+        else document.getElementById('eval-reason-section').classList.add('hidden');
     },
 
     submitEvaluation: async () => {
         const score = parseInt(document.getElementById('eval-score').value);
-        if(!score) return Swal.fire('แจ้งเตือน', 'กรุณาให้คะแนนประเมิน', 'warning');
-        
+        if(!score) return Swal.fire('แจ้งเตือน', 'กรุณาให้คะแนน', 'warning');
         let reasons = [];
         if (score < parseInt(app.currentEvalCriteria.minLevel)) {
             document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value));
-            if(reasons.length === 0) return Swal.fire('บังคับกรอก', 'กรุณาเลือกเหตุผลที่ไม่ผ่านอย่างน้อย 1 ข้อ', 'warning');
+            if(reasons.length === 0) return Swal.fire('บังคับกรอก', 'เลือกเหตุผลอย่างน้อย 1 ข้อ', 'warning');
         }
-
-        const payload = { rowId: app.currentEvalTask.rowId, score: score, reason: reasons.join(' | ') };
-        const res = await app.api({ action: 'save_evaluation', payload: payload }, 'บันทึก...');
+        const res = await app.api({ action: 'save_evaluation', payload: { rowId: app.currentEvalTask.rowId, score: score, reason: reasons.join(' | ') }});
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks());
     },
 
+    // --- Dashboard & Export ---
     loadDashboard: async () => {
-        const res = await app.api({ action: 'get_dashboard_data', user: app.user }, 'ดึงข้อมูล Dashboard...');
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user });
         if(res && res.success) {
+            app.dashboardData = res.data; // เก็บไว้ใช้ตอน Export
             app.showView('view-staff-dashboard');
             const container = document.getElementById('dashboard-content');
-            if(res.data.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่มีข้อมูล Resident ในสถาบันนี้</p>';
+            if(res.data.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่มีข้อมูล</p>';
 
             container.innerHTML = res.data.map(r => `
                 <div class="border rounded-lg shadow-sm bg-white overflow-hidden">
@@ -296,17 +309,9 @@ const app = {
                     </div>
                     <div id="det-${r.mdid}" class="hidden p-3 text-xs sm:text-sm bg-white border-t">
                         <table class="w-full text-left border-collapse">
-                            <thead><tr class="bg-gray-100 text-gray-700"><th class="p-2 border-b">รายการ</th><th class="p-2 border-b text-center">เป้า</th><th class="p-2 border-b text-center">ผ่าน</th><th class="p-2 border-b text-center">สถานะ</th></tr></thead>
+                            <thead><tr class="bg-gray-100"><th class="p-2 border-b">รายการ</th><th class="p-2 border-b text-center">เป้า</th><th class="p-2 border-b text-center">ผ่าน</th><th class="p-2 border-b text-center">สถานะ</th></tr></thead>
                             <tbody>
-                                ${r.items.length === 0 ? `<tr><td colspan="4" class="p-2 text-center text-gray-500">ไม่มีรายการ</td></tr>` : 
-                                r.items.map(item => `
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="p-2"><span class="font-bold text-gray-800">${item.id}</span><br><span class="text-gray-500 text-xs">${item.desc}</span></td>
-                                        <td class="p-2 text-center font-bold">${item.target}</td>
-                                        <td class="p-2 text-center text-green-600 font-bold">${item.pass}</td>
-                                        <td class="p-2 text-center">${item.is_completed ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap">✅ ครบ</span>' : '<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap">⏳ รอ</span>'}</td>
-                                    </tr>
-                                `).join('')}
+                                ${r.items.map(item => `<tr class="border-b"><td class="p-2 font-bold">${item.id}</td><td class="p-2 text-center">${item.target}</td><td class="p-2 text-center text-green-600 font-bold">${item.pass}</td><td class="p-2 text-center">${item.is_completed ? '✅' : '⏳'}</td></tr>`).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -317,9 +322,31 @@ const app = {
 
     toggleRes: (id) => {
         const div = document.getElementById(`det-${id}`);
-        const icon = document.getElementById(`icon-${id}`);
         div.classList.toggle('hidden');
-        icon.innerText = div.classList.contains('hidden') ? '▼' : '▲';
+        document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲';
+    },
+
+    exportCSV: () => {
+        if(!app.dashboardData || app.dashboardData.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลให้ Export', 'warning');
+        
+        let csvContent = "\uFEFF"; // ใส่ BOM เพื่อให้ Excel อ่านภาษาไทย UTF-8 ได้
+        csvContent += "MDID,ชื่อ-สกุล,ชั้นปี,รหัสรายการ,รายละเอียด,เป้าหมาย,เคสที่ผ่าน,สถานะ\n";
+        
+        app.dashboardData.forEach(r => {
+            r.items.forEach(item => {
+                let status = item.is_completed ? "ผ่านเกณฑ์" : "ยังไม่ครบ";
+                csvContent += `"${r.mdid}","${r.name}","${r.level}","${item.id}","${item.desc}","${item.target}","${item.pass}","${status}"\n`;
+            });
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `EPA_Dashboard_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 };
 </script>
