@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.03</title>
+    <title>EPA Skin App 1.04</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -17,7 +17,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.03</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.04</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (เลข ว. 5 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d*" maxlength="5" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="12345">
@@ -58,7 +58,7 @@
 
         <div id="view-checkin" class="hidden">
             <h2 class="text-xl font-bold mb-4 text-orange-700">📍 ลงชื่อเข้าร่วมกิจกรรม</h2>
-            <div id="checkin-list" class="space-y-3 mb-4 max-h-96 overflow-y-auto pr-1"></div>
+            <div id="checkin-list" class="space-y-3 mb-4 max-h-[65vh] overflow-y-auto pr-1"></div>
             <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
@@ -93,7 +93,7 @@
 
         <div id="view-manage-activities" class="hidden">
             <h2 class="text-xl font-bold mb-4 text-red-700">⚙️ จัดการกิจกรรมที่เปิดอยู่</h2>
-            <div id="manage-act-list" class="space-y-3 mb-4 max-h-96 overflow-y-auto pr-1"></div>
+            <div id="manage-act-list" class="space-y-3 mb-4 max-h-[65vh] overflow-y-auto pr-1"></div>
             <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
@@ -110,7 +110,7 @@
 
         <div id="view-instructor-list" class="hidden">
             <h2 class="text-xl font-bold mb-4 text-purple-800">✅ รายการรอประเมิน EPA</h2>
-            <div id="task-container" class="space-y-3 mb-4 max-h-96 overflow-y-auto pr-1"></div>
+            <div id="task-container" class="space-y-3 mb-4 max-h-[65vh] overflow-y-auto pr-1"></div>
             <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
@@ -290,6 +290,8 @@ const app = {
         const res = await app.api({ action: 'create_activity', payload: payload }, 'กำลังเปิดกิจกรรม...');
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
     },
+    
+    // [อัปเดต] แสดง Description และ Institute เพิ่ม
     loadCheckin: async () => {
         const data = await app.api({ action: 'get_open_checkins', user: app.user }, 'ค้นหากิจกรรม...');
         if(data) {
@@ -300,11 +302,13 @@ const app = {
                     <div class="border p-4 rounded bg-white shadow-sm flex justify-between items-center">
                         <div class="flex-1 pr-2">
                             <div class="font-bold text-gray-800">${a.topic}</div>
+                            <div class="text-sm text-blue-700 mt-1 font-semibold">ประเภท: ${a.desc}</div>
+                            <div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div>
                             <div class="text-xs text-gray-500 mt-1">หมดเวลา: ${formatThaiDateTime(a.act_finish)}</div>
                         </div>
                         ${a.already_joined 
-                            ? `<span class="bg-gray-100 text-gray-400 border border-gray-200 text-sm font-bold py-2 px-3 rounded whitespace-nowrap">✔️ เข้าร่วมแล้ว</span>`
-                            : `<button onclick="app.joinActivity('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-3 rounded whitespace-nowrap shadow">ลงชื่อ (Join)</button>`
+                            ? `<span class="bg-gray-100 text-gray-400 border border-gray-200 text-sm font-bold py-2 px-3 rounded whitespace-nowrap flex-shrink-0">✔️ เข้าร่วมแล้ว</span>`
+                            : `<button onclick="app.joinActivity('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-3 rounded whitespace-nowrap shadow flex-shrink-0">ลงชื่อ (Join)</button>`
                         }
                     </div>
                 `).join('');
@@ -317,6 +321,7 @@ const app = {
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin());
     },
 
+    // [อัปเดต] แสดงจำนวนผู้เข้าร่วม Resident/Instructor
     loadManageActivities: async () => {
         const data = await app.api({ action: 'get_manage_activities', user: app.user }, 'โหลดข้อมูล...');
         if(data) {
@@ -327,7 +332,8 @@ const app = {
                     <div class="font-bold text-gray-800">${a.topic}</div>
                     <div class="text-sm text-blue-700 mt-1 font-semibold">ประเภท: ${a.desc}</div>
                     <div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div>
-                    <div class="text-xs text-gray-500 mt-1">เวลาสิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div>
+                    <div class="text-xs text-gray-700 mt-2 font-bold bg-gray-100 p-2 rounded">👥 ผู้เข้าร่วม: แพทย์ ${a.resident_count} | อาจารย์ ${a.instructor_count}</div>
+                    <div class="text-xs text-red-500 mt-1">เวลาสิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div>
                 </div>
             `).join('');
             app.showView('view-manage-activities');
