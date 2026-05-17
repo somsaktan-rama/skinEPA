@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.04</title>
+    <title>EPA Skin App 1.05</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -17,7 +17,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.04</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.05</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (เลข ว. 5 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d*" maxlength="5" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="12345">
@@ -54,6 +54,54 @@
             <h2 class="text-xl font-bold mb-4 text-blue-800">📜 ประวัติการบันทึก EPA ของฉัน</h2>
             <div id="resident-history-list" class="space-y-3 mb-4 max-h-[60vh] overflow-y-auto pr-1"></div>
             <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
+        </div>
+
+        <div id="view-360-eval" class="hidden">
+            <h2 class="text-xl font-bold mb-4 text-teal-800">🔄 ฟอร์มประเมินความเป้นมืออาชีพ 360 องศา</h2>
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block font-bold mb-1">เลือกแพทย์ประจำบ้านที่จะประเมิน</label>
+                    <select id="sel-360-resident" class="w-full border rounded p-2 bg-gray-50"></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">บทบาทหรือความสัมพันธ์ของคุณต่อผู้รับการประเมิน</label>
+                    <select id="sel-360-role" class="w-full border rounded p-2 bg-gray-50">
+                        <option value="อาจารย์แพทย์">อาจารย์แพทย์ (Instructor)</option>
+                        <option value="เพื่อนแพทย์ประจำบ้าน">เพื่อนแพทย์ประจำบ้าน (Peer)</option>
+                        <option value="พยาบาลวิชาชีพ">พยาบาลวิชาชีพ</option>
+                        <option value="เจ้าหน้าที่/สายสนับสนุน">เจ้าหน้าที่ / สายสนับสนุนสถาบัน</option>
+                    </select>
+                </div>
+                <hr>
+                <p class="text-xs font-semibold text-gray-500">* เกณฑ์การให้คะแนน: 1=ปรับปรุงมาก, 2=พอใช้, 3=ดีตามมาตรฐาน, 4=ดีมาก, 5=ดีเยี่ยมล้ำเลิศ</p>
+                <div>
+                    <label class="block font-bold mb-1">1. การทำงานเป็นทีม (Teamwork / Interpersonal Skill)</label>
+                    <select id="score-teamwork" class="w-full border rounded p-2 bg-gray-50"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">2. การสื่อสารและการปฏิสัมพันธ์ (Communication / Humanized Care)</label>
+                    <select id="score-communication" class="w-full border rounded p-2 bg-gray-50"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">3. ความรับผิดชอบและความตรงต่อเวลา (Responsibility / Punctuality)</label>
+                    <select id="score-punctuality" class="w-full border rounded p-2 bg-gray-50"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select>
+                </div>
+                <div>
+                    <label class="block font-bold mb-1">ข้อคิดเห็น / คำแนะนำเชิงสร้างสรรค์ (Free Text Comment)</label>
+                    <textarea id="txt-360-comment" rows="3" class="w-full border rounded p-2 bg-gray-50" placeholder="เขียนบันทึกสะท้อนผลเพื่อเป็นประโยชน์ในการพัฒนาทักษะ..."></textarea>
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="app.save360Eval()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded font-bold">บันทึกส่งประเมิน</button>
+                    <button onclick="app.showView('view-menu')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-my-360" class="hidden">
+            <h2 class="text-xl font-bold mb-4 text-teal-800">📊 รายงานผลสะท้อนกลับ 360 องศาของฉัน</h2>
+            <p class="text-xs text-red-500 mb-4">* ข้อมูลชุดนี้ทำการปกปิดอัตลักษณ์และชื่อผู้ให้ Feedback เพื่อความโปร่งใสและตรงไปตรงมา</p>
+            <div id="my-360-container" class="space-y-4 max-h-[60vh] overflow-y-auto pr-1"></div>
+            <button onclick="app.showView('view-menu')" class="w-full mt-4 bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
         <div id="view-checkin" class="hidden">
@@ -198,12 +246,16 @@ const app = {
         const container = document.getElementById('menu-buttons'); container.innerHTML = '';
         const role = app.user.role; 
         
+        // ทุกคนที่เข้าระบบได้ มีสิทธิ์ประเมิน 360 องศาให้ผู้อื่น
+        container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 ประเมินความร่วมมือสหายร่วมงาน (360 องศา)</button>`;
+
         if (role.includes('resident') || role.includes('instructor')) {
             container.innerHTML += `<button onclick="app.loadCheckin()" class="w-full bg-orange-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📍 ลงชื่อเข้าร่วมกิจกรรม (Check-in)</button>`;
         }
         if (role.includes('resident')) {
             container.innerHTML += `<button onclick="app.loadResidentForm()" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📝 สร้างฟอร์ม EPA</button>`;
             container.innerHTML += `<button onclick="app.loadResidentHistory()" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📜 ดูประวัติ EPA ของฉัน</button>`;
+            container.innerHTML += `<button onclick="app.loadMy360Feedback()" class="w-full bg-teal-800 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลตอบรับ 360 องศาของฉัน (Anonymous)</button>`;
         }
         if (role.includes('instructor')) {
             container.innerHTML += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">✅ รอประเมิน EPA</button>`;
@@ -214,6 +266,69 @@ const app = {
         if (role.includes('staff')) {
             container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (Staff)</button>`;
             container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดู Dashboard</button>`;
+        }
+    },
+
+    // --- 360-Degree Evaluation Module ---
+    load360Form: async () => {
+        const data = await app.api({ action: 'get_360_form_data', user: app.user });
+        if(data && data.success) {
+            const selectRes = document.getElementById('sel-360-resident');
+            if(data.residents.length === 0) {
+                selectRes.innerHTML = '<option value="">-- ไม่พบรายชื่อบุคลากรอื่นในสถาบัน --</option>';
+            } else {
+                selectRes.innerHTML = data.residents.map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
+            }
+            document.getElementById('txt-360-comment').value = '';
+            app.showView('view-360-eval');
+        }
+    },
+    save360Eval: async () => {
+        const resMdid = document.getElementById('sel-360-resident').value;
+        const comment = document.getElementById('txt-360-comment').value.trim();
+        if(!resMdid) return Swal.fire('ผิดพลาด', 'กรุณาเลือกแพทย์ประจำบ้านที่ต้องการประเมิน', 'warning');
+        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกข้อเสนอแนะ/คำแนะนำเชิงสร้างสรรค์', 'warning');
+
+        const payload = {
+            user: app.user,
+            resident_mdid: resMdid,
+            evaluator_role: document.getElementById('sel-360-role').value,
+            score_teamwork: document.getElementById('score-teamwork').value,
+            score_communication: document.getElementById('score-communication').value,
+            score_punctuality: document.getElementById('score-punctuality').value,
+            feedback_comment: comment
+        };
+
+        const res = await app.api({ action: 'save_360_evaluation', payload: payload }, 'กำลังบันทึกข้อมูล...');
+        if(res) {
+            Swal.fire('บันทึกสำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
+        }
+    },
+    loadMy360Feedback: async () => {
+        const data = await app.api({ action: 'get_my_360_feedback', user: app.user }, 'กำลังดึงข้อมูลสะท้อนกลับ...');
+        if(data && data.success) {
+            app.showView('view-my-360');
+            const container = document.getElementById('my-360-container');
+            if(data.feedback.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติความคิดเห็นประเมิน 360 องศาจากเพื่อนร่วมงาน</p>';
+                return;
+            }
+            container.innerHTML = data.feedback.map(f => `
+                <div class="border p-4 rounded-lg bg-white shadow-sm border-t-4 border-t-teal-600">
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <span class="font-bold text-teal-800 bg-teal-50 px-2 py-1 rounded">👥 ผู้ให้ Feedback: ${f.evaluator_role}</span>
+                        <span class="text-gray-400 font-semibold">${formatThaiDateTime(f.time_create)}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-2 rounded border">
+                        <div><p class="text-gray-500">การทำงานเป็นทีม</p><p class="font-bold text-gray-800 text-sm">${f.score_teamwork} / 5</p></div>
+                        <div><p class="text-gray-500">การสื่อสาร</p><p class="font-bold text-gray-800 text-sm">${f.score_communication} / 5</p></div>
+                        <div><p class="text-gray-500">ความตรงต่อเวลา</p><p class="font-bold text-gray-800 text-sm">${f.score_punctuality} / 5</p></div>
+                    </div>
+                    <div class="text-xs text-gray-700 bg-yellow-50/50 p-2 border border-yellow-100 rounded mt-2">
+                        <strong>บันทึกความคิดเห็น:</strong> ${f.feedback_comment}
+                    </div>
+                </div>
+            `).join('');
         }
     },
 
@@ -290,8 +405,6 @@ const app = {
         const res = await app.api({ action: 'create_activity', payload: payload }, 'กำลังเปิดกิจกรรม...');
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
     },
-    
-    // [อัปเดต] แสดง Description และ Institute เพิ่ม
     loadCheckin: async () => {
         const data = await app.api({ action: 'get_open_checkins', user: app.user }, 'ค้นหากิจกรรม...');
         if(data) {
@@ -321,7 +434,6 @@ const app = {
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin());
     },
 
-    // [อัปเดต] แสดงจำนวนผู้เข้าร่วม Resident/Instructor
     loadManageActivities: async () => {
         const data = await app.api({ action: 'get_manage_activities', user: app.user }, 'โหลดข้อมูล...');
         if(data) {
