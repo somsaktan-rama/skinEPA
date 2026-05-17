@@ -17,7 +17,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.01</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.02</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (เลข ว. 5 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d*" maxlength="5" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="12345">
@@ -67,7 +67,7 @@
             <div class="space-y-4">
                 <select id="create-act-id" class="w-full border rounded p-2 bg-gray-50"></select>
                 <div>
-                    <label class="block text-sm font-bold mb-1">หัวข้อกิจกรรม (Topic - ขยาย 5 บรรทัด)</label>
+                    <label class="block text-sm font-bold mb-1">หัวข้อกิจกรรม (Topic)</label>
                     <textarea id="create-act-topic" rows="5" class="w-full border rounded p-2 bg-gray-50" placeholder="ระบุหัวข้อรายละเอียดกิจกรรม..."></textarea>
                 </div>
                 <div>
@@ -125,10 +125,8 @@
                 <label class="block text-sm font-bold text-gray-700 mb-1">ผลคะแนน (epa_level 1-5)</label>
                 <select id="eval-score" class="w-full border rounded p-2 text-sm focus:ring" onchange="app.checkEvalScore()">
                     <option value="">-- เลือกคะแนน --</option>
-                    <option value="1">1 (ดูอย่างเดียว)</option>
-                    <option value="2">2 (อาจารย์คุมให้ทำ)</option>
-                    <option value="3">3 (ทำเอง/อาจารย์คุม)</option>
-                    <option value="4">4 (ทำเองคนเดียว)</option>
+                    <option value="1">1 (ดูอย่างเดียว)</option><option value="2">2 (อาจารย์คุมให้ทำ)</option>
+                    <option value="3">3 (ทำเอง/อาจารย์คุม)</option><option value="4">4 (ทำเองคนเดียว)</option>
                     <option value="5">5 (สอนน้องทำได้)</option>
                 </select>
             </div>
@@ -154,6 +152,15 @@
 
 <script>
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwbUF943br03qiwMuwqQk4jDp9AJkwlSMETaPpeb0bJHi133IBTwHZWwUNt11sKFNR8/exec'; 
+
+// Helper แปลงรูปแบบเวลาเป็น พ.ศ. ให้สวยงาม
+const formatThaiDateTime = (isoStr) => {
+    if(!isoStr) return '';
+    const d = new Date(isoStr);
+    if(isNaN(d.getTime())) return isoStr;
+    return ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + (d.getFullYear()+543) + ' ' + 
+           ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
+};
 
 const app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
@@ -235,12 +242,11 @@ const app = {
     saveEpa: async () => { 
         const epa = document.getElementById('sel-epaid').value, inst = document.getElementById('sel-instructor').value;
         const note = document.getElementById('txt-epanote').value.trim();
-        // บังคับลง epa_note ก่อนส่งข้อมูล
         if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกข้อมูลและระบุ Note ก่อนส่งประเมินเสมอ', 'warning');
         
         const res = await app.api({ action: 'save_epa', payload: { epaid: epa, epa_desc: document.getElementById('sel-epaid').options[document.getElementById('sel-epaid').selectedIndex].text, epa_note: note, instructor_mdid: inst, user: app.user }});
         if(res) {
-            document.getElementById('txt-epanote').value = ''; // ล้างข้อมูล note เก่าหลัง submit สำเร็จ
+            document.getElementById('txt-epanote').value = ''; 
             Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
         }
     },
@@ -256,14 +262,14 @@ const app = {
             container.innerHTML = data.history.map(h => `
                 <div class="border p-4 rounded-lg shadow-sm bg-white border-l-4 ${h.time_app ? (h.reason ? 'border-l-red-500' : 'border-l-green-500') : 'border-l-orange-400'}">
                     <div class="flex justify-between items-start">
-                        <span class="font-bold text-gray-800">${h.epaid}: ${h.epa_desc}</span>
-                        <span class="text-xs font-bold px-2 py-1 rounded ${h.time_app ? (h.reason ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800') : 'bg-orange-100 text-orange-800'}">
+                        <span class="font-bold text-gray-800">${h.epa_desc}</span>
+                        <span class="text-xs font-bold px-2 py-1 rounded ${h.time_app ? (h.reason ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800') : 'bg-orange-100 text-orange-800'} whitespace-nowrap ml-2">
                             ${h.time_app ? (h.reason ? '❌ FAIL' : '✅ PASS') : '⏳ รอดำเนินการ'}
                         </span>
                     </div>
-                    <div class="text-xs text-gray-500 mt-1">ผู้ประเมิน: อาจารย์ ${h.instructor_name} | วันที่: ${h.time_create}</div>
+                    <div class="text-xs text-gray-500 mt-1">ผู้ประเมิน: อาจารย์ ${h.instructor_name} | วันที่: ${formatThaiDateTime(h.time_create)}</div>
                     <div class="text-xs text-gray-700 bg-gray-50 p-2 border rounded mt-2"><strong>My Note:</strong> ${h.epa_note}</div>
-                    ${h.reason ? `<div class="text-xs text-red-600 bg-red-50 p-2 border border-red-200 rounded mt-2"><strong>เหตุผลที่ไม่ผ่าน:</strong> ${h.reason}</div>` : ''}
+                    ${h.reason ? `<div class="text-xs text-red-600 bg-red-50 p-2 border border-red-200 rounded mt-2"><strong>Feedback อาจารย์:</strong> ${h.reason}</div>` : ''}
                 </div>
             `).join('');
         }
@@ -295,7 +301,7 @@ const app = {
                     <div class="border p-4 rounded bg-white shadow-sm flex justify-between items-center">
                         <div class="flex-1 pr-2">
                             <div class="font-bold text-gray-800">${a.topic}</div>
-                            <div class="text-xs text-gray-500 mt-1">หมดเวลา: ${new Date(a.act_finish).toLocaleString('th-TH')}</div>
+                            <div class="text-xs text-gray-500 mt-1">หมดเวลา: ${formatThaiDateTime(a.act_finish)}</div>
                         </div>
                         ${a.already_joined 
                             ? `<span class="bg-gray-100 text-gray-400 border border-gray-200 text-sm font-bold py-2 px-3 rounded whitespace-nowrap">✔️ เข้าร่วมแล้ว</span>`
@@ -317,14 +323,21 @@ const app = {
         if(data) {
             const list = document.getElementById('manage-act-list');
             if(data.activities.length === 0) list.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่มีกิจกรรมที่เปิดอยู่</p>';
-            else list.innerHTML = data.activities.map(a => `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 transition border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_finish}')"><div class="font-bold text-gray-800">${a.topic}</div><div class="text-sm text-gray-500 mt-1">เวลาสิ้นสุด: ${new Date(a.act_finish).toLocaleString('th-TH')}</div></div>`).join('');
+            else list.innerHTML = data.activities.map(a => `
+                <div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 transition border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_finish}')">
+                    <div class="font-bold text-gray-800">${a.topic}</div>
+                    <div class="text-sm text-blue-700 mt-1 font-semibold">ประเภท: ${a.desc}</div>
+                    <div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div>
+                    <div class="text-xs text-gray-500 mt-1">เวลาสิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div>
+                </div>
+            `).join('');
             app.showView('view-manage-activities');
         }
     },
     viewAttendees: async (actRefId, topicName, actFinish) => {
         app.currentManageAct = { act_ref_id: actRefId, topic: topicName, act_finish: actFinish };
         document.getElementById('attendee-topic').innerText = `กิจกรรม: ${topicName}`;
-        document.getElementById('attendee-time-info').innerText = `กำหนดสิ้นสุดกิจกรรม: ${new Date(actFinish).toLocaleString('th-TH')}`;
+        document.getElementById('attendee-time-info').innerText = `กำหนดสิ้นสุดกิจกรรม: ${formatThaiDateTime(actFinish)}`;
         const data = await app.api({ action: 'get_activity_attendees', act_ref_id: actRefId });
         if(data) {
             const list = document.getElementById('attendees-container');
@@ -339,13 +352,11 @@ const app = {
         if(res) { app.viewAttendees(app.currentManageAct.act_ref_id, app.currentManageAct.topic, app.currentManageAct.act_finish); }
     },
     closeActivitySession: async () => {
-        // เงื่อนไข: การปิดกิจกรรม ต้องทำหลังจากผ่านเวลาสิ้นสุดกิจกรรม (act_finish) ไปแล้วเท่านั้น
         const now = new Date().getTime();
         const finishTime = new Date(app.currentManageAct.act_finish).getTime();
         if(now < finishTime) {
-            return Swal.fire('ไม่สามารถดำเนินการได้', 'ไม่สามารถปิดกิจกรรมได้ชั่วคราว เนื่องจากยังไม่ถึงกำหนดเวลาสิ้นสุดกิจกรรม (act_finish)', 'error');
+            return Swal.fire('ไม่สามารถดำเนินการได้', 'ไม่สามารถปิดกิจกรรมได้ชั่วคราว เนื่องจากยังไม่ถึงกำหนดเวลาสิ้นสุดกิจกรรม', 'error');
         }
-
         if(!confirm('ยืนยันการบันทึกสรุปและปิดคลาสกิจกรรมนี้?')) return;
         const res = await app.api({ action: 'close_activity', act_ref_id: app.currentManageAct.act_ref_id });
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadManageActivities());
@@ -356,15 +367,14 @@ const app = {
         const data = await app.api({ action: 'get_eval_tasks', user: app.user });
         if (data) {
             const container = document.getElementById('task-container');
-            // ปรับการ์ดแสดงผลให้เพิ่ม name + time_create // epa_desc + epa_note
             if(data.tasks.length === 0) container.innerHTML = '<p class="text-gray-500 text-center py-6">ไม่มีรายการค้างประเมิน</p>';
             else container.innerHTML = data.tasks.map(t => `
                 <div class="border p-4 rounded bg-white cursor-pointer hover:bg-purple-50 transition border-l-4 border-l-purple-500" onclick='app.openEvalForm(${JSON.stringify(t)})'>
                     <div class="flex justify-between items-start mb-2">
                         <strong class="text-gray-800 text-base">${t.resident_name} (${t.resident_level})</strong>
-                        <span class="text-xs text-gray-400 font-semibold">${t.time_create}</span>
+                        <span class="text-xs text-gray-400 font-semibold">${formatThaiDateTime(t.time_create)}</span>
                     </div>
-                    <div class="text-sm font-semibold text-purple-700">${t.epaid}: ${t.epa_desc}</div>
+                    <div class="text-sm font-semibold text-purple-700">${t.epa_desc}</div>
                     <div class="text-xs text-gray-600 bg-gray-50 border rounded p-2 mt-2 italic"><strong>Note แพทย์:</strong> ${t.epa_note}</div>
                 </div>
             `).join('');
@@ -374,11 +384,11 @@ const app = {
     openEvalForm: async (task) => {
         app.currentEvalTask = task; 
         document.getElementById('eval-res-name').innerText = task.resident_name; 
-        document.getElementById('eval-epa-desc').innerText = `${task.epaid}: ${task.epa_desc}`;
+        document.getElementById('eval-epa-desc').innerText = task.epa_desc;
         document.getElementById('eval-res-note').innerText = task.epa_note || 'ไม่มี';
         document.getElementById('eval-score').value = ''; 
         document.getElementById('eval-reason-section').classList.add('hidden');
-        document.getElementById('eval-freetext').value = ''; // Reset โน้ตความเห็นอิสระ
+        document.getElementById('eval-freetext').value = ''; 
         
         const data = await app.api({ action: 'get_eval_criteria', epaid: task.epaid, resident_level: task.resident_level });
         if(data) {
@@ -392,15 +402,14 @@ const app = {
         document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m);
     },
     submitEvaluation: async () => {
-        const score = parseInt(document.getElementById('eval-score').value); if(!score) return;
+        const score = parseInt(document.getElementById('eval-score').value); if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning');
         let reasons = [];
         const customText = document.getElementById('eval-freetext').value.trim();
 
         if (score < parseInt(app.currentEvalCriteria.minLevel)) {
             document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value));
-            // ผนวกความคิดเห็นอิสระ (Free Text) ของ Instructor เข้าไปในฟิลด์เหตุผลเมื่อไม่ผ่าน
             if(customText) reasons.push(`ความเห็นอาจารย์เพิ่มเติม: ${customText}`);
-            if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุเกณฑ์ข้อที่ไม่ผ่าน หรือเติม Free text แนะนำแพทย์ประจำบ้าน', 'warning');
+            if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุเกณฑ์ข้อที่ไม่ผ่าน หรือเติม Free text แนะนำแพทย์', 'warning');
         } else {
             if(customText) reasons.push(`ความเห็นอาจารย์: ${customText}`);
         }
