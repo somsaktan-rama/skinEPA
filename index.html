@@ -222,55 +222,34 @@ const app = {
         }
     },
 
-    // --- 360 Eval Flow ---
+// ค้นหาฟังก์ชัน load360Form ภายในตัวแปรโครงสร้าง app และแทนที่ด้วยชุดนี้
     load360Form: async () => { 
         const data = await app.api({ action: 'get_360_form_data', user: app.user }); 
         if(data) { 
-            const selectRes = document.getElementById('sel-360-resident'); 
+            const grid = document.getElementById('grid-360-residents'); 
+            document.getElementById('sel-360-resident').value = ''; 
+            
             if(data.residents.length === 0) { 
-                selectRes.innerHTML = '<option value="">-- ประเมินครบทุกคนแล้ว --</option>'; selectRes.disabled = true; 
+                grid.innerHTML = '<p class="col-span-full text-center text-red-500 py-4 font-bold bg-red-50 rounded">-- คุณได้ประเมินแพทย์ครบทุกคนเรียบร้อยแล้ว --</p>'; 
             } else { 
-                selectRes.disabled = false; 
-                selectRes.innerHTML = '<option value="">-- เลือกแพทย์ประจำบ้าน --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name} (${r.level})</option>`).join(''); 
+                grid.innerHTML = data.residents.map(r => `
+                    <div id="card-res-${r.mdid}" onclick="app.select360Resident('${r.mdid}')" class="border-2 border-transparent bg-white shadow-sm rounded-lg p-3 text-center cursor-pointer hover:shadow-md transition">
+                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover border border-gray-200 shadow-sm">
+                        <p class="text-xs font-bold text-gray-800 line-clamp-1">${r.name}</p>
+                        <p class="text-[10px] text-teal-700 bg-teal-50 border border-teal-100 rounded-full inline-block px-2 mt-1 font-semibold">${r.level}</p>
+                    </div>
+                `).join(''); 
             } 
-            document.getElementById('txt-360-comment').value = ''; app.showView('view-360-eval'); 
+            
+            document.getElementById('txt-360-comment').value = ''; 
+            document.getElementById('score-teamwork').value = '3';
+            document.getElementById('score-communication').value = '3';
+            document.getElementById('score-punctuality').value = '3';
+            
+            app.showView('view-360-eval'); 
         } 
     },
-    save360Eval: async () => { 
-        const resMdid = document.getElementById('sel-360-resident').value; const comment = document.getElementById('txt-360-comment').value.trim(); 
-        if(!resMdid || !comment) return Swal.fire('ผิดพลาด', 'กรุณาระบุข้อมูลให้ครบ', 'warning'); 
-        const res = await app.api({ action: 'save_360_evaluation', payload: { user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment } }); 
-        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
-    },
-    loadMy360Feedback: async () => { 
-        document.getElementById('inst-360-selector').classList.add('hidden');
-        app._render360Data(app.user.mdid); 
-    },
-    initInst360: async () => {
-        const data = await app.api({ action: 'get_inst_360_residents', user: app.user }, 'ดึงรายชื่อ...');
-        if (data && data.success) {
-            const selector = document.getElementById('inst-360-selector');
-            selector.classList.remove('hidden');
-            const drop = document.getElementById('sel-inst-360-target');
-            drop.innerHTML = '<option value="">-- เลือกศิษย์ในความดูแล --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name} (${r.level})</option>`).join('');
-            document.getElementById('my-360-container').innerHTML = '<p class="text-center text-gray-500 py-6">กรุณาเลือกรายชื่อเพื่อดูผลลัพธ์</p>';
-            app.showView('view-my-360');
-        }
-    },
-    fetchInstructor360: () => {
-        const target = document.getElementById('sel-inst-360-target').value;
-        if(target) app._render360Data(target);
-    },
-    _render360Data: async (targetMdid) => {
-        const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...'); 
-        if(data) { 
-            app.showView('view-my-360'); 
-            const container = document.getElementById('my-360-container'); 
-            if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีข้อมูล</p>'; 
-            container.innerHTML = data.feedback.map(f => `<div class="border p-4 rounded-lg bg-white shadow-sm border-t-4 border-t-teal-600"><div class="flex justify-between items-center mb-3 border-b pb-2"><span class="font-bold text-teal-800">👥 กลุ่ม: ${f.role}</span><span class="text-xs text-gray-600 bg-gray-100 border px-2 py-1 rounded-full">ประเมิน: ${f.eval_count} คน</span></div><div class="grid grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-3 rounded border"><div><p class="text-gray-500 mb-1">ทำงานเป็นทีม</p><p class="font-bold text-teal-600 text-lg">${f.avg_teamwork}</p></div><div><p class="text-gray-500 mb-1">สื่อสาร</p><p class="font-bold text-teal-600 text-lg">${f.avg_communication}</p></div><div><p class="text-gray-500 mb-1">ตรงเวลา</p><p class="font-bold text-teal-600 text-lg">${f.avg_punctuality}</p></div></div><div class="text-sm text-gray-700 mt-3 bg-yellow-50/50 p-3 border border-yellow-100 rounded"><p class="font-bold text-gray-600 mb-2">💬 ข้อคิดเห็น:</p><ul class="list-disc pl-5 space-y-1">${f.comments.map(c => `<li>${c}</li>`).join('')}</ul></div></div>`).join(''); 
-        }
-    },
-
+    
     // --- My Progress (Resident Personal Dashboard) ---
     loadMyProgress: async () => {
         const data = await app.api({ action: 'get_my_progress', user: app.user }, 'ประมวลผลความก้าวหน้า...');
