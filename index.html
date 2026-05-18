@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.11</title>
+    <title>EPA Skin App 1.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.11</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.12</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
@@ -267,7 +267,11 @@ const app = {
         const res = await app.api({ action: 'save_360_evaluation', payload: { user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment } }); 
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
     },
-    loadMy360Feedback: async () => { document.getElementById('inst-360-selector').classList.add('hidden'); app._render360Data(app.user.mdid); },
+// 🟢 เริ่มคลุมดำทับตั้งแต่บรรทัดนี้ลงไป:
+    loadMy360Feedback: async () => { 
+        document.getElementById('inst-360-selector').classList.add('hidden'); 
+        app._render360Data(app.user.mdid); 
+    },
     initInst360: async () => {
         const data = await app.api({ action: 'get_inst_360_residents', user: app.user }, 'ดึงรายชื่อ...');
         if (data && data.success) {
@@ -278,15 +282,112 @@ const app = {
             app.showView('view-my-360');
         }
     },
-    fetchInstructor360: () => { const target = document.getElementById('sel-inst-360-target').value; if(target) app._render360Data(target); },
+    fetchInstructor360: () => { 
+        const target = document.getElementById('sel-inst-360-target').value; 
+        if(target) app._render360Data(target); 
+    },
     _render360Data: async (targetMdid) => {
+        const isSelf = !targetMdid || targetMdid === app.user.mdid.toString();
         const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...'); 
+        
         if(data) { 
-            app.showView('view-my-360'); const container = document.getElementById('my-360-container'); 
-            if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีข้อมูล</p>'; 
-            container.innerHTML = data.feedback.map(f => `<div class="border p-4 rounded-lg bg-white shadow-sm border-t-4 border-t-teal-600"><div class="flex justify-between items-center mb-3 border-b pb-2"><span class="font-bold text-teal-800 text-base">👥 กลุ่ม: ${f.role}</span><span class="text-xs text-gray-600 bg-gray-100 border px-2 py-1 rounded-full">ประเมิน: ${f.eval_count} คน</span></div><div class="grid grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-3 rounded border"><div><p class="text-gray-500 mb-1">ทำงานเป็นทีม</p><p class="font-bold text-teal-600 text-lg">${f.avg_teamwork}</p></div><div><p class="text-gray-500 mb-1">การสื่อสาร</p><p class="font-bold text-teal-600 text-lg">${f.avg_communication}</p></div><div><p class="text-gray-500 mb-1">ตรงเวลา</p><p class="font-bold text-teal-600 text-lg">${f.avg_punctuality}</p></div></div><div class="text-sm text-gray-700 mt-3 bg-yellow-50/50 p-3 border border-yellow-100 rounded"><p class="font-bold text-gray-600 mb-2">💬 ข้อคิดเห็น:</p><ul class="list-disc pl-5 space-y-1">${f.comments.map(c => `<li>${c}</li>`).join('')}</ul></div></div>`).join(''); 
+            app.showView('view-my-360'); 
+            const container = document.getElementById('my-360-container'); 
+            if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติการประเมิน 360 องศา</p>'; 
+
+            if (isSelf) {
+                // ==========================================
+                // มุมมอง Resident (Self-View) : ระบบ Tab
+                // ==========================================
+                let tabsHtml = `<div class="flex overflow-x-auto border-b border-teal-200 mb-4 space-x-2">`;
+                let contentHtml = ``;
+
+                data.feedback.forEach((t, index) => {
+                    let isActive = index === 0;
+                    let btnClass = isActive ? 'bg-teal-600 text-white' : 'bg-teal-50 text-teal-700 hover:bg-teal-100';
+                    let label = index === 0 ? `เทอมปัจจุบัน` : `ประวัติ (${t.term})`;
+
+                    tabsHtml += `<button onclick="app.switch360Tab(${index})" id="tab-btn-${index}" class="tab-360-btn px-4 py-2 rounded-t-lg font-bold text-sm whitespace-nowrap transition ${btnClass}">${label}</button>`;
+
+                    contentHtml += `<div id="tab-content-${index}" class="tab-360-content ${isActive ? '' : 'hidden'} space-y-4">`;
+                    if (index === 0) contentHtml += `<p class="text-sm font-bold text-teal-800">📊 ผลประเมินประจำ: ${t.term}</p>`;
+                    
+                    t.roles.forEach(f => {
+                         contentHtml += `
+                         <div class="border p-4 rounded-lg bg-white shadow-sm border-t-4 border-t-teal-600">
+                             <div class="flex justify-between items-center mb-3 border-b pb-2"><span class="font-bold text-teal-800 text-base">👥 กลุ่ม: ${f.role}</span><span class="text-xs text-gray-600 bg-gray-100 border px-2 py-1 rounded-full">ผู้ประเมิน: ${f.eval_count} คน</span></div>
+                             <div class="grid grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-3 rounded border"><div><p class="text-gray-500 mb-1">ทำงานเป็นทีม</p><p class="font-bold text-teal-600 text-lg">${f.avg_teamwork}</p></div><div><p class="text-gray-500 mb-1">การสื่อสาร</p><p class="font-bold text-teal-600 text-lg">${f.avg_communication}</p></div><div><p class="text-gray-500 mb-1">ตรงเวลา</p><p class="font-bold text-teal-600 text-lg">${f.avg_punctuality}</p></div></div>
+                             <div class="text-sm text-gray-700 mt-3 bg-yellow-50/50 p-3 border border-yellow-100 rounded"><p class="font-bold text-gray-600 mb-2">💬 ข้อคิดเห็น:</p><ul class="list-disc pl-5 space-y-1">${f.comments.map(c => `<li>${c}</li>`).join('')}</ul></div>
+                         </div>`;
+                    });
+                    contentHtml += `</div>`;
+                });
+                tabsHtml += `</div>`;
+                container.innerHTML = tabsHtml + contentHtml;
+
+            } else {
+                // ==========================================
+                // มุมมอง Instructor : ตารางเปรียบเทียบพัฒนาการ
+                // ==========================================
+                let comparisonHtml = `<h3 class="font-bold text-teal-900 mb-2 mt-4">📈 ตารางเปรียบเทียบพัฒนาการ (ย้อนหลัง)</h3>`;
+                comparisonHtml += `<div class="overflow-x-auto bg-white border rounded-lg shadow-sm mb-6"><table class="w-full text-sm text-left"><thead class="bg-teal-50 border-b"><tr><th class="p-3">หัวข้อประเมิน (ภาพรวม)</th>`;
+
+                let reversedFeedback = [...data.feedback].reverse();
+
+                reversedFeedback.forEach(t => {
+                     comparisonHtml += `<th class="p-3 text-center border-l whitespace-nowrap text-teal-800">${t.term}</th>`;
+                });
+                comparisonHtml += `</tr></thead><tbody>`;
+
+                let getOverall = (termData, key) => {
+                    let total = 0, count = 0;
+                    termData.roles.forEach(r => { total += parseFloat(r[key]) * r.eval_count; count += r.eval_count; });
+                    return count > 0 ? (total/count).toFixed(2) : "-";
+                };
+
+                let rows = [{label: "1. ทำงานเป็นทีม", key: "avg_teamwork"}, {label: "2. การสื่อสาร", key: "avg_communication"}, {label: "3. ตรงต่อเวลา", key: "avg_punctuality"}];
+
+                rows.forEach(row => {
+                    comparisonHtml += `<tr class="border-b"><td class="p-3 font-semibold text-gray-700">${row.label}</td>`;
+                    reversedFeedback.forEach(t => {
+                        let score = getOverall(t, row.key);
+                        let color = score >= 4 ? 'text-green-600' : (score < 3 ? 'text-red-500' : 'text-teal-700');
+                        comparisonHtml += `<td class="p-3 text-center border-l font-bold ${color}">${score}</td>`;
+                    });
+                    comparisonHtml += `</tr>`;
+                });
+                comparisonHtml += `</tbody></table></div>`;
+
+                comparisonHtml += `<h3 class="font-bold text-teal-900 mb-2">💬 รวบรวมข้อคิดเห็น (แยกตามเทอม)</h3><div class="space-y-4">`;
+                data.feedback.forEach(t => {
+                    comparisonHtml += `<div class="border p-4 rounded-lg bg-gray-50 shadow-sm border-l-4 border-l-teal-500"><h4 class="font-bold text-teal-800 mb-2">${t.term}</h4>`;
+                    let hasComments = false;
+                    t.roles.forEach(r => {
+                        if(r.comments.length > 0) {
+                            hasComments = true;
+                            comparisonHtml += `<div class="mb-3"><span class="text-xs font-bold bg-white border border-gray-200 px-2 py-1 rounded shadow-sm text-teal-800">จาก: ${r.role}</span><ul class="list-disc pl-6 mt-2 text-sm text-gray-700 space-y-1">${r.comments.map(c => `<li>${c}</li>`).join('')}</ul></div>`;
+                        }
+                    });
+                    if (!hasComments) comparisonHtml += `<p class="text-sm text-gray-500 italic">ไม่มีข้อเสนอแนะในเทอมนี้</p>`;
+                    comparisonHtml += `</div>`;
+                });
+                comparisonHtml += `</div>`;
+
+                container.innerHTML = comparisonHtml;
+            }
         }
     },
+    switch360Tab: (index) => {
+        document.querySelectorAll('.tab-360-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`tab-content-${index}`).classList.remove('hidden');
+
+        document.querySelectorAll('.tab-360-btn').forEach(el => {
+            el.classList.remove('bg-teal-600', 'text-white');   el.classList.add('bg-teal-50', 'text-teal-700');
+        });
+        const activeBtn = document.getElementById(`tab-btn-${index}`);
+        activeBtn.classList.remove('bg-teal-50', 'text-teal-700'); activeBtn.classList.add('bg-teal-600', 'text-white');
+    }, 
+    // 🛑 สิ้นสุดการคลุมดำทับที่จุลภาคตัวนี้ (บรรทัดต่อไปจะเป็นฟังก์ชันอื่น เช่น loadMyProgress:)
 
     // --- My Progress ---
     loadMyProgress: async () => {
