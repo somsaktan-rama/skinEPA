@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.12</title>
+    <title>EPA Skin App 1.13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.12</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.13</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
@@ -35,24 +35,48 @@
             <button onclick="app.logout()" class="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">ออกจากระบบ</button>
         </div>
 
-        <div id="view-360-eval" class="hidden">
-            <h2 class="text-xl font-bold mb-4 text-teal-800">🔄 ฟอร์มประเมินความเป็นมืออาชีพ 360 องศา</h2>
-            <div class="space-y-4 text-sm">
-                <div>
-                    <label class="block font-bold mb-2">เลือกแพทย์ประจำบ้านที่จะประเมิน</label>
-                    <div id="grid-360-residents" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[40vh] overflow-y-auto p-1 pb-2"></div>
-                    <input type="hidden" id="sel-360-resident">
-                </div>
-                <hr>
-                <p class="text-xs font-semibold text-gray-500">* เกณฑ์: 1=ปรับปรุงมาก, 2=พอใช้, 3=ดีตามมาตรฐาน, 4=ดีมาก, 5=ดีเยี่ยมล้ำเลิศ</p>
-                <div><label class="block font-bold mb-1">1. การทำงานเป็นทีม (Teamwork)</label><select id="score-teamwork" class="w-full border rounded p-2 bg-gray-50"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select></div>
-                <div><label class="block font-bold mb-1">2. การสื่อสารและการปฏิสัมพันธ์ (Communication)</label><select id="score-communication" class="w-full border rounded p-2 bg-gray-50"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select></div>
-                <div><label class="block font-bold mb-1">3. ความรับผิดชอบ (Punctuality)</label><select id="score-punctuality" class="w-full border rounded p-2 bg-gray-50"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select></div>
-                <div><label class="block font-bold mb-1">ข้อคิดเห็น / คำแนะนำเชิงสร้างสรรค์</label><textarea id="txt-360-comment" rows="3" class="w-full border rounded p-2 bg-gray-50"></textarea></div>
-                <div class="flex space-x-2 pt-2"><button onclick="app.save360Eval()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded font-bold shadow">บันทึกส่งประเมิน</button><button onclick="app.showView('view-menu')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button></div>
+        <div id="view-360-grid" class="hidden">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xl font-bold text-teal-800">🔄 เลือกแพทย์เพื่อประเมิน</h2>
+                <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับหน้าหลัก</button>
             </div>
+            <p class="text-sm text-red-500 font-semibold mb-4 bg-red-50 p-2 rounded border border-red-100">* เลือกประเมินเฉพาะแพทย์ที่ท่าน "รู้จักและเคยร่วมงานด้วย" ในเทอมนี้เท่านั้น</p>
+            
+            <div id="grid-360-residents" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto p-1 pb-4">
+                </div>
         </div>
 
+        <div id="view-360-focus" class="hidden">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-teal-800">📝 แบบประเมิน 360 องศา</h2>
+                <button onclick="app.cancel360Eval()" class="text-gray-500 hover:text-gray-700 font-bold text-xl">✕</button>
+            </div>
+            
+            <div class="bg-gradient-to-b from-teal-50 to-white border border-teal-200 rounded-xl p-5 mb-5 flex flex-col items-center text-center shadow-sm">
+                <img id="focus-360-pic" src="" class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md mb-3">
+                <h3 id="focus-360-name" class="text-xl font-bold text-gray-800 mb-1"></h3>
+                <p id="focus-360-level" class="text-sm text-teal-800 bg-teal-100 px-4 py-1 rounded-full font-bold shadow-sm"></p>
+            </div>
+
+            <div class="space-y-4 text-sm bg-white p-1">
+                <input type="hidden" id="sel-360-resident">
+                <p class="text-xs font-semibold text-gray-500 text-center mb-2">* 1=ปรับปรุงมาก, 2=พอใช้, 3=มาตรฐาน, 4=ดีมาก, 5=ดีเยี่ยม</p>
+                
+                <div class="bg-gray-50 p-3 rounded border"><label class="block font-bold mb-2 text-teal-900">1. การทำงานเป็นทีม (Teamwork)</label><select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select></div>
+                <div class="bg-gray-50 p-3 rounded border"><label class="block font-bold mb-2 text-teal-900">2. การสื่อสาร (Communication)</label><select id="score-communication" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select></div>
+                <div class="bg-gray-50 p-3 rounded border"><label class="block font-bold mb-2 text-teal-900">3. ความรับผิดชอบ (Punctuality)</label><select id="score-punctuality" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm"><option value="5">5</option><option value="4">4</option><option value="3" selected>3</option><option value="2">2</option><option value="1">1</option></select></div>
+                <div class="bg-gray-50 p-3 rounded border"><label class="block font-bold mb-2 text-teal-900">ข้อคิดเห็น / คำแนะนำเพิ่มเติม</label><textarea id="txt-360-comment" rows="3" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" placeholder="ระบุสิ่งที่ทำได้ดี หรือสิ่งที่ควรปรับปรุง..."></textarea></div>
+                
+                <div class="flex flex-col space-y-3 pt-4 pb-6">
+                    <button onclick="app.save360Eval()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
+                    <div class="flex space-x-2">
+                        <button onclick="app.cancel360Eval(false)" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-bold transition">ถอยกลับ</button>
+                        <button onclick="app.cancel360Eval(true)" class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-bold transition border border-red-200">ไม่รู้จัก (N/A)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div id="view-my-360" class="hidden">
             <h2 class="text-xl font-bold mb-2 text-teal-800">📊 ผลประเมิน 360 องศา</h2>
             <div id="inst-360-selector" class="hidden mb-4 p-3 bg-teal-50 border border-teal-200 rounded">
@@ -225,49 +249,100 @@ const app = {
         }
     },
 
-    // --- 360 Eval Flow ---
+// --- 360 Eval Flow (Focus Mode Update) ---
     load360Form: async () => { 
         const data = await app.api({ action: 'get_360_form_data', user: app.user }); 
         if(data) { 
             const grid = document.getElementById('grid-360-residents'); 
-            document.getElementById('sel-360-resident').value = ''; 
             
             if(data.residents.length === 0) { 
-                grid.innerHTML = '<p class="col-span-full text-center text-red-500 py-4 font-bold bg-red-50 rounded">-- คุณประเมินแพทย์ครบทุกคนแล้ว --</p>'; 
+                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินแพทย์ประจำบ้านในเทอมนี้ครบทุกคนแล้วครับ</p></div>`; 
             } else { 
                 grid.innerHTML = data.residents.map(r => `
-                    <div id="card-res-${r.mdid}" onclick="app.select360Resident('${r.mdid}')" class="border-2 border-transparent bg-white shadow-sm rounded-lg p-3 text-center cursor-pointer hover:shadow-md transition">
-                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 rounded-full mx-auto mb-2 object-cover border border-gray-200 shadow-sm">
-                        <p class="text-xs font-bold text-gray-800 line-clamp-1">${r.name}</p>
-                        <p class="text-[10px] text-teal-700 bg-teal-50 border border-teal-100 rounded-full inline-block px-2 mt-1 font-semibold">${r.level}</p>
+                    <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
+                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
+                        <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
+                        <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
                     </div>
                 `).join(''); 
             } 
-            document.getElementById('txt-360-comment').value = ''; 
-            document.getElementById('score-teamwork').value = '3';
-            document.getElementById('score-communication').value = '3';
-            document.getElementById('score-punctuality').value = '3';
-            app.showView('view-360-eval'); 
+            app.showView('view-360-grid'); 
         } 
     },
-    select360Resident: (mdid) => {
+    
+    // 🔍 เปิดโหมดโฟกัสรูปใหญ่
+    open360Focus: (mdid, name, level, picUrl) => {
+        // เซ็ตค่า Profile
         document.getElementById('sel-360-resident').value = mdid;
-        document.querySelectorAll('[id^="card-res-"]').forEach(el => {
-            el.classList.remove('border-teal-500', 'bg-teal-50'); el.classList.add('border-transparent', 'bg-white');
-        });
-        const selectedCard = document.getElementById(`card-res-${mdid}`);
-        if(selectedCard) {
-            selectedCard.classList.remove('border-transparent', 'bg-white'); selectedCard.classList.add('border-teal-500', 'bg-teal-50');
+        document.getElementById('focus-360-name').innerText = name;
+        document.getElementById('focus-360-level').innerText = level;
+        
+        const fallbackPic = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+        const imgEl = document.getElementById('focus-360-pic');
+        imgEl.src = picUrl || fallbackPic;
+        imgEl.onerror = function() { this.src = fallbackPic; };
+
+        // รีเซ็ตฟอร์ม
+        document.getElementById('txt-360-comment').value = ''; 
+        document.getElementById('score-teamwork').value = '3';
+        document.getElementById('score-communication').value = '3';
+        document.getElementById('score-punctuality').value = '3';
+        
+        // สลับหน้าจอ
+        app.showView('view-360-focus');
+        window.scrollTo(0, 0); // เลื่อนจอขึ้นบนสุด
+    },
+
+    // 🔙 ยกเลิก หรือ กด N/A (ไม่รู้จัก)
+    cancel360Eval: (isNotApplicable = false) => {
+        if (isNotApplicable) {
+            // ถ้ากดไม่รู้จัก ให้ซ่อนการ์ดนั้นจากหน้าจอไปเลย (ไม่ต้องประเมินคนนี้อีกใน Session นี้)
+            const mdid = document.getElementById('sel-360-resident').value;
+            const card = document.getElementById(`card-res-${mdid}`);
+            if(card) card.style.display = 'none';
+            
+            // แจ้งเตือนเล็กน้อย
+            Swal.fire({
+                title: 'ข้ามการประเมิน',
+                text: 'ซ่อนรายชื่อนี้เรียบร้อยแล้ว',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+        // สลับกลับไปหน้า Grid
+        app.showView('view-360-grid');
+    },
+
+    // 💾 บันทึกผล
+    save360Eval: async () => { 
+        const resMdid = document.getElementById('sel-360-resident').value; 
+        const comment = document.getElementById('txt-360-comment').value.trim(); 
+        
+        if(!resMdid) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสแพทย์เป้าหมาย', 'error'); 
+        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำเชิงสร้างสรรค์', 'warning'); 
+
+        const res = await app.api({ 
+            action: 'save_360_evaluation', 
+            payload: { 
+                user: app.user, 
+                resident_mdid: resMdid, 
+                score_teamwork: document.getElementById('score-teamwork').value, 
+                score_communication: document.getElementById('score-communication').value, 
+                score_punctuality: document.getElementById('score-punctuality').value, 
+                feedback_comment: comment 
+            } 
+        }); 
+        
+        if(res) {
+            Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => {
+                // โหลดหน้า Grid ใหม่เพื่ออัปเดตรายชื่อ (คนที่ประเมินแล้วจะหายไป)
+                app.load360Form(); 
+            });
         }
     },
-    save360Eval: async () => { 
-        const resMdid = document.getElementById('sel-360-resident').value; const comment = document.getElementById('txt-360-comment').value.trim(); 
-        if(!resMdid) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาคลิกเลือกรูปแพทย์ประจำบ้านที่ต้องการประเมิน', 'warning'); 
-        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำ', 'warning'); 
-        const res = await app.api({ action: 'save_360_evaluation', payload: { user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment } }); 
-        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
-    },
-// 🟢 เริ่มคลุมดำทับตั้งแต่บรรทัดนี้ลงไป:
+
+    
     loadMy360Feedback: async () => { 
         document.getElementById('inst-360-selector').classList.add('hidden'); 
         app._render360Data(app.user.mdid); 
