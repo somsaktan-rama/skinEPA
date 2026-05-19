@@ -180,6 +180,20 @@
             <button onclick="app.showView('view-menu')" class="w-full mt-6 bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
+        <div id="view-admin-tracking" class="hidden">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-gray-800">🕵️‍♂️ ติดตามสถานะประเมิน 360°</h2>
+                <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับ</button>
+            </div>
+            <p id="admin-term-info" class="text-sm text-blue-800 bg-blue-50 border border-blue-200 p-2 rounded mb-4 font-bold text-center"></p>
+            
+            <div class="mb-4 text-xs text-gray-600 bg-gray-100 p-2 rounded">
+                <p><strong>คำแนะนำ:</strong> ดูเฉพาะจำนวนผู้ส่งประเมิน (เพื่อรักษาความลับของคะแนน) หากแพทย์คนใดมีแถบสีแดง แสดงว่ายอดประเมินรวมน้อยกว่า 5 ฉบับ ควรดำเนินการติดตาม</p>
+            </div>
+
+            <div id="admin-tracking-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 pb-4"></div>
+        </div>
+        
     </div>
 
 <script>
@@ -202,6 +216,35 @@ const app = {
         document.getElementById(id).classList.remove('hidden');
     },
 
+    // --- Admin Tracking Flow ---
+    loadAdminTracking: async () => {
+        const res = await app.api({ action: 'get_admin_tracking', user: app.user }, 'กำลังสรุปยอด...');
+        if(res && res.success) {
+            document.getElementById('admin-term-info').innerText = `ข้อมูลยอดประเมิน: ${res.current_term_label}`;
+            
+            const container = document.getElementById('admin-tracking-content');
+            if(res.data.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>';
+            } else {
+                container.innerHTML = res.data.map(r => `
+                    <div class="border p-4 rounded-lg bg-white shadow-sm border-l-4 ${r.total < 5 ? 'border-l-red-500' : 'border-l-green-500'}">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-bold text-gray-800 text-base">${r.name} <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">${r.level}</span></span>
+                            <span class="text-xs font-bold ${r.total < 5 ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'} px-2 py-1 rounded border">รวม ${r.total} ฉบับ</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 text-xs">
+                            <div class="bg-blue-50 p-2 rounded text-center border border-blue-100"><div class="text-blue-800 mb-1">อาจารย์</div><div class="font-bold text-lg text-blue-900">${r.counts['อาจารย์แพทย์'] || 0}</div></div>
+                            <div class="bg-purple-50 p-2 rounded text-center border border-purple-100"><div class="text-purple-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">เพื่อนแพทย์</div><div class="font-bold text-lg text-purple-900">${r.counts['เพื่อนแพทย์ประจำบ้าน'] || 0}</div></div>
+                            <div class="bg-pink-50 p-2 rounded text-center border border-pink-100"><div class="text-pink-800 mb-1">พยาบาล</div><div class="font-bold text-lg text-pink-900">${r.counts['พยาบาลวิชาชีพ'] || 0}</div></div>
+                            <div class="bg-orange-50 p-2 rounded text-center border border-orange-100"><div class="text-orange-800 mb-1">สนับสนุน</div><div class="font-bold text-lg text-orange-900">${r.counts['เจ้าหน้าที่/สายสนับสนุน'] || 0}</div></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            app.showView('view-admin-tracking');
+        }
+    },
+    
     api: async (payload, loadingMsg = 'กำลังประมวลผล...') => {
         Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
@@ -246,6 +289,13 @@ const app = {
         if (role.includes('staff')) {
             container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (Staff)</button>`;
             container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 ดู Dashboard และความเสี่ยง</button>`;
+        }
+        if (role.includes('admin') || role.includes('staff')) {
+            container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (Activity)</button>`;
+            container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 ดู Dashboard ความก้าวหน้า EPA</button>`;
+            
+            // 🟢 ปุ่มใหม่สำหรับ Admin Tracking 360
+            container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
         }
     },
 
