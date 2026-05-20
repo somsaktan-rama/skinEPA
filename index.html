@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.20</title>
+    <title>EPA Skin App 1.21</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -22,7 +22,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.20</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.21</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -640,6 +640,64 @@ const app = {
             }
             document.getElementById('tpl-time-begin').value = '12:00'; document.getElementById('tpl-time-finish').value = '13:00'; document.getElementById('tpl-topic').value = '';
             app.showView('view-weekly-batch');
+        }
+    },
+
+// 🟢 ฟังก์ชันที่ 1: บันทึกแม่แบบกิจกรรมใหม่ลงฐานข้อมูล
+    saveTemplateOnly: async () => {
+        const payload = {
+            user: app.user,
+            act_type: document.getElementById('tpl-act-type').value,
+            day_of_week: document.getElementById('tpl-day').value,
+            time_begin: document.getElementById('tpl-time-begin').value,
+            time_finish: document.getElementById('tpl-time-finish').value,
+            instructor_mdid: document.getElementById('tpl-instructor').value,
+            topic: document.getElementById('tpl-topic').value.trim()
+        };
+        
+        if(!payload.topic || !payload.time_begin || !payload.time_finish) return Swal.fire('แจ้งเตือน', 'กรุณากรอกหัวข้อและเวลาให้ครบ', 'warning');
+        
+        // เรียกใช้ action 'save_fav_act' ตามลอจิกใหม่ที่หลังบ้านรองรับ
+        const res = await app.api({ action: 'save_fav_act', payload: payload }, 'บันทึกแม่แบบ...');
+        if(res && res.success) {
+            document.getElementById('tpl-topic').value = ''; // เคลียร์ฟอร์ม
+            Swal.fire({title: 'สำเร็จ', text: res.message, icon: 'success', timer: 1500});
+            app.loadWeeklyBatch(); // รีเฟรชตารางแม่แบบ
+        }
+    },
+
+    // 🟢 ฟังก์ชันที่ 2: กดสร้างกิจกรรมจากแม่แบบที่ถูกติ๊กเลือก (Batch Creation)
+    submitBatchCreation: async () => {
+        const checkedBoxes = document.querySelectorAll('.chk-fav-template:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        if(selectedIds.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาติ๊กเลือกอย่างน้อย 1 กิจกรรม', 'warning');
+        const res = await app.api({ action: 'batch_create_weekly', payload: { user: app.user, selected_ids: selectedIds } }, 'กำลังประมวลผลและตรวจสอบข้อมูลซ้ำ...');
+        
+        if(res && res.success) {
+            Swal.fire('สำเร็จ', res.message, 'success');
+            checkedBoxes.forEach(cb => cb.checked = false); // เคลียร์ติ๊กถูกออก
+            app.loadWeeklyBatch(); // รีเฟรชหน้าจอเพื่ออัปเดตการคำนวณวัน
+        }
+    },
+
+    // 🟢 ฟังก์ชันที่ 3: ลบแม่แบบกิจกรรม (activity_fav)
+    deleteTemplate: async (favId) => {
+        if(!confirm('ต้องการลบแม่แบบกิจกรรมนี้ใช่หรือไม่?')) return;
+        const res = await app.api({ action: 'delete_template', fav_id: favId });
+        if(res && res.success) { 
+            Swal.fire('สำเร็จ', res.message, 'success'); 
+            app.loadWeeklyBatch(); 
+        }
+    },
+
+    // 🟢 ฟังก์ชันที่ 4: ลบกิจกรรมหลักที่เปิดอยู่ออกจากระบบ (activity_master)
+    deleteActivity: async (actRefId) => {
+        if(!confirm('🚨 คำเตือน: ต้องการลบกิจกรรมนี้ออกจากระบบใช่หรือไม่? (ข้อมูลคนลงชื่อจะหายไปด้วย)')) return;
+        const res = await app.api({ action: 'delete_activity', act_ref_id: actRefId });
+        if(res && res.success) { 
+            Swal.fire('สำเร็จ', res.message, 'success'); 
+            app.loadManageActivities(); // กลับไปโหลดหน้ารายการกิจกรรมใหม่
         }
     },
     
