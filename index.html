@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.22</title>
+    <title>EPA Skin App 1.23</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -22,7 +22,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.22</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.23</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -296,37 +296,67 @@ const app = {
 
     logout: () => { app.user = null; document.getElementById('mdid-input').value = ''; app.showView('view-login'); },
 
-    // 🟢 จดระเบียบปุ่มเมนูให้ไม่ซ้ำซ้อน
+    // 🟢 จดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
     renderMenu: () => {
         const container = document.getElementById('menu-buttons');
         container.innerHTML = '';
-        const role = app.user.role; 
         
-        container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 ประเมิน 360 องศา</button>`;
+        // 1. จัดการข้อความ Role ให้เป็นตัวพิมพ์เล็กและตัดช่องว่าง/ขีดล่างออก เพื่อป้องกันการพิมพ์ผิดใน Sheet
+        const roleRaw = app.user.role.toLowerCase().replace(/[\s_]/g, '');
         
-        if (role.includes('resident') || role.includes('instructor')) {
+        // แยกเช็คสิทธิ์แต่ละกลุ่มอย่างละเอียด
+        const isResident = roleRaw.includes('resident');
+        const isFellowDermSurg = roleRaw.includes('fellowdermsurg');
+        const isFellowResearch = roleRaw.includes('fellowresearch');
+        
+        // จัดกลุ่มผู้เรียน (Trainee) ทั้งหมดเข้าด้วยกัน สำหรับเมนูที่ใช้ร่วมกัน
+        const isTrainee = isResident || isFellowDermSurg || isFellowResearch;
+        
+        const isInstructor = roleRaw.includes('instructor');
+        const isStaff = roleRaw.includes('staff');
+        const isAdmin = roleRaw.includes('admin');
+
+        // ==========================================
+        // วาดปุ่มเมนูตามเงื่อนไข
+        // ==========================================
+
+        // เมนูที่ 1: การประเมิน 360 (ทุกคนเห็นเมนูนี้ เพื่อเข้าไปประเมินผู้อื่น)
+        container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 ทำแบบประเมิน 360 องศา</button>`;
+        
+        // เมนูที่ 2: กิจกรรม (Activity) - เฉพาะ Resident และ Instructor
+        if (isResident || isInstructor) {
             container.innerHTML += `<button onclick="app.loadCheckin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📍 ลงชื่อเข้าร่วมกิจกรรม (Check-in)</button>`;
         }
-        if (role.includes('resident')) {
-            container.innerHTML += `<button onclick="app.loadMyProgress()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📈 ดูความก้าวหน้าของฉัน (My Progress)</button>`;
+
+        // เมนูที่ 3: ระบบ EPA - เฉพาะ Resident และ FellowDermSurg
+        if (isResident || isFellowDermSurg) {
             container.innerHTML += `<button onclick="app.loadResidentForm()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📝 สร้างฟอร์ม EPA</button>`;
             container.innerHTML += `<button onclick="app.loadResidentHistory()" class="w-full bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📜 ดูประวัติการส่ง EPA</button>`;
+            container.innerHTML += `<button onclick="app.loadMyProgress()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📈 ดูความก้าวหน้าของฉัน (My Progress)</button>`;
+        }
+
+        // เมนูที่ 4: ดูผลตอบรับ 360 องศาของตนเอง - ผู้เรียนทุกคน (Resident + Fellow 1 + Fellow 2)
+        if (isTrainee) {
             container.innerHTML += `<button onclick="app.loadMy360Feedback()" class="w-full bg-teal-800 hover:bg-teal-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลตอบรับ 360 องศา (Anonymous)</button>`;
         }
-        if (role.includes('instructor')) {
+
+        // เมนูที่ 5: เมนูสำหรับ Instructor
+        if (isInstructor) {
             container.innerHTML += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">✅ รอประเมิน EPA</button>`;
             container.innerHTML += `<button onclick="app.initInst360()" class="w-full bg-teal-800 hover:bg-teal-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลประเมิน 360 องศา (ลูกศิษย์)</button>`;
         }
-        if (role.includes('staff') || role.includes('instructor')) {
-            container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">⚙️ จัดการกิจกรรม (ลบ/ปิด)</button>`;
+
+        // เมนูที่ 6: จัดการกิจกรรม - Instructor และ Staff
+        if (isStaff || isInstructor) {
+            container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">⚙️ จัดการกิจกรรม (ปิดกิจกรรม)</button>`;
         }
         
-        // เมนูพิเศษสำหรับ Staff และ Admin
-        if (role.includes('staff') || role.includes('admin')) {
-            container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📌 เปิดกิจกรรมใหม่ (แบบครั้งเดียว)</button>`;
-            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📅 Template ตั้งกิจกรรมรายสัปดาห์</button>`;
-            container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400 mt-2">📊 Dashboard ความก้าวหน้า EPA</button>`;
-            container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600 mt-2">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
+        // เมนูที่ 7: เมนูพิเศษสำหรับ Staff และ Admin
+        if (isStaff || isAdmin) {
+            container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (แบบครั้งเดียว)</button>`;
+            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📅 ระบบแม่แบบและกิจกรรมรายสัปดาห์</button>`;
+            container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 Dashboard ความก้าวหน้า EPA</button>`;
+            container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
         }
     },
 
