@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.15</title>
+    <title>EPA Skin App 1.16</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.15</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.16</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
@@ -194,6 +194,65 @@
 
             <div id="admin-tracking-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 pb-4"></div>
         </div>
+
+<div id="view-weekly-batch" class="hidden">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-gray-800">📅 กิจกรรมรายสัปดาห์</h2>
+                <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับ</button>
+            </div>
+            
+            <div class="bg-white border rounded-lg shadow-sm p-4 mb-5">
+                <h3 class="font-bold text-teal-800 mb-2">☑️ เลือกแม่แบบเพื่อลงตารางสัปดาห์หน้า</h3>
+                <div id="batch-template-list" class="space-y-2 max-h-60 overflow-y-auto mb-3 p-1">
+                    </div>
+                <button onclick="app.submitBatchCreation()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded shadow">
+                    ✅ ยืนยันสร้างกิจกรรมที่เลือก
+                </button>
+            </div>
+
+            <div class="bg-gray-50 border rounded-lg shadow-sm p-4">
+                <h3 class="font-bold text-gray-700 mb-3">➕ เพิ่มแม่แบบกิจกรรมใหม่</h3>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <label class="block font-bold mb-1">รหัสกิจกรรม</label>
+                        <select id="tpl-act-type" class="w-full border rounded p-2">
+                            <option value="act01">act01 (กิจกรรมประเภทที่ 1)</option>
+                            <option value="act02">act02 (กิจกรรมประเภทที่ 2)</option>
+                            <option value="act03">act03 (กิจกรรมประเภทที่ 3)</option>
+                            <option value="act04">act04 (กิจกรรมประเภทที่ 4)</option>
+                            <option value="act05">act05 (กิจกรรมประเภทที่ 5)</option>
+                            <option value="act06">act06 (กิจกรรมประเภทที่ 6)</option>
+                            <option value="act07">act07 (กิจกรรมประเภทที่ 7)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">วันในสัปดาห์</label>
+                        <select id="tpl-day" class="w-full border rounded p-2">
+                            <option value="1">วันจันทร์ (Monday)</option>
+                            <option value="2">วันอังคาร (Tuesday)</option>
+                            <option value="3">วันพุธ (Wednesday)</option>
+                            <option value="4">วันพฤหัสบดี (Thursday)</option>
+                            <option value="5">วันศุกร์ (Friday)</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block font-bold mb-1">เวลาเริ่ม</label><input type="time" id="tpl-time-begin" value="12:00" class="w-full border rounded p-2"></div>
+                        <div><label class="block font-bold mb-1">เวลาจบ</label><input type="time" id="tpl-time-finish" value="13:00" class="w-full border rounded p-2"></div>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">อาจารย์ผู้ควบคุม (เว้นว่างได้)</label>
+                        <select id="tpl-instructor" class="w-full border rounded p-2"><option value="">-- ไม่ระบุ --</option></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">หัวข้อกิจกรรม (Topic)</label>
+                        <input type="text" id="tpl-topic" class="w-full border rounded p-2" placeholder="เช่น Laser Journal Club">
+                    </div>
+                    <button onclick="app.saveTemplateOnly()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mt-2">
+                        💾 บันทึกแม่แบบ
+                    </button>
+                </div>
+            </div>
+        </div>
         
     </div>
 
@@ -242,6 +301,76 @@ const app = {
         }
     },
 
+   // --- 📅 Weekly Batch Flow ---
+    loadWeeklyBatch: async () => {
+        // โหลดข้อมูล แม่แบบ และ รายชื่ออาจารย์
+        const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
+        const instRes = await app.api({ action: 'get_activity_form_data' }); // ขอยืมใช้ API เดิมดึงชื่ออาจารย์
+        
+        if (instRes && document.getElementById('tpl-instructor')) {
+            // สมมติว่า API get_activity_form_data ของคุณหมอส่งรายชื่ออาจารย์มาในตัวแปร instructors
+            if(instRes.instructors) {
+                document.getElementById('tpl-instructor').innerHTML = '<option value="">-- ไม่ระบุ --</option>' + instRes.instructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
+            }
+        }
+
+        if(res && res.success) {
+            const listEl = document.getElementById('batch-template-list');
+            if(res.favs.length === 0) {
+                listEl.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">ยังไม่มีแม่แบบในสถาบันของคุณ</p>';
+            } else {
+                const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์"];
+                listEl.innerHTML = res.favs.map(f => `
+                    <label class="flex items-center space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" value="${f.fav_id}" class="chk-fav-template w-5 h-5 text-teal-600">
+                        <div class="flex-1">
+                            <p class="font-bold text-gray-800 text-sm">${f.topic}</p>
+                            <p class="text-xs text-gray-500">ทุกวัน${days[f.day_of_week]} | ${f.time_begin}-${f.time_finish} น.</p>
+                        </div>
+                    </label>
+                `).join('');
+            }
+            app.showView('view-weekly-batch');
+        }
+    },
+
+    saveTemplateOnly: async () => {
+        const payload = {
+            user: app.user,
+            act_type: document.getElementById('tpl-act-type').value,
+            day_of_week: document.getElementById('tpl-day').value,
+            time_begin: document.getElementById('tpl-time-begin').value,
+            time_finish: document.getElementById('tpl-time-finish').value,
+            instructor_mdid: document.getElementById('tpl-instructor').value,
+            topic: document.getElementById('tpl-topic').value.trim()
+        };
+        
+        if(!payload.topic || !payload.time_begin || !payload.time_finish) return Swal.fire('แจ้งเตือน', 'กรุณากรอกหัวข้อและเวลาให้ครบ', 'warning');
+        
+        const res = await app.api({ action: 'save_new_template', payload: payload }, 'บันทึกแม่แบบ...');
+        if(res && res.success) {
+            document.getElementById('tpl-topic').value = ''; // เคลียร์ช่องพิมพ์
+            Swal.fire({title: 'สำเร็จ', text: res.message, icon: 'success', timer: 1500});
+            app.loadWeeklyBatch(); // รีเฟรชตารางแม่แบบด้านบน
+        }
+    },
+
+    submitBatchCreation: async () => {
+        // กวาดรหัส ID ของ Checkbox ที่ถูกติ๊กเลือก
+        const checkedBoxes = document.querySelectorAll('.chk-fav-template:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        if(selectedIds.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาติ๊กเลือกอย่างน้อย 1 กิจกรรม', 'warning');
+        
+        const res = await app.api({ action: 'batch_create_weekly', payload: { user: app.user, selected_ids: selectedIds } }, 'กำลังประมวลผลและตรวจสอบข้อมูลซ้ำ...');
+        
+        if(res && res.success) {
+            Swal.fire('สำเร็จ', res.message, 'success');
+            // ติ๊กออกให้หมดหลังทำเสร็จ
+            checkedBoxes.forEach(cb => cb.checked = false);
+        }
+    },
+    
     // ฟังก์ชันคำนวณหาวันที่ล่วงหน้า จากวันในสัปดาห์ (1=จันทร์ .. 5=ศุกร์)
     applyFavActivity: (encodedData) => {
         const f = JSON.parse(decodeURIComponent(encodedData));
@@ -346,6 +475,7 @@ const app = {
         if (role.includes('staff') || role.includes('instructor')) container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">⚙️ จัดการกิจกรรม (ปิดกิจกรรม)</button>`;
         if (role.includes('staff')) {
             container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (Staff)</button>`;
+            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📅 สร้างกิจกรรมจากแม่แบบรายสัปดาห์</button>`;
             container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 ดู Dashboard และความเสี่ยง</button>`;
         }
         if (role.includes('admin') || role.includes('staff')) {
