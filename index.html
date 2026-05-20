@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.17</title>
+    <title>EPA Skin App 1.18</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,10 +18,11 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.17</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.18</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
-                <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
+                <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
             </div>
             <button onclick="app.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">เข้าสู่ระบบ</button>
         </div>
@@ -41,9 +42,7 @@
                 <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับหน้าหลัก</button>
             </div>
             <p class="text-sm text-red-500 font-semibold mb-4 bg-red-50 p-2 rounded border border-red-100">* เลือกประเมินเฉพาะแพทย์ที่ท่าน "รู้จักและเคยร่วมงานด้วย" ในเทอมนี้เท่านั้น</p>
-            
-            <div id="grid-360-residents" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto p-1 pb-4">
-                </div>
+            <div id="grid-360-residents" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto p-1 pb-4"></div>
         </div>
 
         <div id="view-360-focus" class="hidden">
@@ -51,13 +50,11 @@
                 <h2 class="text-xl font-bold text-teal-800">📝 แบบประเมิน 360 องศา</h2>
                 <button onclick="app.cancel360Eval()" class="text-gray-500 hover:text-gray-700 font-bold text-xl">✕</button>
             </div>
-            
             <div class="bg-gradient-to-b from-teal-50 to-white border border-teal-200 rounded-xl p-5 mb-5 flex flex-col items-center text-center shadow-sm">
                 <img id="focus-360-pic" src="" class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md mb-3">
                 <h3 id="focus-360-name" class="text-xl font-bold text-gray-800 mb-1"></h3>
                 <p id="focus-360-level" class="text-sm text-teal-800 bg-teal-100 px-4 py-1 rounded-full font-bold shadow-sm"></p>
             </div>
-
             <div class="space-y-4 text-sm bg-white p-1">
                 <input type="hidden" id="sel-360-resident">
                 <p class="text-xs font-semibold text-gray-500 text-center mb-2">* 1=ปรับปรุงมาก, 2=พอใช้, 3=มาตรฐาน, 4=ดีมาก, 5=ดีเยี่ยม</p>
@@ -118,14 +115,67 @@
         </div>
 
         <div id="view-staff-create-activity" class="hidden">
-            <h2 class="text-xl font-bold mb-4 text-orange-700">📌 สร้างกิจกรรมใหม่ (Favorite Activity)</h2>
+            <h2 class="text-xl font-bold mb-4 text-indigo-700">📌 สร้างกิจกรรมใหม่ (1 ครั้ง)</h2>
             <div class="space-y-4">
                 <select id="create-act-id" class="w-full border rounded p-2 bg-gray-50"></select>
-                <div><label class="block text-sm font-bold mb-1">หัวข้อกิจกรรม (Topic)</label><textarea id="create-act-topic" rows="5" class="w-full border rounded p-2 bg-gray-50"></textarea></div>
+                <div><label class="block text-sm font-bold mb-1">หัวข้อกิจกรรม (Topic)</label><textarea id="create-act-topic" rows="3" class="w-full border rounded p-2 bg-gray-50"></textarea></div>
                 <div><label class="block text-sm font-bold mb-1">วัน-เวลาเริ่มต้น</label><input type="datetime-local" id="create-act-begin" class="w-full border rounded p-2 bg-gray-50"></div>
                 <div><label class="block text-sm font-bold mb-1">ระยะเวลากิจกรรม</label><select id="create-act-duration" class="w-full border rounded p-2 bg-gray-50"><option value="30">30 นาที</option><option value="60" selected>60 นาที</option><option value="90">90 นาที</option><option value="120">120 นาที</option><option value="180">180 นาที</option></select></div>
-                <button type="button" onclick="app.saveAsFavActivity()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-2 px-4 rounded mb-2 shadow">⭐ บันทึกฟอร์มนี้เป็นแม่แบบรายสัปดาห์</button>
-                <div class="flex space-x-2 pt-4"><button onclick="app.saveActivity()" class="flex-1 bg-orange-500 text-white py-2 rounded font-bold">สร้างกิจกรรม</button><button onclick="app.showView('view-menu')" class="flex-1 bg-gray-400 text-white py-2 rounded font-bold">กลับ</button></div>
+                
+                <div class="flex space-x-2 pt-4">
+                    <button onclick="app.saveActivity()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded font-bold shadow">✅ ยืนยันสร้าง</button>
+                    <button onclick="app.showView('view-menu')" class="flex-1 bg-gray-400 text-white py-2 rounded font-bold">กลับ</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-weekly-batch" class="hidden">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h2 class="text-xl font-bold text-gray-800">📅 กิจกรรมรายสัปดาห์</h2>
+                <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับ</button>
+            </div>
+            
+            <div class="bg-white border rounded-lg shadow-sm p-4 mb-5">
+                <h3 class="font-bold text-teal-800 mb-2">☑️ เลือกแม่แบบเพื่อลงตารางสัปดาห์หน้า</h3>
+                <div id="batch-template-list" class="space-y-2 max-h-60 overflow-y-auto mb-3 p-1"></div>
+                <button onclick="app.submitBatchCreation()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded shadow">
+                    ✅ ยืนยันสร้างกิจกรรมที่เลือก
+                </button>
+            </div>
+
+            <div class="bg-gray-50 border rounded-lg shadow-sm p-4">
+                <h3 class="font-bold text-gray-700 mb-3">➕ เพิ่มแม่แบบกิจกรรมใหม่</h3>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <label class="block font-bold mb-1">รหัสกิจกรรม</label>
+                        <select id="tpl-act-type" class="w-full border rounded p-2"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">วันในสัปดาห์</label>
+                        <select id="tpl-day" class="w-full border rounded p-2">
+                            <option value="1">วันจันทร์ (Monday)</option>
+                            <option value="2">วันอังคาร (Tuesday)</option>
+                            <option value="3">วันพุธ (Wednesday)</option>
+                            <option value="4">วันพฤหัสบดี (Thursday)</option>
+                            <option value="5">วันศุกร์ (Friday)</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block font-bold mb-1">เวลาเริ่ม</label><input type="time" id="tpl-time-begin" value="12:00" class="w-full border rounded p-2"></div>
+                        <div><label class="block font-bold mb-1">เวลาจบ</label><input type="time" id="tpl-time-finish" value="13:00" class="w-full border rounded p-2"></div>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">อาจารย์ผู้ควบคุม (เว้นว่างได้)</label>
+                        <select id="tpl-instructor" class="w-full border rounded p-2"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold mb-1">หัวข้อกิจกรรม (Topic)</label>
+                        <textarea id="tpl-topic" rows="3" class="w-full border rounded p-2" placeholder="พิมพ์รายละเอียดกิจกรรม (ขึ้นบรรทัดใหม่ได้)..."></textarea>
+                    </div>
+                    <button onclick="app.saveTemplateOnly()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mt-2 shadow">
+                        💾 บันทึกแม่แบบ
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -157,8 +207,10 @@
                 <label class="block text-sm font-bold text-gray-700 mb-1">ผลคะแนน (epa_level 1-5)</label>
                 <select id="eval-score" class="w-full border rounded p-2 text-sm focus:ring" onchange="app.checkEvalScore()">
                     <option value="">-- เลือกคะแนน --</option>
-                    <option value="1">1. ดูอย่างเดียว</option><option value="2">2. อาจารย์คุมให้ทำ</option>
-                    <option value="3">3. ทำเอง/อาจารย์คุม</option><option value="4">4. ทำเองคนเดียว</option>
+                    <option value="1">1. ดูอย่างเดียว</option>
+                    <option value="2">2. อาจารย์คุมให้ทำ</option>
+                    <option value="3">3. ทำเอง/อาจารย์คุม</option>
+                    <option value="4">4. ทำเองคนเดียว</option>
                     <option value="5">5. สอนน้องทำได้</option>
                 </select>
             </div>
@@ -173,7 +225,7 @@
 
         <div id="view-staff-dashboard" class="hidden">
             <div class="flex justify-between items-center mb-2">
-                <h2 class="text-xl font-bold text-blue-800">📊 Dashboard คุมสอบ</h2>
+                <h2 class="text-xl font-bold text-blue-800">📊 Dashboard ความก้าวหน้า</h2>
                 <button onclick="app.exportCSV()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export Excel</button>
             </div>
             <p id="time-elapsed-info" class="text-sm text-gray-600 mb-4 bg-gray-100 p-2 rounded text-center font-bold"></p>
@@ -189,126 +241,102 @@
             <p id="admin-term-info" class="text-sm text-blue-800 bg-blue-50 border border-blue-200 p-2 rounded mb-4 font-bold text-center"></p>
             
             <div class="mb-4 text-xs text-gray-600 bg-gray-100 p-2 rounded">
-                <p><strong>คำแนะนำ:</strong> ดูเฉพาะจำนวนผู้ส่งประเมิน (เพื่อรักษาความลับของคะแนน) หากแพทย์คนใดมีแถบสีแดง แสดงว่ายอดประเมินรวมน้อยกว่า 5 ฉบับ ควรดำเนินการติดตาม</p>
+                <p><strong>คำแนะนำ:</strong> ดูเฉพาะจำนวนผู้ส่งประเมิน หากแพทย์คนใดมีแถบสีแดง (ยอดน้อยกว่า 5 ฉบับ) ควรดำเนินการติดตาม</p>
             </div>
-
             <div id="admin-tracking-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 pb-4"></div>
         </div>
-
-<div id="view-weekly-batch" class="hidden">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 class="text-xl font-bold text-gray-800">📅 กิจกรรมรายสัปดาห์</h2>
-                <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับ</button>
-            </div>
-            
-            <div class="bg-white border rounded-lg shadow-sm p-4 mb-5">
-                <h3 class="font-bold text-teal-800 mb-2">☑️ เลือกแม่แบบเพื่อลงตารางสัปดาห์หน้า</h3>
-                <div id="batch-template-list" class="space-y-2 max-h-60 overflow-y-auto mb-3 p-1">
-                    </div>
-                <button onclick="app.submitBatchCreation()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 rounded shadow">
-                    ✅ ยืนยันสร้างกิจกรรมที่เลือก
-                </button>
-            </div>
-
-<div class="bg-gray-50 border rounded-lg shadow-sm p-4">
-                <h3 class="font-bold text-gray-700 mb-3">➕ เพิ่มแม่แบบกิจกรรมใหม่</h3>
-                <div class="space-y-3 text-sm">
-                    <div>
-                        <label class="block font-bold mb-1">รหัสกิจกรรม</label>
-                        <select id="tpl-act-type" class="w-full border rounded p-2">
-                            </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1">วันในสัปดาห์</label>
-                        <select id="tpl-day" class="w-full border rounded p-2">
-                            <option value="1">วันจันทร์ (Monday)</option>
-                            <option value="2">วันอังคาร (Tuesday)</option>
-                            <option value="3">วันพุธ (Wednesday)</option>
-                            <option value="4">วันพฤหัสบดี (Thursday)</option>
-                            <option value="5">วันศุกร์ (Friday)</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block font-bold mb-1">เวลาเริ่ม</label><input type="time" id="tpl-time-begin" value="12:00" class="w-full border rounded p-2"></div>
-                        <div><label class="block font-bold mb-1">เวลาจบ</label><input type="time" id="tpl-time-finish" value="13:00" class="w-full border rounded p-2"></div>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1">อาจารย์ผู้ควบคุม (เว้นว่างได้)</label>
-                        <select id="tpl-instructor" class="w-full border rounded p-2">
-                            </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold mb-1">หัวข้อกิจกรรม (Topic)</label>
-                        <textarea id="tpl-topic" rows="3" class="w-full border rounded p-2" placeholder="พิมพ์รายละเอียดกิจกรรม (ขึ้นบรรทัดใหม่ได้)..."></textarea>
-                    </div>
-                    <button onclick="app.saveTemplateOnly()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mt-2">
-                        💾 บันทึกแม่แบบ
-                    </button>
-                </div>
-            </div>
-    </div>
     </div>
 
 <script>
 // ==========================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxF8IMDGnOdSTQ_mOVZOJE4MmEiRQjCpBUkVKX5Ge01-2elgJnVXO2xLkAC8xrr9oSx/exec'; 
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxF8IMDGnOdSTQ_mOVZOJE4MmEiRQjCpBUkVKX5Ge01-2elgJnVXO2xLkAC8xrr9oSx/exec';
 // ==========================================
 
 const formatThaiDateTime = (isoStr) => {
-    if(!isoStr) return ''; const d = new Date(isoStr); if(isNaN(d.getTime())) return isoStr;
+    if(!isoStr) return ''; const d = new Date(isoStr);
+    if(isNaN(d.getTime())) return isoStr;
     return ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + (d.getFullYear()+543) + ' ' + 
            ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
 };
 
 const app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
-    cachedTasks: {}, // เพิ่มหน่วยความจำส่วนกลางเพื่อลดภาระการ Stringify บนโค้ดปุ่มกด
+    cachedTasks: {}, 
 
     showView: (id) => {
         document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     },
 
-// --- Favorite Activity Flow ---
-    loadFavActivities: async () => {
-        const res = await app.api({ action: 'get_fav_act', user: app.user }, 'โหลดแม่แบบกิจกรรม...');
-        if(res && res.success && res.favs.length > 0) {
-            const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
-            let html = `<div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="font-bold text-yellow-800 mb-2">⭐ เลือกจากรูปแบบกิจกรรมที่ใช้บ่อย (รายสัปดาห์)</p>
-                <div class="flex overflow-x-auto space-x-2 pb-2">`;
-                
-            res.favs.forEach(f => {
-                // แปลงข้อมูลไปเก็บไว้ในปุ่มเพื่อดึงมาใช้งาน
-                const favData = encodeURIComponent(JSON.stringify(f));
-                html += `<button type="button" onclick="app.applyFavActivity('${favData}')" class="flex-shrink-0 bg-white border border-yellow-300 hover:bg-yellow-100 text-left p-2 rounded shadow-sm w-48 transition">
-                    <div class="text-xs font-bold text-gray-700 truncate">${f.topic}</div>
-                    <div class="text-xs text-gray-500 mt-1">ทุกวัน${days[f.day_of_week]} ${f.time_begin}-${f.time_finish}น.</div>
-                </button>`;
-            });
-            html += `</div></div>`;
-            
-            // นำไปแทรกไว้เหนือฟอร์มสร้างกิจกรรม (สมมติว่าฟอร์มมี id="create-act-form")
-            const formContainer = document.getElementById('create-act-form'); 
-            if(formContainer) formContainer.insertAdjacentHTML('beforebegin', html);
+    api: async (payload, loadingMsg = 'กำลังประมวลผล...') => {
+        Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const data = await res.json(); Swal.close();
+            if(!data.success) throw new Error(data.message); return data;
+        } catch (err) { Swal.fire('ข้อผิดพลาด', err.message || 'เกิดข้อผิดพลาด', 'error'); return null; }
+    },
+
+    login: async () => {
+        const mdid = document.getElementById('mdid-input').value;
+        if (mdid.length < 4 || mdid.length > 6) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 4-6 หลัก', 'warning');
+        const data = await app.api({ action: 'login', mdid: mdid }, 'ตรวจสอบข้อมูล...');
+        if (data) {
+            app.user = data.user;
+            document.getElementById('display-name').innerText = app.user.name;
+            document.getElementById('display-inst').innerText = app.user.institute;
+            document.getElementById('display-role').innerText = app.user.role.toUpperCase();
+            app.renderMenu(); app.showView('view-menu');
         }
     },
 
- // --- 📅 Weekly Batch Flow ---
+    logout: () => { app.user = null; document.getElementById('mdid-input').value = ''; app.showView('view-login'); },
+
+    // 🟢 จดระเบียบปุ่มเมนูให้ไม่ซ้ำซ้อน
+    renderMenu: () => {
+        const container = document.getElementById('menu-buttons');
+        container.innerHTML = '';
+        const role = app.user.role; 
+        
+        container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 ประเมิน 360 องศา</button>`;
+        
+        if (role.includes('resident') || role.includes('instructor')) {
+            container.innerHTML += `<button onclick="app.loadCheckin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📍 ลงชื่อเข้าร่วมกิจกรรม (Check-in)</button>`;
+        }
+        if (role.includes('resident')) {
+            container.innerHTML += `<button onclick="app.loadMyProgress()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📈 ดูความก้าวหน้าของฉัน (My Progress)</button>`;
+            container.innerHTML += `<button onclick="app.loadResidentForm()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📝 สร้างฟอร์ม EPA</button>`;
+            container.innerHTML += `<button onclick="app.loadResidentHistory()" class="w-full bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📜 ดูประวัติการส่ง EPA</button>`;
+            container.innerHTML += `<button onclick="app.loadMy360Feedback()" class="w-full bg-teal-800 hover:bg-teal-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลตอบรับ 360 องศา (Anonymous)</button>`;
+        }
+        if (role.includes('instructor')) {
+            container.innerHTML += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">✅ รอประเมิน EPA</button>`;
+            container.innerHTML += `<button onclick="app.initInst360()" class="w-full bg-teal-800 hover:bg-teal-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลประเมิน 360 องศา (ลูกศิษย์)</button>`;
+        }
+        if (role.includes('staff') || role.includes('instructor')) {
+            container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">⚙️ จัดการกิจกรรม (ปิดกิจกรรม)</button>`;
+        }
+        
+        // เมนูพิเศษสำหรับ Staff และ Admin
+        if (role.includes('staff') || role.includes('admin')) {
+            container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📌 เปิดกิจกรรมใหม่ (แบบครั้งเดียว)</button>`;
+            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📅 ระบบแม่แบบและกิจกรรมรายสัปดาห์</button>`;
+            container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400 mt-2">📊 Dashboard ความก้าวหน้า EPA</button>`;
+            container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600 mt-2">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
+        }
+    },
+
+    // --- 📅 Weekly Batch Flow ---
     loadWeeklyBatch: async () => {
-        // ดึงแม่แบบเดิม + ดึงข้อมูล Dropdown (Activity Types และ Instructors)
         const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
         const formDataRes = await app.api({ action: 'get_weekly_batch_data', user: app.user });
         
         if (formDataRes && formDataRes.success) {
-            // หยอดข้อมูลรายชื่ออาจารย์ (เว้นว่างได้)
             const instEl = document.getElementById('tpl-instructor');
             if (instEl && formDataRes.instructors) {
                 instEl.innerHTML = '<option value="">-- ไม่ระบุ (ปล่อยว่างได้) --</option>' + 
                     formDataRes.instructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
             }
-            
-            // หยอดข้อมูลประเภทกิจกรรม (ACT01-ACT07)
             const actEl = document.getElementById('tpl-act-type');
             if (actEl && formDataRes.acts) {
                 actEl.innerHTML = formDataRes.acts.map(a => `<option value="${a.id}">${a.id} - ${a.desc}</option>`).join('');
@@ -335,7 +363,6 @@ const app = {
                 `).join('');
             }
             
-            // รีเซ็ตค่า Default ของฟอร์มทุกครั้งที่เปิดหน้าจอ
             document.getElementById('tpl-time-begin').value = '12:00';
             document.getElementById('tpl-time-finish').value = '13:00';
             document.getElementById('tpl-topic').value = '';
@@ -359,152 +386,50 @@ const app = {
         
         const res = await app.api({ action: 'save_new_template', payload: payload }, 'บันทึกแม่แบบ...');
         if(res && res.success) {
-            document.getElementById('tpl-topic').value = ''; // เคลียร์ช่องพิมพ์
+            document.getElementById('tpl-topic').value = '';
             Swal.fire({title: 'สำเร็จ', text: res.message, icon: 'success', timer: 1500});
-            app.loadWeeklyBatch(); // รีเฟรชตารางแม่แบบด้านบน
+            app.loadWeeklyBatch(); 
         }
     },
 
     submitBatchCreation: async () => {
-        // กวาดรหัส ID ของ Checkbox ที่ถูกติ๊กเลือก
         const checkedBoxes = document.querySelectorAll('.chk-fav-template:checked');
         const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
         
         if(selectedIds.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาติ๊กเลือกอย่างน้อย 1 กิจกรรม', 'warning');
-        
         const res = await app.api({ action: 'batch_create_weekly', payload: { user: app.user, selected_ids: selectedIds } }, 'กำลังประมวลผลและตรวจสอบข้อมูลซ้ำ...');
         
         if(res && res.success) {
             Swal.fire('สำเร็จ', res.message, 'success');
-            // ติ๊กออกให้หมดหลังทำเสร็จ
             checkedBoxes.forEach(cb => cb.checked = false);
         }
     },
-    
-    // ฟังก์ชันคำนวณหาวันที่ล่วงหน้า จากวันในสัปดาห์ (1=จันทร์ .. 5=ศุกร์)
-    applyFavActivity: (encodedData) => {
-        const f = JSON.parse(decodeURIComponent(encodedData));
-        let d = new Date();
-        let currentDay = d.getDay(); 
-        let targetDay = parseInt(f.day_of_week);
-        
-        let distance = targetDay - currentDay;
-        if (distance <= 0) distance += 7; 
-        d.setDate(d.getDate() + distance);
-        
-        // ชดเชย Timezone เป็นเวลาไทย (+7)
-        d.setHours(d.getHours() + 7);
-        let dateStr = d.toISOString().split('T')[0];
-        
-        // 1. คำนวณระยะเวลา (Duration) เป็นนาที จาก time_begin และ time_finish
-        let tBegin = f.time_begin.split(':');
-        let tFinish = f.time_finish.split(':');
-        let minBegin = (parseInt(tBegin[0]) * 60) + parseInt(tBegin[1]);
-        let minFinish = (parseInt(tFinish[0]) * 60) + parseInt(tFinish[1]);
-        let durationMins = minFinish - minBegin;
-        if (durationMins < 0) durationMins = 60; // ป้องกันค่าติดลบกรณีตั้งเวลาข้ามวัน
-        
-        // 2. หยอดค่าลง Input ในฟอร์ม (ใช้ ID ให้ตรงกับของคุณหมอ)
-        if(document.getElementById('create-act-id')) document.getElementById('create-act-id').value = f.act_type;
-        if(document.getElementById('create-act-topic')) document.getElementById('create-act-topic').value = f.topic;
-        if(document.getElementById('create-act-begin')) document.getElementById('create-act-begin').value = `${dateStr}T${f.time_begin}`;
-        if(document.getElementById('create-act-duration')) document.getElementById('create-act-duration').value = durationMins;
-        
-        Swal.fire({ title: 'ดึงข้อมูลสำเร็จ', text: 'ระบบคำนวณวันที่และเวลาให้เรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
-    },   
-    
-    // --- Admin Tracking Flow ---
-    loadAdminTracking: async () => {
-        const res = await app.api({ action: 'get_admin_tracking', user: app.user }, 'กำลังสรุปยอด...');
-        if(res && res.success) {
-            document.getElementById('admin-term-info').innerText = `ข้อมูลยอดประเมิน: ${res.current_term_label}`;
-            
-            const container = document.getElementById('admin-tracking-content');
-            if(res.data.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>';
-            } else {
-                container.innerHTML = res.data.map(r => `
-                    <div class="border p-4 rounded-lg bg-white shadow-sm border-l-4 ${r.total < 5 ? 'border-l-red-500' : 'border-l-green-500'}">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-bold text-gray-800 text-base">${r.name} <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">${r.level}</span></span>
-                            <span class="text-xs font-bold ${r.total < 5 ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'} px-2 py-1 rounded border">รวม ${r.total} ฉบับ</span>
-                        </div>
-                        <div class="grid grid-cols-4 gap-2 text-xs">
-                            <div class="bg-blue-50 p-2 rounded text-center border border-blue-100"><div class="text-blue-800 mb-1">อาจารย์</div><div class="font-bold text-lg text-blue-900">${r.counts['อาจารย์แพทย์'] || 0}</div></div>
-                            <div class="bg-purple-50 p-2 rounded text-center border border-purple-100"><div class="text-purple-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">เพื่อนแพทย์</div><div class="font-bold text-lg text-purple-900">${r.counts['เพื่อนแพทย์ประจำบ้าน'] || 0}</div></div>
-                            <div class="bg-pink-50 p-2 rounded text-center border border-pink-100"><div class="text-pink-800 mb-1">พยาบาล</div><div class="font-bold text-lg text-pink-900">${r.counts['พยาบาลวิชาชีพ'] || 0}</div></div>
-                            <div class="bg-orange-50 p-2 rounded text-center border border-orange-100"><div class="text-orange-800 mb-1">สนับสนุน</div><div class="font-bold text-lg text-orange-900">${r.counts['เจ้าหน้าที่/สายสนับสนุน'] || 0}</div></div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            app.showView('view-admin-tracking');
-        }
-    },
-    
-    api: async (payload, loadingMsg = 'กำลังประมวลผล...') => {
-        Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        try {
-            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const data = await res.json(); Swal.close();
-            if(!data.success) throw new Error(data.message); return data;
-        } catch (err) { Swal.fire('ข้อผิดพลาด', err.message || 'เกิดข้อผิดพลาด', 'error'); return null; }
-    },
 
-    login: async () => {
-        const mdid = document.getElementById('mdid-input').value;
-        if (mdid.length < 4 || mdid.length > 6) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 4-6 หลัก', 'warning');
-        const data = await app.api({ action: 'login', mdid: mdid }, 'ตรวจสอบข้อมูล...');
-        if (data) {
-            app.user = data.user;
-            document.getElementById('display-name').innerText = app.user.name;
-            document.getElementById('display-inst').innerText = app.user.institute;
-            document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-            app.renderMenu(); app.showView('view-menu');
-        }
-    },
-
-    logout: () => { app.user = null; document.getElementById('mdid-input').value = ''; app.showView('view-login'); },
-
-    renderMenu: () => {
-        const container = document.getElementById('menu-buttons'); container.innerHTML = '';
-        const role = app.user.role; 
-        
-        container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 ประเมิน 360 องศา</button>`;
-        if (role.includes('resident') || role.includes('instructor')) container.innerHTML += `<button onclick="app.loadCheckin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📍 ลงชื่อเข้าร่วมกิจกรรม (Check-in)</button>`;
-        if (role.includes('resident')) {
-            container.innerHTML += `<button onclick="app.loadMyProgress()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📈 ดูความก้าวหน้าของฉัน (My Progress)</button>`;
-            container.innerHTML += `<button onclick="app.loadResidentForm()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📝 สร้างฟอร์ม EPA</button>`;
-            container.innerHTML += `<button onclick="app.loadResidentHistory()" class="w-full bg-blue-400 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📜 ดูประวัติการส่ง EPA</button>`;
-            container.innerHTML += `<button onclick="app.loadMy360Feedback()" class="w-full bg-teal-800 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลตอบรับ 360 องศา (Anonymous)</button>`;
-        }
-        if (role.includes('instructor')) {
-            container.innerHTML += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">✅ รอประเมิน EPA</button>`;
-            container.innerHTML += `<button onclick="app.initInst360()" class="w-full bg-teal-800 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลประเมิน 360 องศา (Instructor)</button>`;
-        }
-        if (role.includes('staff') || role.includes('instructor')) container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">⚙️ จัดการกิจกรรม (ปิดกิจกรรม)</button>`;
-        if (role.includes('staff')) {
-            container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (Staff)</button>`;
-            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📅 สร้างกิจกรรมจากแม่แบบรายสัปดาห์</button>`;
-            container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 ดู Dashboard และความเสี่ยง</button>`;
-        }
-        if (role.includes('admin') || role.includes('staff')) {
-            container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📌 เปิดกิจกรรมใหม่ (Activity)</button>`;
-            container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 ดู Dashboard ความก้าวหน้า EPA</button>`;
-            
-            // 🟢 ปุ่มใหม่สำหรับ Admin Tracking 360
-            container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
-        }
-    },
-
-// --- 360 Eval Flow (Focus Mode Update) ---
-    load360Form: async () => { 
-        const data = await app.api({ action: 'get_360_form_data', user: app.user }); 
+    // --- Activity Flow ---
+    loadStaffCreateActivity: async () => { 
+        const data = await app.api({ action: 'get_activity_form_data' });
         if(data) { 
-            const grid = document.getElementById('grid-360-residents'); 
-            
+            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join('');
+            document.getElementById('create-act-topic').value = ''; 
+            document.getElementById('create-act-begin').value = ''; 
+            app.showView('view-staff-create-activity'); 
+        } 
+    },
+    
+    saveActivity: async () => { 
+        const actEl = document.getElementById('create-act-id'), topicEl = document.getElementById('create-act-topic'), beginEl = document.getElementById('create-act-begin'), durationEl = document.getElementById('create-act-duration');
+        if(!actEl.value || !beginEl.value || !topicEl.value.trim()) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning'); 
+        const res = await app.api({ action: 'create_activity', payload: { user: app.user, act_id: actEl.value, topic: topicEl.value, act_begin: beginEl.value, duration_mins: durationEl.value } });
+        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
+    },
+    
+    // --- 360 Eval Flow ---
+    load360Form: async () => { 
+        const data = await app.api({ action: 'get_360_form_data', user: app.user });
+        if(data) { 
+            const grid = document.getElementById('grid-360-residents');
             if(data.residents.length === 0) { 
-                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินแพทย์ประจำบ้านในเทอมนี้ครบทุกคนแล้วครับ</p></div>`; 
+                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินแพทย์ประจำบ้านในเทอมนี้ครบทุกคนแล้วครับ</p></div>`;
             } else { 
                 grid.innerHTML = data.residents.map(r => `
                     <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
@@ -512,15 +437,13 @@ const app = {
                         <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
                         <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
                     </div>
-                `).join(''); 
+                `).join('');
             } 
-            app.showView('view-360-grid'); 
+            app.showView('view-360-grid');
         } 
     },
     
-    // 🔍 เปิดโหมดโฟกัสรูปใหญ่
     open360Focus: (mdid, name, level, picUrl) => {
-        // เซ็ตค่า Profile
         document.getElementById('sel-360-resident').value = mdid;
         document.getElementById('focus-360-name').innerText = name;
         document.getElementById('focus-360-level').innerText = level;
@@ -530,75 +453,50 @@ const app = {
         imgEl.src = picUrl || fallbackPic;
         imgEl.onerror = function() { this.src = fallbackPic; };
 
-        // รีเซ็ตฟอร์ม
-        document.getElementById('txt-360-comment').value = ''; 
+        document.getElementById('txt-360-comment').value = '';
         document.getElementById('score-teamwork').value = '3';
         document.getElementById('score-communication').value = '3';
         document.getElementById('score-punctuality').value = '3';
         
-        // สลับหน้าจอ
         app.showView('view-360-focus');
-        window.scrollTo(0, 0); // เลื่อนจอขึ้นบนสุด
+        window.scrollTo(0, 0); 
     },
 
-    // 🔙 ยกเลิก หรือ กด N/A (ไม่รู้จัก)
     cancel360Eval: (isNotApplicable = false) => {
         if (isNotApplicable) {
-            // ถ้ากดไม่รู้จัก ให้ซ่อนการ์ดนั้นจากหน้าจอไปเลย (ไม่ต้องประเมินคนนี้อีกใน Session นี้)
             const mdid = document.getElementById('sel-360-resident').value;
             const card = document.getElementById(`card-res-${mdid}`);
             if(card) card.style.display = 'none';
-            
-            // แจ้งเตือนเล็กน้อย
-            Swal.fire({
-                title: 'ข้ามการประเมิน',
-                text: 'ซ่อนรายชื่อนี้เรียบร้อยแล้ว',
-                icon: 'info',
-                timer: 1500,
-                showConfirmButton: false
-            });
+            Swal.fire({ title: 'ข้ามการประเมิน', text: 'ซ่อนรายชื่อนี้เรียบร้อยแล้ว', icon: 'info', timer: 1500, showConfirmButton: false });
         }
-        // สลับกลับไปหน้า Grid
         app.showView('view-360-grid');
     },
 
-    // 💾 บันทึกผล
     save360Eval: async () => { 
-        const resMdid = document.getElementById('sel-360-resident').value; 
+        const resMdid = document.getElementById('sel-360-resident').value;
         const comment = document.getElementById('txt-360-comment').value.trim(); 
         
         if(!resMdid) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสแพทย์เป้าหมาย', 'error'); 
-        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำเชิงสร้างสรรค์', 'warning'); 
-
+        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำเชิงสร้างสรรค์', 'warning');
         const res = await app.api({ 
             action: 'save_360_evaluation', 
             payload: { 
-                user: app.user, 
-                resident_mdid: resMdid, 
-                score_teamwork: document.getElementById('score-teamwork').value, 
-                score_communication: document.getElementById('score-communication').value, 
-                score_punctuality: document.getElementById('score-punctuality').value, 
-                feedback_comment: comment 
+                user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, 
+                score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment 
             } 
-        }); 
-        
-        if(res) {
-            Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => {
-                // โหลดหน้า Grid ใหม่เพื่ออัปเดตรายชื่อ (คนที่ประเมินแล้วจะหายไป)
-                app.load360Form(); 
-            });
-        }
+        });
+        if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
     },
 
-    
     loadMy360Feedback: async () => { 
-        document.getElementById('inst-360-selector').classList.add('hidden'); 
+        document.getElementById('inst-360-selector').classList.add('hidden');
         app._render360Data(app.user.mdid); 
     },
     initInst360: async () => {
         const data = await app.api({ action: 'get_inst_360_residents', user: app.user }, 'ดึงรายชื่อ...');
         if (data && data.success) {
-            const selector = document.getElementById('inst-360-selector'); selector.classList.remove('hidden');
+            const selector = document.getElementById('inst-360-selector');
+            selector.classList.remove('hidden');
             const drop = document.getElementById('sel-inst-360-target');
             drop.innerHTML = '<option value="">-- เลือกศิษย์ในความดูแล --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name} (${r.level})</option>`).join('');
             document.getElementById('my-360-container').innerHTML = '<p class="text-center text-gray-500 py-6">กรุณาเลือกรายชื่อเพื่อดูผลลัพธ์</p>';
@@ -606,22 +504,17 @@ const app = {
         }
     },
     fetchInstructor360: () => { 
-        const target = document.getElementById('sel-inst-360-target').value; 
+        const target = document.getElementById('sel-inst-360-target').value;
         if(target) app._render360Data(target); 
     },
     _render360Data: async (targetMdid) => {
         const isSelf = !targetMdid || targetMdid === app.user.mdid.toString();
-        const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...'); 
-        
+        const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...');
         if(data) { 
             app.showView('view-my-360'); 
-            const container = document.getElementById('my-360-container'); 
-            if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติการประเมิน 360 องศา</p>'; 
-
+            const container = document.getElementById('my-360-container');
+            if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติการประเมิน 360 องศา</p>';
             if (isSelf) {
-                // ==========================================
-                // มุมมอง Resident (Self-View) : ระบบ Tab
-                // ==========================================
                 let tabsHtml = `<div class="flex overflow-x-auto border-b border-teal-200 mb-4 space-x-2">`;
                 let contentHtml = ``;
 
@@ -631,7 +524,6 @@ const app = {
                     let label = index === 0 ? `เทอมปัจจุบัน` : `ประวัติ (${t.term})`;
 
                     tabsHtml += `<button onclick="app.switch360Tab(${index})" id="tab-btn-${index}" class="tab-360-btn px-4 py-2 rounded-t-lg font-bold text-sm whitespace-nowrap transition ${btnClass}">${label}</button>`;
-
                     contentHtml += `<div id="tab-content-${index}" class="tab-360-content ${isActive ? '' : 'hidden'} space-y-4">`;
                     if (index === 0) contentHtml += `<p class="text-sm font-bold text-teal-800">📊 ผลประเมินประจำ: ${t.term}</p>`;
                     
@@ -647,19 +539,12 @@ const app = {
                 });
                 tabsHtml += `</div>`;
                 container.innerHTML = tabsHtml + contentHtml;
-
             } else {
-                // ==========================================
-                // มุมมอง Instructor : ตารางเปรียบเทียบพัฒนาการ
-                // ==========================================
                 let comparisonHtml = `<h3 class="font-bold text-teal-900 mb-2 mt-4">📈 ตารางเปรียบเทียบพัฒนาการ (ย้อนหลัง)</h3>`;
                 comparisonHtml += `<div class="overflow-x-auto bg-white border rounded-lg shadow-sm mb-6"><table class="w-full text-sm text-left"><thead class="bg-teal-50 border-b"><tr><th class="p-3">หัวข้อประเมิน (ภาพรวม)</th>`;
 
                 let reversedFeedback = [...data.feedback].reverse();
-
-                reversedFeedback.forEach(t => {
-                     comparisonHtml += `<th class="p-3 text-center border-l whitespace-nowrap text-teal-800">${t.term}</th>`;
-                });
+                reversedFeedback.forEach(t => comparisonHtml += `<th class="p-3 text-center border-l whitespace-nowrap text-teal-800">${t.term}</th>`);
                 comparisonHtml += `</tr></thead><tbody>`;
 
                 let getOverall = (termData, key) => {
@@ -669,7 +554,6 @@ const app = {
                 };
 
                 let rows = [{label: "1. ทำงานเป็นทีม", key: "avg_teamwork"}, {label: "2. การสื่อสาร", key: "avg_communication"}, {label: "3. ตรงต่อเวลา", key: "avg_punctuality"}];
-
                 rows.forEach(row => {
                     comparisonHtml += `<tr class="border-b"><td class="p-3 font-semibold text-gray-700">${row.label}</td>`;
                     reversedFeedback.forEach(t => {
@@ -695,7 +579,6 @@ const app = {
                     comparisonHtml += `</div>`;
                 });
                 comparisonHtml += `</div>`;
-
                 container.innerHTML = comparisonHtml;
             }
         }
@@ -703,20 +586,17 @@ const app = {
     switch360Tab: (index) => {
         document.querySelectorAll('.tab-360-content').forEach(el => el.classList.add('hidden'));
         document.getElementById(`tab-content-${index}`).classList.remove('hidden');
-
-        document.querySelectorAll('.tab-360-btn').forEach(el => {
-            el.classList.remove('bg-teal-600', 'text-white');   el.classList.add('bg-teal-50', 'text-teal-700');
-        });
+        document.querySelectorAll('.tab-360-btn').forEach(el => { el.classList.remove('bg-teal-600', 'text-white'); el.classList.add('bg-teal-50', 'text-teal-700'); });
         const activeBtn = document.getElementById(`tab-btn-${index}`);
         activeBtn.classList.remove('bg-teal-50', 'text-teal-700'); activeBtn.classList.add('bg-teal-600', 'text-white');
     }, 
-    // 🛑 สิ้นสุดการคลุมดำทับที่จุลภาคตัวนี้ (บรรทัดต่อไปจะเป็นฟังก์ชันอื่น เช่น loadMyProgress:)
 
     // --- My Progress ---
     loadMyProgress: async () => {
         const data = await app.api({ action: 'get_my_progress', user: app.user }, 'ประมวลผลความก้าวหน้า...');
         if(data && data.success) {
-            const r = data.my_data; const timePct = data.time_elapsed_pct; app.showView('view-my-progress');
+            const r = data.my_data;
+            const timePct = data.time_elapsed_pct; app.showView('view-my-progress');
             let riskAlert = r.is_at_risk ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-bold">⚠️ แจ้งเตือน: อัตราสะสมเคสช้ากว่าเวลาที่ผ่านไป (${timePct.toFixed(0)}%) กรุณาเร่งเก็บเคสเพิ่ม</div>` : '';
             document.getElementById('my-progress-summary').innerHTML = `${riskAlert}<div class="bg-blue-50 border p-4 rounded-lg shadow-sm"><p class="text-sm text-blue-800 font-bold mb-2">ความสำเร็จรวมทั้งหมด (EPA & Activity)</p><div class="w-full bg-gray-200 rounded-full h-4 mb-1"><div class="bg-blue-600 h-4 rounded-full progress-bar-fill" style="width: ${r.completion_pct}%"></div></div><p class="text-xs text-right text-gray-600 font-semibold">${r.completion_pct.toFixed(1)}% (ผ่าน ${r.total_pass} จาก ${r.total_target})</p></div>`;
             document.getElementById('my-progress-details').innerHTML = r.items.map(item => {
@@ -729,121 +609,78 @@ const app = {
 
     // --- Resident Flow ---
     loadResidentForm: async () => { 
-        const data = await app.api({ action: 'get_resident_data', user: app.user }); 
+        const data = await app.api({ action: 'get_resident_data', user: app.user });
         if (data) { 
-            app.residentContext = data; const selEpa = document.getElementById('sel-epaid'); 
+            app.residentContext = data;
+            const selEpa = document.getElementById('sel-epaid'); 
             selEpa.innerHTML = '<option value="">-- เลือกรายการ EPA --</option>' + data.epas.map(e => `<option value="${e.id}">${e.id}: ${e.desc}</option>`).join(''); 
-            selEpa.setAttribute('onchange', 'app.filterInstructors()'); 
+            selEpa.setAttribute('onchange', 'app.filterInstructors()');
             document.getElementById('sel-instructor').innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>'; app.showView('view-resident-epa'); 
         } 
     },
     filterInstructors: () => { 
-        const selEpaId = document.getElementById('sel-epaid').value, selInst = document.getElementById('sel-instructor'); if (!selEpaId) return selInst.innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>'; const epaInfo = app.residentContext.epas.find(e => e.id === selEpaId); const passedData = app.residentContext.passedCounts[selEpaId] || {}; let available = app.residentContext.instructors.filter(inst => (passedData[inst.mdid] || 0) < epaInfo.maxEval); if (available.length === 0) { selInst.innerHTML = '<option value="">-- โควต้าเต็ม --</option>'; selInst.disabled = true; } else { selInst.disabled = false; selInst.innerHTML = available.map(i => `<option value="${i.mdid}">${i.name}</option>`).join(''); } 
+        const selEpaId = document.getElementById('sel-epaid').value, selInst = document.getElementById('sel-instructor');
+        if (!selEpaId) return selInst.innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>'; const epaInfo = app.residentContext.epas.find(e => e.id === selEpaId);
+        const passedData = app.residentContext.passedCounts[selEpaId] || {}; let available = app.residentContext.instructors.filter(inst => (passedData[inst.mdid] || 0) < epaInfo.maxEval);
+        if (available.length === 0) { selInst.innerHTML = '<option value="">-- โควต้าเต็ม --</option>'; selInst.disabled = true; } else { selInst.disabled = false;
+        selInst.innerHTML = available.map(i => `<option value="${i.mdid}">${i.name}</option>`).join(''); } 
     },
     saveEpa: async () => { 
-        const epa = document.getElementById('sel-epaid').value, inst = document.getElementById('sel-instructor').value; const note = document.getElementById('txt-epanote').value.trim(); if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุ Note ก่อนส่งเสมอ', 'warning'); const res = await app.api({ action: 'save_epa', payload: { epaid: epa, epa_desc: document.getElementById('sel-epaid').options[document.getElementById('sel-epaid').selectedIndex].text, epa_note: note, instructor_mdid: inst, user: app.user }}); if(res) { document.getElementById('txt-epanote').value = ''; Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); } 
+        const epa = document.getElementById('sel-epaid').value, inst = document.getElementById('sel-instructor').value;
+        const note = document.getElementById('txt-epanote').value.trim(); if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุ Note ก่อนส่งเสมอ', 'warning');
+        const res = await app.api({ action: 'save_epa', payload: { epaid: epa, epa_desc: document.getElementById('sel-epaid').options[document.getElementById('sel-epaid').selectedIndex].text, epa_note: note, instructor_mdid: inst, user: app.user }});
+        if(res) { document.getElementById('txt-epanote').value = ''; Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); } 
     },
     loadResidentHistory: async () => { 
-        const data = await app.api({ action: 'get_resident_history', user: app.user }); 
+        const data = await app.api({ action: 'get_resident_history', user: app.user });
         if(data) { 
-            app.showView('view-resident-history'); const container = document.getElementById('resident-history-list'); if(data.history.length === 0) return container.innerHTML = '<p class="text-center py-6">ไม่มีประวัติ</p>'; container.innerHTML = data.history.map(h => `<div class="border p-4 rounded-lg bg-white border-l-4 ${h.time_app ? (h.reason ? 'border-l-red-500' : 'border-l-green-500') : 'border-l-orange-400'}"><div class="flex justify-between items-start"><span class="font-bold">${h.epa_desc}</span><span class="text-xs font-bold px-2 py-1 rounded ${h.time_app ? (h.reason ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800') : 'bg-orange-100 text-orange-800'} ml-2">${h.time_app ? (h.reason ? '❌ FAIL' : '✅ PASS') : '⏳ รอ'}</span></div><div class="text-xs text-gray-500 mt-1">อ. ${h.instructor_name} | ${formatThaiDateTime(h.time_create)}</div><div class="text-xs text-gray-700 bg-gray-50 p-2 border mt-2"><strong>My Note:</strong> ${h.epa_note}</div>${h.reason ? `<div class="text-xs text-red-600 bg-red-50 p-2 border rounded mt-2"><strong>Feedback อาจารย์:</strong> ${h.reason}</div>` : ''}</div>`).join(''); 
+            app.showView('view-resident-history'); const container = document.getElementById('resident-history-list');
+            if(data.history.length === 0) return container.innerHTML = '<p class="text-center py-6">ไม่มีประวัติ</p>'; container.innerHTML = data.history.map(h => `<div class="border p-4 rounded-lg bg-white border-l-4 ${h.time_app ? (h.reason ? 'border-l-red-500' : 'border-l-green-500') : 'border-l-orange-400'}"><div class="flex justify-between items-start"><span class="font-bold">${h.epa_desc}</span><span class="text-xs font-bold px-2 py-1 rounded ${h.time_app ? (h.reason ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800') : 'bg-orange-100 text-orange-800'} ml-2">${h.time_app ? (h.reason ? '❌ FAIL' : '✅ PASS') : '⏳ รอ'}</span></div><div class="text-xs text-gray-500 mt-1">อ. ${h.instructor_name} | ${formatThaiDateTime(h.time_create)}</div><div class="text-xs text-gray-700 bg-gray-50 p-2 border mt-2"><strong>My Note:</strong> ${h.epa_note}</div>${h.reason ? `<div class="text-xs text-red-600 bg-red-50 p-2 border rounded mt-2"><strong>Feedback อาจารย์:</strong> ${h.reason}</div>` : ''}</div>`).join('');
         } 
     },
 
-    // --- Activity Flow ---
-    loadStaffCreateActivity: async () => { 
-        const data = await app.api({ action: 'get_activity_form_data' }); 
-        if(data) { 
-            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join(''); 
-            document.getElementById('create-act-topic').value = ''; 
-            document.getElementById('create-act-begin').value = ''; 
-            
-            // 🟢 แทรกคำสั่งโหลดกิจกรรมโปรดตรงนี้ครับ
-            app.loadFavActivities(); 
-
-            app.showView('view-staff-create-activity'); 
-        } 
-    },
-    
-    saveActivity: async () => { const actEl = document.getElementById('create-act-id'), topicEl = document.getElementById('create-act-topic'), beginEl = document.getElementById('create-act-begin'), durationEl = document.getElementById('create-act-duration'); if(!actEl.value || !beginEl.value || !topicEl.value.trim()) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning'); const res = await app.api({ action: 'create_activity', payload: { user: app.user, act_id: actEl.value, topic: topicEl.value, act_begin: beginEl.value, duration_mins: durationEl.value } }); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); },
-    
-// --- ⭐️ ฟังก์ชันบันทึกกิจกรรมที่กำลังกรอก ให้เป็นแม่แบบ (Favorite) ---
-    saveAsFavActivity: async () => {
-        const actEl = document.getElementById('create-act-id');
-        const topicEl = document.getElementById('create-act-topic');
-        const beginEl = document.getElementById('create-act-begin');
-        const durationEl = document.getElementById('create-act-duration');
-
-        // เช็คว่ากรอกข้อมูลครบหรือยัง
-        if(!actEl.value || !beginEl.value || !topicEl.value.trim() || !durationEl.value) {
-            return Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลกิจกรรม และวัน-เวลาให้ครบถ้วนก่อนกดบันทึกเป็นแม่แบบครับ', 'warning');
-        }
-
-        // ดึงวันที่จากช่อง input มาคำนวณหาวันในสัปดาห์ (1=จันทร์ ... 7=อาทิตย์)
-        const d = new Date(beginEl.value);
-        let dayOfWeek = d.getDay(); 
-        if (dayOfWeek === 0) dayOfWeek = 7; 
-
-        // จัดฟอร์แมตเวลาเริ่ม (time_begin) แบบ HH:MM
-        const hhBegin = String(d.getHours()).padStart(2, '0');
-        const mmBegin = String(d.getMinutes()).padStart(2, '0');
-        const timeBegin = `${hhBegin}:${mmBegin}`;
-
-        // บวกเวลา duration เพื่อหาเวลาจบ (time_finish) แบบ HH:MM
-        d.setMinutes(d.getMinutes() + parseInt(durationEl.value));
-        const hhFinish = String(d.getHours()).padStart(2, '0');
-        const mmFinish = String(d.getMinutes()).padStart(2, '0');
-        const timeFinish = `${hhFinish}:${mmFinish}`;
-
-        // ส่งข้อมูลไปเซฟที่หลังบ้าน
-        const res = await app.api({ 
-            action: 'save_fav_act', 
-            payload: { 
-                user: app.user, 
-                act_type: actEl.value, 
-                topic: topicEl.value, 
-                day_of_week: dayOfWeek,
-                time_begin: timeBegin,
-                time_finish: timeFinish,
-                instructor_mdid: '' // หากในฟอร์มของ Staff มีช่องให้เลือก Instructor ด้วย สามารถดึง ID มาใส่ตรงนี้ได้ครับ
-            } 
-        }, 'กำลังบันทึกแม่แบบ...');
-
-        if(res && res.success) {
-            Swal.fire({title: 'สำเร็จ', text: res.message, icon: 'success', timer: 1500});
-            app.loadFavActivities(); // โหลดปุ่มสีเหลืองใหม่ทันที โดยไม่ต้องรีเฟรชหน้าเว็บ
-        }
-    },
-    
+    // --- Checkin & Attendees ---
     loadCheckin: async () => {
         const data = await app.api({ action: 'get_open_checkins', user: app.user });
         if(data) {
-            const list = document.getElementById('checkin-list'); if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-6">ไม่มีกิจกรรมที่เปิดให้ลงชื่อ</p>';
+            const list = document.getElementById('checkin-list');
+            if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-6">ไม่มีกิจกรรมที่เปิดให้ลงชื่อ</p>';
             else list.innerHTML = data.activities.map(a => `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 border-l-orange-500"><div class="flex-1 pr-2 mb-3 md:mb-0"><div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div><div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div><div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div><div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div><div class="text-xs mt-1 font-semibold text-green-700">สถานะ: ${a.status}</div></div><div class="flex items-center">${a.already_joined ? `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center">✔️ เข้าร่วมแล้ว</span>` : `<button onclick="app.joinActivity('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full">ลงชื่อ (Join)</button>`}</div></div>`).join('');
             app.showView('view-checkin');
         }
     },
-    joinActivity: async (actRefId) => { const res = await app.api({ action: 'join_activity', payload: { user: app.user, act_ref_id: actRefId }}); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin()); },
+    joinActivity: async (actRefId) => { const res = await app.api({ action: 'join_activity', payload: { user: app.user, act_ref_id: actRefId }});
+        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin()); },
     loadManageActivities: async () => {
         const data = await app.api({ action: 'get_manage_activities', user: app.user });
         if(data) {
-            const list = document.getElementById('manage-act-list'); if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-4">ไม่มีกิจกรรมเปิดอยู่</p>';
+            const list = document.getElementById('manage-act-list');
+            if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-4">ไม่มีกิจกรรมเปิดอยู่</p>';
             else list.innerHTML = data.activities.map(a => `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_finish}')"><div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div><div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div><div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div><div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div><div class="text-xs mt-1 font-semibold text-green-700">สถานะ: ${a.status}</div><div class="text-xs text-gray-700 mt-2 font-bold bg-gray-100 p-2 rounded text-center">👥 จำนวนผู้เข้าร่วม: แพทย์ ${a.resident_count} | อาจารย์ ${a.instructor_count}</div></div>`).join('');
             app.showView('view-manage-activities');
         }
     },
-    viewAttendees: async (actRefId, topicName, actFinish) => { app.currentManageAct = { act_ref_id: actRefId, topic: topicName, act_finish: actFinish }; document.getElementById('attendee-topic').innerText = `กิจกรรม: ${topicName}`; document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(actFinish)}`; const data = await app.api({ action: 'get_activity_attendees', act_ref_id: actRefId }); if(data) { const list = document.getElementById('attendees-container'); if(data.attendees.length === 0) list.innerHTML = '<p class="text-center py-4">ยังไม่มี</p>'; else list.innerHTML = data.attendees.map(u => `<div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1"><div><b>${u.name}</b></div><button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold">ลบ</button></div>`).join(''); app.showView('view-activity-attendees'); } },
-    removeAttendee: async (recordId) => { if(!confirm('ลบ?')) return; const res = await app.api({ action: 'remove_attendee', record_id: recordId }); if(res) app.viewAttendees(app.currentManageAct.act_ref_id, app.currentManageAct.topic, app.currentManageAct.act_finish); },
-    closeActivitySession: async () => { if(new Date().getTime() < new Date(app.currentManageAct.act_finish).getTime()) return Swal.fire('ผิดพลาด', 'ยังไม่หมดเวลา', 'error'); if(!confirm('ปิด?')) return; const res = await app.api({ action: 'close_activity', act_ref_id: app.currentManageAct.act_ref_id }); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadManageActivities()); },
+    viewAttendees: async (actRefId, topicName, actFinish) => { app.currentManageAct = { act_ref_id: actRefId, topic: topicName, act_finish: actFinish };
+        document.getElementById('attendee-topic').innerText = `กิจกรรม: ${topicName}`; document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(actFinish)}`; const data = await app.api({ action: 'get_activity_attendees', act_ref_id: actRefId });
+        if(data) { const list = document.getElementById('attendees-container'); if(data.attendees.length === 0) list.innerHTML = '<p class="text-center py-4">ยังไม่มี</p>';
+        else list.innerHTML = data.attendees.map(u => `<div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1"><div><b>${u.name}</b></div><button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold">ลบ</button></div>`).join('');
+        app.showView('view-activity-attendees'); } },
+    removeAttendee: async (recordId) => { if(!confirm('ลบ?')) return;
+        const res = await app.api({ action: 'remove_attendee', record_id: recordId }); if(res) app.viewAttendees(app.currentManageAct.act_ref_id, app.currentManageAct.topic, app.currentManageAct.act_finish);
+    },
+    closeActivitySession: async () => { if(new Date().getTime() < new Date(app.currentManageAct.act_finish).getTime()) return Swal.fire('ผิดพลาด', 'ยังไม่หมดเวลา', 'error'); if(!confirm('ปิด?')) return;
+        const res = await app.api({ action: 'close_activity', act_ref_id: app.currentManageAct.act_ref_id }); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadManageActivities());
+    },
 
-    // --- Evaluation Flow (แก้บั๊ก Stringify หลุดด้วยระบบ Cache ดึงผ่าน ID) ---
+    // --- Evaluation Flow ---
     loadInstructorTasks: async () => { 
-        const data = await app.api({ action: 'get_eval_tasks', user: app.user }); 
+        const data = await app.api({ action: 'get_eval_tasks', user: app.user });
         if (data) { 
-            const container = document.getElementById('task-container'); app.cachedTasks = {}; // เคลียร์แคชตัวเก่า
-            if(data.tasks.length === 0) container.innerHTML = '<p class="text-center py-6">ไม่มีรายการ</p>'; 
+            const container = document.getElementById('task-container');
+            app.cachedTasks = {}; 
+            if(data.tasks.length === 0) container.innerHTML = '<p class="text-center py-6">ไม่มีรายการ</p>';
             else container.innerHTML = data.tasks.map(t => {
-                app.cachedTasks[t.record_id] = t; // บันทึกลงอาเรย์แคชกลางของแอป
+                app.cachedTasks[t.record_id] = t; 
                 return `
                 <div class="border p-4 rounded-lg bg-white cursor-pointer hover:bg-purple-50 border-l-4 border-l-purple-500 shadow-sm" onclick="app.openEvalFormByCache('${t.record_id}')">
                     <div class="flex justify-between items-start mb-2">
@@ -858,16 +695,42 @@ const app = {
         } 
     },
     openEvalFormByCache: async (recordId) => {
-        const task = app.cachedTasks[recordId]; if(!task) return;
-        app.currentEvalTask = task; document.getElementById('eval-res-name').innerText = `${task.resident_name} (${task.resident_level})`; document.getElementById('eval-epa-desc').innerText = task.epa_desc; document.getElementById('eval-res-note').innerText = task.epa_note || 'ไม่มี'; document.getElementById('eval-score').value = ''; document.getElementById('eval-reason-section').classList.add('hidden'); document.getElementById('eval-freetext').value = ''; const data = await app.api({ action: 'get_eval_criteria', epaid: task.epaid, resident_level: task.resident_level }); if(data) { app.currentEvalCriteria = data; document.getElementById('eval-min-level').innerText = data.minLevel; document.getElementById('reason-checkboxes').innerHTML = data.reasons.map(r => `<label class="flex items-start mb-1"><input type="checkbox" value="${r.desc}" class="mt-1 reason-cb mr-2"><span>${r.desc}</span></label>`).join(''); app.showView('view-eval-form'); }
+        const task = app.cachedTasks[recordId];
+        if(!task) return;
+        app.currentEvalTask = task; document.getElementById('eval-res-name').innerText = `${task.resident_name} (${task.resident_level})`; document.getElementById('eval-epa-desc').innerText = task.epa_desc; document.getElementById('eval-res-note').innerText = task.epa_note || 'ไม่มี'; document.getElementById('eval-score').value = '';
+        document.getElementById('eval-reason-section').classList.add('hidden'); document.getElementById('eval-freetext').value = ''; const data = await app.api({ action: 'get_eval_criteria', epaid: task.epaid, resident_level: task.resident_level });
+        if(data) { app.currentEvalCriteria = data; document.getElementById('eval-min-level').innerText = data.minLevel; document.getElementById('reason-checkboxes').innerHTML = data.reasons.map(r => `<label class="flex items-start mb-1"><input type="checkbox" value="${r.desc}" class="mt-1 reason-cb mr-2"><span>${r.desc}</span></label>`).join('');
+        app.showView('view-eval-form'); }
     },
-    checkEvalScore: () => { const s = parseInt(document.getElementById('eval-score').value), m = parseInt(app.currentEvalCriteria.minLevel); document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
-    submitEvaluation: async () => { const score = parseInt(document.getElementById('eval-score').value); if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning'); let reasons = []; const customText = document.getElementById('eval-freetext').value.trim(); if (score < parseInt(app.currentEvalCriteria.minLevel)) { document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); if(customText) reasons.push(`ความเห็น: ${customText}`); if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุเหตุผล', 'warning'); } else { if(customText) reasons.push(`ความเห็น: ${customText}`); } const res = await app.api({ action: 'save_evaluation', payload: { rowId: app.currentEvalTask.rowId, score: score, reason: reasons.join(' | ') }}); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); },
+    checkEvalScore: () => { const s = parseInt(document.getElementById('eval-score').value), m = parseInt(app.currentEvalCriteria.minLevel);
+        document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
+    submitEvaluation: async () => { const score = parseInt(document.getElementById('eval-score').value);
+        if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning'); let reasons = []; const customText = document.getElementById('eval-freetext').value.trim();
+        if (score < parseInt(app.currentEvalCriteria.minLevel)) { document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); if(customText) reasons.push(`ความเห็น: ${customText}`); if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุเหตุผล', 'warning');
+        } else { if(customText) reasons.push(`ความเห็น: ${customText}`); } const res = await app.api({ action: 'save_evaluation', payload: { rowId: app.currentEvalTask.rowId, score: score, reason: reasons.join(' | ') }});
+        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); },
 
     // --- Dashboard ---
-    loadDashboard: async () => { const res = await app.api({ action: 'get_dashboard_data', user: app.user }); if(res && res.success) { app.dashboardData = res.data; app.showView('view-staff-dashboard'); document.getElementById('time-elapsed-info').innerText = `⏳ เวลาผ่านไปแล้ว ${res.time_elapsed_pct.toFixed(0)}% (นับจาก 1 ก.ค.)`; const container = document.getElementById('dashboard-content'); if(res.data.length === 0) return container.innerHTML = '<p class="text-center py-4">ไม่มีข้อมูล</p>'; container.innerHTML = res.data.map(r => `<div class="border rounded-lg shadow-sm bg-white overflow-hidden ${r.is_at_risk ? 'border-red-400' : ''}"><div class="${r.is_at_risk ? 'bg-red-50' : 'bg-blue-50'} p-4 font-bold cursor-pointer flex flex-col transition" onclick="app.toggleRes('${r.mdid}')"><div class="flex justify-between w-full"><span class="text-blue-900">🧑‍⚕️ ${r.name} <span class="bg-blue-200 text-xs px-2 py-1 rounded">${r.level}</span></span><span id="icon-${r.mdid}">▼</span></div>${r.is_at_risk ? `<div class="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded inline-block self-start shadow">🚩 เสี่ยงล่าช้า (${r.completion_pct.toFixed(0)}%)</div>` : `<div class="mt-2 text-xs text-green-700 self-start">✔️ ปกติ (${r.completion_pct.toFixed(0)}%)</div>`}</div><div id="det-${r.mdid}" class="hidden p-3 text-xs bg-white border-t"><table class="w-full text-left"><thead><tr class="bg-gray-100"><th class="p-2 border-b">รหัส</th><th class="p-2 border-b text-center">เป้า</th><th class="p-2 border-b text-center">ผ่าน</th><th class="p-2 border-b text-center">สถานะ</th></tr></thead><tbody>${r.items.map(item => `<tr class="border-b"><td class="p-2">${item.id}</td><td class="p-2 text-center font-bold">${item.target}</td><td class="p-2 text-center text-green-600 font-bold">${item.pass}</td><td class="p-2 text-center">${item.is_completed ? '✅' : '⏳'}</td></tr>`).join('')}</tbody></table></div></div>`).join(''); } },
-    toggleRes: (id) => { const div = document.getElementById(`det-${id}`); div.classList.toggle('hidden'); document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲'; },
-    exportCSV: () => { if(!app.dashboardData) return; let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,รหัส,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n" + app.dashboardData.map(r => r.items.map(i => `"${r.mdid}","${r.name}","${r.level}","${i.id}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`).join('\n')).join('\n'); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `EPA_Report.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    loadDashboard: async () => { const res = await app.api({ action: 'get_dashboard_data', user: app.user });
+        if(res && res.success) { app.dashboardData = res.data; app.showView('view-staff-dashboard'); document.getElementById('time-elapsed-info').innerText = `⏳ เวลาผ่านไปแล้ว ${res.time_elapsed_pct.toFixed(0)}% (นับจาก 1 ก.ค.)`; const container = document.getElementById('dashboard-content');
+        if(res.data.length === 0) return container.innerHTML = '<p class="text-center py-4">ไม่มีข้อมูล</p>'; container.innerHTML = res.data.map(r => `<div class="border rounded-lg shadow-sm bg-white overflow-hidden ${r.is_at_risk ? 'border-red-400' : ''}"><div class="${r.is_at_risk ? 'bg-red-50' : 'bg-blue-50'} p-4 font-bold cursor-pointer flex flex-col transition" onclick="app.toggleRes('${r.mdid}')"><div class="flex justify-between w-full"><span class="text-blue-900">🧑‍⚕️ ${r.name} <span class="bg-blue-200 text-xs px-2 py-1 rounded">${r.level}</span></span><span id="icon-${r.mdid}">▼</span></div>${r.is_at_risk ? `<div class="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded inline-block self-start shadow">🚩 เสี่ยงล่าช้า (${r.completion_pct.toFixed(0)}%)</div>` : `<div class="mt-2 text-xs text-green-700 self-start">✔️ ปกติ (${r.completion_pct.toFixed(0)}%)</div>`}</div><div id="det-${r.mdid}" class="hidden p-3 text-xs bg-white border-t"><table class="w-full text-left"><thead><tr class="bg-gray-100"><th class="p-2 border-b">รหัส</th><th class="p-2 border-b text-center">เป้า</th><th class="p-2 border-b text-center">ผ่าน</th><th class="p-2 border-b text-center">สถานะ</th></tr></thead><tbody>${r.items.map(item => `<tr class="border-b"><td class="p-2">${item.id}</td><td class="p-2 text-center font-bold">${item.target}</td><td class="p-2 text-center text-green-600 font-bold">${item.pass}</td><td class="p-2 text-center">${item.is_completed ? '✅' : '⏳'}</td></tr>`).join('')}</tbody></table></div></div>`).join(''); } },
+    toggleRes: (id) => { const div = document.getElementById(`det-${id}`);
+        div.classList.toggle('hidden'); document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲'; },
+    exportCSV: () => { if(!app.dashboardData) return;
+        let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,รหัส,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n" + app.dashboardData.map(r => r.items.map(i => `"${r.mdid}","${r.name}","${r.level}","${i.id}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`).join('\n')).join('\n');
+        const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `EPA_Report.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    // --- Admin Tracking ---
+    , loadAdminTracking: async () => {
+        const res = await app.api({ action: 'get_admin_tracking', user: app.user }, 'กำลังสรุปยอด...');
+        if(res && res.success) {
+            document.getElementById('admin-term-info').innerText = `ข้อมูลยอดประเมิน: ${res.current_term_label}`;
+            const container = document.getElementById('admin-tracking-content');
+            if(res.data.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>'; } else {
+                container.innerHTML = res.data.map(r => `<div class="border p-4 rounded-lg bg-white shadow-sm border-l-4 ${r.total < 5 ? 'border-l-red-500' : 'border-l-green-500'}"><div class="flex justify-between items-center mb-3"><span class="font-bold text-gray-800 text-base">${r.name} <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">${r.level}</span></span><span class="text-xs font-bold ${r.total < 5 ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'} px-2 py-1 rounded border">รวม ${r.total} ฉบับ</span></div><div class="grid grid-cols-4 gap-2 text-xs"><div class="bg-blue-50 p-2 rounded text-center border border-blue-100"><div class="text-blue-800 mb-1">อาจารย์</div><div class="font-bold text-lg text-blue-900">${r.counts['อาจารย์แพทย์'] || 0}</div></div><div class="bg-purple-50 p-2 rounded text-center border border-purple-100"><div class="text-purple-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">เพื่อนแพทย์</div><div class="font-bold text-lg text-purple-900">${r.counts['เพื่อนแพทย์ประจำบ้าน'] || 0}</div></div><div class="bg-pink-50 p-2 rounded text-center border border-pink-100"><div class="text-pink-800 mb-1">พยาบาล</div><div class="font-bold text-lg text-pink-900">${r.counts['พยาบาลวิชาชีพ'] || 0}</div></div><div class="bg-orange-50 p-2 rounded text-center border border-orange-100"><div class="text-orange-800 mb-1">สนับสนุน</div><div class="font-bold text-lg text-orange-900">${r.counts['เจ้าหน้าที่/สายสนับสนุน'] || 0}</div></div></div></div>`).join('');
+            }
+            app.showView('view-admin-tracking');
+        }
+    }
 };
 </script>
 </body>
