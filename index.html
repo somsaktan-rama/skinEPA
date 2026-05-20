@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.14</title>
+    <title>EPA Skin App 1.15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.14</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.15</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
@@ -244,30 +244,34 @@ const app = {
     // ฟังก์ชันคำนวณหาวันที่ล่วงหน้า จากวันในสัปดาห์ (1=จันทร์ .. 5=ศุกร์)
     applyFavActivity: (encodedData) => {
         const f = JSON.parse(decodeURIComponent(encodedData));
-        
         let d = new Date();
-        let currentDay = d.getDay(); // 0=อาทิตย์, 1=จันทร์...
+        let currentDay = d.getDay(); 
         let targetDay = parseInt(f.day_of_week);
         
-        // คำนวณระยะห่างวัน
         let distance = targetDay - currentDay;
-        if (distance <= 0) distance += 7; // ถ้าวันผ่านไปแล้ว ให้เป็นสัปดาห์ถัดไป
+        if (distance <= 0) distance += 7; 
         d.setDate(d.getDate() + distance);
         
-        // แปลงเวลาให้อยู่ในฟอร์แมต input type="datetime-local" (YYYY-MM-DDTHH:mm)
+        // ชดเชย Timezone เป็นเวลาไทย (+7)
+        d.setHours(d.getHours() + 7);
         let dateStr = d.toISOString().split('T')[0];
-        let startDateTime = `${dateStr}T${f.time_begin}`;
-        let endDateTime = `${dateStr}T${f.time_finish}`;
         
-        // กรอกข้อมูลลงในฟอร์มโดยอัตโนมัติ (สมมติ ID ของฟอร์มตามที่ออกแบบไว้)
-        document.getElementById('act-topic').value = f.topic;
-        document.getElementById('act-type').value = f.act_type;
-        document.getElementById('act-instructor').value = f.instructor_mdid;
-        document.getElementById('act-start').value = startDateTime;
-        document.getElementById('act-end').value = endDateTime;
+        // 1. คำนวณระยะเวลา (Duration) เป็นนาที จาก time_begin และ time_finish
+        let tBegin = f.time_begin.split(':');
+        let tFinish = f.time_finish.split(':');
+        let minBegin = (parseInt(tBegin[0]) * 60) + parseInt(tBegin[1]);
+        let minFinish = (parseInt(tFinish[0]) * 60) + parseInt(tFinish[1]);
+        let durationMins = minFinish - minBegin;
+        if (durationMins < 0) durationMins = 60; // ป้องกันค่าติดลบกรณีตั้งเวลาข้ามวัน
         
-        Swal.fire('นำเข้าสำเร็จ', 'ระบบได้คำนวณวันที่ให้เป็นสัปดาห์ถัดไปเรียบร้อยแล้ว', 'success');
-    },    
+        // 2. หยอดค่าลง Input ในฟอร์ม (ใช้ ID ให้ตรงกับของคุณหมอ)
+        if(document.getElementById('create-act-id')) document.getElementById('create-act-id').value = f.act_type;
+        if(document.getElementById('create-act-topic')) document.getElementById('create-act-topic').value = f.topic;
+        if(document.getElementById('create-act-begin')) document.getElementById('create-act-begin').value = `${dateStr}T${f.time_begin}`;
+        if(document.getElementById('create-act-duration')) document.getElementById('create-act-duration').value = durationMins;
+        
+        Swal.fire({ title: 'ดึงข้อมูลสำเร็จ', text: 'ระบบคำนวณวันที่และเวลาให้เรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false });
+    },   
     
     // --- Admin Tracking Flow ---
     loadAdminTracking: async () => {
