@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.21</title>
+    <title>EPA Skin App 1.22</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -22,7 +22,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.21</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.22</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -433,13 +433,15 @@ const app = {
         const target = document.getElementById('sel-inst-360-target').value;
         if(target) app._render360Data(target); 
     },
-    _render360Data: async (targetMdid) => {
+
+_render360Data: async (targetMdid) => {
         const isSelf = !targetMdid || targetMdid === app.user.mdid.toString();
         const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...');
         if(data) { 
             app.showView('view-my-360'); 
             const container = document.getElementById('my-360-container');
             if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติการประเมิน 360 องศา</p>';
+            
             if (isSelf) {
                 let tabsHtml = `<div class="flex overflow-x-auto border-b border-teal-200 mb-4 space-x-2">`;
                 let contentHtml = ``;
@@ -466,7 +468,39 @@ const app = {
                 tabsHtml += `</div>`;
                 container.innerHTML = tabsHtml + contentHtml;
             } else {
-                let comparisonHtml = `<h3 class="font-bold text-teal-900 mb-2 mt-4">📈 ตารางเปรียบเทียบพัฒนาการ (ย้อนหลัง)</h3>`;
+                // ==========================================
+                // 🌟 โหมด Instructor: เพิ่มสรุปจำนวนฉบับแยกกลุ่มตามเทอม
+                // ==========================================
+                let summaryBreakdownHtml = `<h3 class="font-bold text-teal-900 mb-2">📋 สัดส่วนและที่มาของผลประเมินในแต่ละเทอม</h3>`;
+                summaryBreakdownHtml += `<div class="space-y-2 mb-6">`;
+                
+                data.feedback.forEach(t => {
+                    let totalSubmissions = t.roles.reduce((sum, r) => sum + r.eval_count, 0);
+                    
+                    // ดึงจำนวนผู้ประเมินแยกตามกลุ่มหลัก
+                    let ajarn = t.roles.find(r => r.role === 'อาจารย์แพทย์')?.eval_count || 0;
+                    let peer = t.roles.find(r => r.role === 'เพื่อนแพทย์ประจำบ้าน')?.eval_count || 0;
+                    let nurse = t.roles.find(r => r.role === 'พยาบาลวิชาชีพ')?.eval_count || 0;
+                    let support = t.roles.find(r => r.role === 'เจ้าหน้าที่/สายสนับสนุน')?.eval_count || 0;
+
+                    summaryBreakdownHtml += `
+                    <div class="bg-white border rounded-xl p-3 shadow-sm">
+                        <div class="flex justify-between items-center mb-2 border-b pb-1">
+                            <span class="font-bold text-gray-700 text-xs sm:text-sm">📅 ${t.term}</span>
+                            <span class="text-xs font-bold bg-teal-600 text-white px-2 py-0.5 rounded-full shadow-sm">รวม ${totalSubmissions} ฉบับ</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1.5 text-[10px] sm:text-xs text-center font-semibold">
+                            <div class="bg-blue-50 text-blue-800 border border-blue-100 p-1 rounded">อาจารย์: ${ajarn}</div>
+                            <div class="bg-purple-50 text-purple-800 border border-purple-100 p-1 rounded">เพื่อนแพทย์: ${peer}</div>
+                            <div class="bg-pink-50 text-pink-800 border border-pink-100 p-1 rounded">พยาบาล: ${nurse}</div>
+                            <div class="bg-orange-50 text-orange-800 border border-orange-100 p-1 rounded">สนับสนุน: ${support}</div>
+                        </div>
+                    </div>`;
+                });
+                summaryBreakdownHtml += `</div>`;
+
+                // 📈 ตารางเปรียบเทียบพัฒนาการ (ส่วนเดิมที่มีอยู่แล้ว)
+                let comparisonHtml = `<h3 class="font-bold text-teal-900 mb-2">📈 ตารางเปรียบเทียบพัฒนาการ (ย้อนหลัง)</h3>`;
                 comparisonHtml += `<div class="overflow-x-auto bg-white border rounded-lg shadow-sm mb-6"><table class="w-full text-sm text-left"><thead class="bg-teal-50 border-b"><tr><th class="p-3">หัวข้อประเมิน (ภาพรวม)</th>`;
 
                 let reversedFeedback = [...data.feedback].reverse();
@@ -491,6 +525,7 @@ const app = {
                 });
                 comparisonHtml += `</tbody></table></div>`;
 
+                // 💬 รวบรวมข้อคิดเห็นแยกตามเทอม (ส่วนเดิม)
                 comparisonHtml += `<h3 class="font-bold text-teal-900 mb-2">💬 รวบรวมข้อคิดเห็น (แยกตามเทอม)</h3><div class="space-y-4">`;
                 data.feedback.forEach(t => {
                     comparisonHtml += `<div class="border p-4 rounded-lg bg-gray-50 shadow-sm border-l-4 border-l-teal-500"><h4 class="font-bold text-teal-800 mb-2">${t.term}</h4>`;
@@ -505,10 +540,13 @@ const app = {
                     comparisonHtml += `</div>`;
                 });
                 comparisonHtml += `</div>`;
-                container.innerHTML = comparisonHtml;
+                
+                // 🟢 นำการ์ดสรุปยอดที่มาของคะแนนมาต่อหัวแถวคู่กับเนื้อหาหลัก
+                container.innerHTML = summaryBreakdownHtml + comparisonHtml;
             }
         }
-    },
+    },    
+    
     switch360Tab: (index) => {
         document.querySelectorAll('.tab-360-content').forEach(el => el.classList.add('hidden'));
         document.getElementById(`tab-content-${index}`).classList.remove('hidden');
