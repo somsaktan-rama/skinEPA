@@ -606,7 +606,20 @@ const app = {
     },
 
     // --- Activity Flow ---
-    loadStaffCreateActivity: async () => { const data = await app.api({ action: 'get_activity_form_data' }); if(data) { document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join(''); document.getElementById('create-act-topic').value = ''; document.getElementById('create-act-begin').value = ''; app.showView('view-staff-create-activity'); } },
+    loadStaffCreateActivity: async () => { 
+        const data = await app.api({ action: 'get_activity_form_data' }); 
+        if(data) { 
+            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join(''); 
+            document.getElementById('create-act-topic').value = ''; 
+            document.getElementById('create-act-begin').value = ''; 
+            
+            // 🟢 แทรกคำสั่งโหลดกิจกรรมโปรดตรงนี้ครับ
+            app.loadFavActivities(); 
+
+            app.showView('view-staff-create-activity'); 
+        } 
+    },
+    
     saveActivity: async () => { const actEl = document.getElementById('create-act-id'), topicEl = document.getElementById('create-act-topic'), beginEl = document.getElementById('create-act-begin'), durationEl = document.getElementById('create-act-duration'); if(!actEl.value || !beginEl.value || !topicEl.value.trim()) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning'); const res = await app.api({ action: 'create_activity', payload: { user: app.user, act_id: actEl.value, topic: topicEl.value, act_begin: beginEl.value, duration_mins: durationEl.value } }); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); },
     loadCheckin: async () => {
         const data = await app.api({ action: 'get_open_checkins', user: app.user });
