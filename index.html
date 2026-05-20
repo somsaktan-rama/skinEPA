@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.18</title>
+    <title>EPA Skin App 1.19</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.18</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.19</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -326,7 +326,7 @@ const app = {
         }
     },
 
-    // --- 📅 Weekly Batch Flow ---
+  // --- 📅 Weekly Batch Flow ---
     loadWeeklyBatch: async () => {
         const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
         const formDataRes = await app.api({ action: 'get_weekly_batch_data', user: app.user });
@@ -348,19 +348,33 @@ const app = {
             if(res.favs.length === 0) {
                 listEl.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">ยังไม่มีแม่แบบในสถาบันของคุณ</p>';
             } else {
-                const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์"];
-                listEl.innerHTML = res.favs.map(f => `
+                const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
+                listEl.innerHTML = res.favs.map(f => {
+                    
+                    // 🟢 คำนวณวันที่จริงของสัปดาห์ถัดไปเพื่อนำมาแสดง
+                    let d = new Date();
+                    let today = d.getDay();
+                    if (today === 0) today = 7;
+                    let distance = parseInt(f.day_of_week) - today;
+                    if (distance <= 0) distance += 7;
+                    d.setDate(d.getDate() + distance);
+                    
+                    // แปลงเป็นภาษาไทย เช่น "25 พ.ค. 2569"
+                    let thaiDateStr = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+
+                    return `
                     <label class="flex items-start space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer">
                         <input type="checkbox" value="${f.fav_id}" class="chk-fav-template w-5 h-5 text-teal-600 mt-1">
                         <div class="flex-1">
                             <p class="font-bold text-gray-800 text-sm whitespace-pre-line">${f.topic}</p>
                             <p class="text-xs text-gray-500 mt-1">
                                 <span class="bg-gray-200 px-2 py-0.5 rounded font-bold text-gray-700">${f.act_type}</span> 
-                                ทุกวัน${days[f.day_of_week]} | ${f.time_begin}-${f.time_finish} น.
+                                วัน${days[f.day_of_week]}ที่ ${thaiDateStr} | เวลา ${f.time_begin}-${f.time_finish} น.
                             </p>
                         </div>
                     </label>
-                `).join('');
+                    `;
+                }).join('');
             }
             
             document.getElementById('tpl-time-begin').value = '12:00';
@@ -368,27 +382,6 @@ const app = {
             document.getElementById('tpl-topic').value = '';
             
             app.showView('view-weekly-batch');
-        }
-    },
-
-    saveTemplateOnly: async () => {
-        const payload = {
-            user: app.user,
-            act_type: document.getElementById('tpl-act-type').value,
-            day_of_week: document.getElementById('tpl-day').value,
-            time_begin: document.getElementById('tpl-time-begin').value,
-            time_finish: document.getElementById('tpl-time-finish').value,
-            instructor_mdid: document.getElementById('tpl-instructor').value,
-            topic: document.getElementById('tpl-topic').value.trim()
-        };
-        
-        if(!payload.topic || !payload.time_begin || !payload.time_finish) return Swal.fire('แจ้งเตือน', 'กรุณากรอกหัวข้อและเวลาให้ครบ', 'warning');
-        
-        const res = await app.api({ action: 'save_new_template', payload: payload }, 'บันทึกแม่แบบ...');
-        if(res && res.success) {
-            document.getElementById('tpl-topic').value = '';
-            Swal.fire({title: 'สำเร็จ', text: res.message, icon: 'success', timer: 1500});
-            app.loadWeeklyBatch(); 
         }
     },
 
