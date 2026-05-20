@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.13</title>
+    <title>EPA Skin App 1.14</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.13</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.14</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
@@ -216,6 +216,59 @@ const app = {
         document.getElementById(id).classList.remove('hidden');
     },
 
+// --- Favorite Activity Flow ---
+    loadFavActivities: async () => {
+        const res = await app.api({ action: 'get_fav_act', user: app.user }, 'โหลดแม่แบบกิจกรรม...');
+        if(res && res.success && res.favs.length > 0) {
+            const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
+            let html = `<div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="font-bold text-yellow-800 mb-2">⭐ เลือกจากรูปแบบกิจกรรมที่ใช้บ่อย (รายสัปดาห์)</p>
+                <div class="flex overflow-x-auto space-x-2 pb-2">`;
+                
+            res.favs.forEach(f => {
+                // แปลงข้อมูลไปเก็บไว้ในปุ่มเพื่อดึงมาใช้งาน
+                const favData = encodeURIComponent(JSON.stringify(f));
+                html += `<button type="button" onclick="app.applyFavActivity('${favData}')" class="flex-shrink-0 bg-white border border-yellow-300 hover:bg-yellow-100 text-left p-2 rounded shadow-sm w-48 transition">
+                    <div class="text-xs font-bold text-gray-700 truncate">${f.topic}</div>
+                    <div class="text-xs text-gray-500 mt-1">ทุกวัน${days[f.day_of_week]} ${f.time_begin}-${f.time_finish}น.</div>
+                </button>`;
+            });
+            html += `</div></div>`;
+            
+            // นำไปแทรกไว้เหนือฟอร์มสร้างกิจกรรม (สมมติว่าฟอร์มมี id="create-act-form")
+            const formContainer = document.getElementById('create-act-form'); 
+            if(formContainer) formContainer.insertAdjacentHTML('beforebegin', html);
+        }
+    },
+
+    // ฟังก์ชันคำนวณหาวันที่ล่วงหน้า จากวันในสัปดาห์ (1=จันทร์ .. 5=ศุกร์)
+    applyFavActivity: (encodedData) => {
+        const f = JSON.parse(decodeURIComponent(encodedData));
+        
+        let d = new Date();
+        let currentDay = d.getDay(); // 0=อาทิตย์, 1=จันทร์...
+        let targetDay = parseInt(f.day_of_week);
+        
+        // คำนวณระยะห่างวัน
+        let distance = targetDay - currentDay;
+        if (distance <= 0) distance += 7; // ถ้าวันผ่านไปแล้ว ให้เป็นสัปดาห์ถัดไป
+        d.setDate(d.getDate() + distance);
+        
+        // แปลงเวลาให้อยู่ในฟอร์แมต input type="datetime-local" (YYYY-MM-DDTHH:mm)
+        let dateStr = d.toISOString().split('T')[0];
+        let startDateTime = `${dateStr}T${f.time_begin}`;
+        let endDateTime = `${dateStr}T${f.time_finish}`;
+        
+        // กรอกข้อมูลลงในฟอร์มโดยอัตโนมัติ (สมมติ ID ของฟอร์มตามที่ออกแบบไว้)
+        document.getElementById('act-topic').value = f.topic;
+        document.getElementById('act-type').value = f.act_type;
+        document.getElementById('act-instructor').value = f.instructor_mdid;
+        document.getElementById('act-start').value = startDateTime;
+        document.getElementById('act-end').value = endDateTime;
+        
+        Swal.fire('นำเข้าสำเร็จ', 'ระบบได้คำนวณวันที่ให้เป็นสัปดาห์ถัดไปเรียบร้อยแล้ว', 'success');
+    },    
+    
     // --- Admin Tracking Flow ---
     loadAdminTracking: async () => {
         const res = await app.api({ action: 'get_admin_tracking', user: app.user }, 'กำลังสรุปยอด...');
