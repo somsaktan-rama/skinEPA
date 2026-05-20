@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.16</title>
+    <title>EPA Skin App 1.17</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -18,7 +18,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.16</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.17</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
@@ -210,20 +210,13 @@
                 </button>
             </div>
 
-            <div class="bg-gray-50 border rounded-lg shadow-sm p-4">
+<div class="bg-gray-50 border rounded-lg shadow-sm p-4">
                 <h3 class="font-bold text-gray-700 mb-3">➕ เพิ่มแม่แบบกิจกรรมใหม่</h3>
                 <div class="space-y-3 text-sm">
                     <div>
                         <label class="block font-bold mb-1">รหัสกิจกรรม</label>
                         <select id="tpl-act-type" class="w-full border rounded p-2">
-                            <option value="act01">act01 (กิจกรรมประเภทที่ 1)</option>
-                            <option value="act02">act02 (กิจกรรมประเภทที่ 2)</option>
-                            <option value="act03">act03 (กิจกรรมประเภทที่ 3)</option>
-                            <option value="act04">act04 (กิจกรรมประเภทที่ 4)</option>
-                            <option value="act05">act05 (กิจกรรมประเภทที่ 5)</option>
-                            <option value="act06">act06 (กิจกรรมประเภทที่ 6)</option>
-                            <option value="act07">act07 (กิจกรรมประเภทที่ 7)</option>
-                        </select>
+                            </select>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">วันในสัปดาห์</label>
@@ -241,19 +234,19 @@
                     </div>
                     <div>
                         <label class="block font-bold mb-1">อาจารย์ผู้ควบคุม (เว้นว่างได้)</label>
-                        <select id="tpl-instructor" class="w-full border rounded p-2"><option value="">-- ไม่ระบุ --</option></select>
+                        <select id="tpl-instructor" class="w-full border rounded p-2">
+                            </select>
                     </div>
                     <div>
                         <label class="block font-bold mb-1">หัวข้อกิจกรรม (Topic)</label>
-                        <input type="text" id="tpl-topic" class="w-full border rounded p-2" placeholder="เช่น Laser Journal Club">
+                        <textarea id="tpl-topic" rows="3" class="w-full border rounded p-2" placeholder="พิมพ์รายละเอียดกิจกรรม (ขึ้นบรรทัดใหม่ได้)..."></textarea>
                     </div>
                     <button onclick="app.saveTemplateOnly()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mt-2">
                         💾 บันทึกแม่แบบ
                     </button>
                 </div>
             </div>
-        </div>
-        
+    </div>
     </div>
 
 <script>
@@ -301,16 +294,24 @@ const app = {
         }
     },
 
-   // --- 📅 Weekly Batch Flow ---
+ // --- 📅 Weekly Batch Flow ---
     loadWeeklyBatch: async () => {
-        // โหลดข้อมูล แม่แบบ และ รายชื่ออาจารย์
+        // ดึงแม่แบบเดิม + ดึงข้อมูล Dropdown (Activity Types และ Instructors)
         const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
-        const instRes = await app.api({ action: 'get_activity_form_data' }); // ขอยืมใช้ API เดิมดึงชื่ออาจารย์
+        const formDataRes = await app.api({ action: 'get_weekly_batch_data', user: app.user });
         
-        if (instRes && document.getElementById('tpl-instructor')) {
-            // สมมติว่า API get_activity_form_data ของคุณหมอส่งรายชื่ออาจารย์มาในตัวแปร instructors
-            if(instRes.instructors) {
-                document.getElementById('tpl-instructor').innerHTML = '<option value="">-- ไม่ระบุ --</option>' + instRes.instructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
+        if (formDataRes && formDataRes.success) {
+            // หยอดข้อมูลรายชื่ออาจารย์ (เว้นว่างได้)
+            const instEl = document.getElementById('tpl-instructor');
+            if (instEl && formDataRes.instructors) {
+                instEl.innerHTML = '<option value="">-- ไม่ระบุ (ปล่อยว่างได้) --</option>' + 
+                    formDataRes.instructors.map(i => `<option value="${i.mdid}">${i.name}</option>`).join('');
+            }
+            
+            // หยอดข้อมูลประเภทกิจกรรม (ACT01-ACT07)
+            const actEl = document.getElementById('tpl-act-type');
+            if (actEl && formDataRes.acts) {
+                actEl.innerHTML = formDataRes.acts.map(a => `<option value="${a.id}">${a.id} - ${a.desc}</option>`).join('');
             }
         }
 
@@ -321,15 +322,24 @@ const app = {
             } else {
                 const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์"];
                 listEl.innerHTML = res.favs.map(f => `
-                    <label class="flex items-center space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                        <input type="checkbox" value="${f.fav_id}" class="chk-fav-template w-5 h-5 text-teal-600">
+                    <label class="flex items-start space-x-3 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" value="${f.fav_id}" class="chk-fav-template w-5 h-5 text-teal-600 mt-1">
                         <div class="flex-1">
-                            <p class="font-bold text-gray-800 text-sm">${f.topic}</p>
-                            <p class="text-xs text-gray-500">ทุกวัน${days[f.day_of_week]} | ${f.time_begin}-${f.time_finish} น.</p>
+                            <p class="font-bold text-gray-800 text-sm whitespace-pre-line">${f.topic}</p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <span class="bg-gray-200 px-2 py-0.5 rounded font-bold text-gray-700">${f.act_type}</span> 
+                                ทุกวัน${days[f.day_of_week]} | ${f.time_begin}-${f.time_finish} น.
+                            </p>
                         </div>
                     </label>
                 `).join('');
             }
+            
+            // รีเซ็ตค่า Default ของฟอร์มทุกครั้งที่เปิดหน้าจอ
+            document.getElementById('tpl-time-begin').value = '12:00';
+            document.getElementById('tpl-time-finish').value = '13:00';
+            document.getElementById('tpl-topic').value = '';
+            
             app.showView('view-weekly-batch');
         }
     },
