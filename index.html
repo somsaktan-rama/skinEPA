@@ -318,13 +318,13 @@ const app = {
             container.innerHTML += `<button onclick="app.initInst360()" class="w-full bg-teal-800 hover:bg-teal-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลประเมิน 360 องศา (ลูกศิษย์)</button>`;
         }
         if (role.includes('staff') || role.includes('instructor')) {
-            container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">⚙️ จัดการกิจกรรม (ปิดกิจกรรม)</button>`;
+            container.innerHTML += `<button onclick="app.loadManageActivities()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">⚙️ จัดการกิจกรรม (ลบ/ปิด)</button>`;
         }
         
         // เมนูพิเศษสำหรับ Staff และ Admin
         if (role.includes('staff') || role.includes('admin')) {
             container.innerHTML += `<button onclick="app.loadStaffCreateActivity()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📌 เปิดกิจกรรมใหม่ (แบบครั้งเดียว)</button>`;
-            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📅 ระบบแม่แบบและกิจกรรมรายสัปดาห์</button>`;
+            container.innerHTML += `<button onclick="app.loadWeeklyBatch()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded text-left shadow-sm mt-2">📅 Template ตั้งกิจกรรมรายสัปดาห์</button>`;
             container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400 mt-2">📊 Dashboard ความก้าวหน้า EPA</button>`;
             container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600 mt-2">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
         }
