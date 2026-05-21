@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.24</title>
+    <title>EPA Skin App 1.25</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -22,7 +22,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.24</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.25</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -942,14 +942,71 @@ loadManageActivities: async () => {
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); },
 
     // --- Dashboard ---
-    loadDashboard: async () => { const res = await app.api({ action: 'get_dashboard_data', user: app.user });
-        if(res && res.success) { app.dashboardData = res.data; app.showView('view-staff-dashboard'); document.getElementById('time-elapsed-info').innerText = `⏳ เวลาผ่านไปแล้ว ${res.time_elapsed_pct.toFixed(0)}% (นับจาก 1 ก.ค.)`; const container = document.getElementById('dashboard-content');
-        if(res.data.length === 0) return container.innerHTML = '<p class="text-center py-4">ไม่มีข้อมูล</p>'; container.innerHTML = res.data.map(r => `<div class="border rounded-lg shadow-sm bg-white overflow-hidden ${r.is_at_risk ? 'border-red-400' : ''}"><div class="${r.is_at_risk ? 'bg-red-50' : 'bg-blue-50'} p-4 font-bold cursor-pointer flex flex-col transition" onclick="app.toggleRes('${r.mdid}')"><div class="flex justify-between w-full"><span class="text-blue-900">🧑‍⚕️ ${r.name} <span class="bg-blue-200 text-xs px-2 py-1 rounded">${r.level}</span></span><span id="icon-${r.mdid}">▼</span></div>${r.is_at_risk ? `<div class="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded inline-block self-start shadow">🚩 เสี่ยงล่าช้า (${r.completion_pct.toFixed(0)}%)</div>` : `<div class="mt-2 text-xs text-green-700 self-start">✔️ ปกติ (${r.completion_pct.toFixed(0)}%)</div>`}</div><div id="det-${r.mdid}" class="hidden p-3 text-xs bg-white border-t"><table class="w-full text-left"><thead><tr class="bg-gray-100"><th class="p-2 border-b">รหัส</th><th class="p-2 border-b text-center">เป้า</th><th class="p-2 border-b text-center">ผ่าน</th><th class="p-2 border-b text-center">สถานะ</th></tr></thead><tbody>${r.items.map(item => `<tr class="border-b"><td class="p-2">${item.id}</td><td class="p-2 text-center font-bold">${item.target}</td><td class="p-2 text-center text-green-600 font-bold">${item.pass}</td><td class="p-2 text-center">${item.is_completed ? '✅' : '⏳'}</td></tr>`).join('')}</tbody></table></div></div>`).join(''); } },
-    toggleRes: (id) => { const div = document.getElementById(`det-${id}`);
-        div.classList.toggle('hidden'); document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲'; },
-    exportCSV: () => { if(!app.dashboardData) return;
-        let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,รหัส,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n" + app.dashboardData.map(r => r.items.map(i => `"${r.mdid}","${r.name}","${r.level}","${i.id}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`).join('\n')).join('\n');
-        const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `EPA_Report.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    loadDashboard: async () => { 
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user });
+        if(res && res.success) { 
+            app.dashboardData = res.data; 
+            app.showView('view-staff-dashboard'); 
+            document.getElementById('time-elapsed-info').innerText = `⏳ เวลาผ่านไปแล้ว ${res.time_elapsed_pct.toFixed(0)}% (นับจาก 1 ก.ค.)`; 
+            const container = document.getElementById('dashboard-content');
+            if(res.data.length === 0) return container.innerHTML = '<p class="text-center py-4">ไม่มีข้อมูล</p>'; 
+            
+            container.innerHTML = res.data.map(r => `
+                <div class="border rounded-lg shadow-sm bg-white overflow-hidden ${r.is_at_risk ? 'border-red-400' : ''}">
+                    <div class="${r.is_at_risk ? 'bg-red-50' : 'bg-blue-50'} p-4 font-bold cursor-pointer flex flex-col transition" onclick="app.toggleRes('${r.mdid}')">
+                        <div class="flex justify-between w-full">
+                            <span class="text-blue-900">🧑‍⚕️ ${r.name} <span class="bg-blue-200 text-xs px-2 py-1 rounded">${r.level}</span></span>
+                            <span id="icon-${r.mdid}">▼</span>
+                        </div>
+                        ${r.is_at_risk ? `<div class="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded inline-block self-start shadow">🚩 เสี่ยงล่าช้า (${r.completion_pct.toFixed(0)}%)</div>` : `<div class="mt-2 text-xs text-green-700 self-start">✔️ ปกติ (${r.completion_pct.toFixed(0)}%)</div>`}
+                    </div>
+                    <div id="det-${r.mdid}" class="hidden p-3 text-xs bg-white border-t">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-2 border-b w-[60%]">รายละเอียดประเมิน</th>
+                                    <th class="p-2 border-b text-center">เป้า</th>
+                                    <th class="p-2 border-b text-center">ผ่าน</th>
+                                    <th class="p-2 border-b text-center">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${r.items.map(item => `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-2 text-gray-700 text-sm break-words">${item.desc}</td>
+                                    <td class="p-2 text-center font-bold">${item.target}</td>
+                                    <td class="p-2 text-center text-green-600 font-bold">${item.pass}</td>
+                                    <td class="p-2 text-center">${item.is_completed ? '✅' : '⏳'}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `).join(''); 
+        } 
+    },
+    
+    toggleRes: (id) => { 
+        const div = document.getElementById(`det-${id}`);
+        div.classList.toggle('hidden'); 
+        document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲'; 
+    },
+    
+    exportCSV: () => { 
+        if(!app.dashboardData) return;
+        // 🟢 เปลี่ยนหัวคอลัมน์และข้อมูลที่ดึงจาก item.id เป็น item.desc
+        let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,รายละเอียด,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n" + 
+                  app.dashboardData.map(r => r.items.map(i => `"${r.mdid}","${r.name}","${r.level}","${i.desc}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`).join('\n')).join('\n');
+        
+        const link = document.createElement("a"); 
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
+        link.download = `EPA_Report.csv`; 
+        document.body.appendChild(link); 
+        link.click(); 
+        document.body.removeChild(link); 
+    }
+    
     // --- Admin Tracking ---
     , loadAdminTracking: async () => {
         const res = await app.api({ action: 'get_admin_tracking', user: app.user }, 'กำลังสรุปยอด...');
