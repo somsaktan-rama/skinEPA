@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.30 (LIFF & Access Control)</title>
+    <title>EPA Skin App 1.31 (LIFF & Access Control)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.30</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.31</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเข้าใช้งาน)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -330,15 +330,36 @@ const app = {
         } 
     },
     
-    open360Focus: (mdid, name, level, picUrl) => {
-        // 🟢 ดักสิทธิ์ NEW_RESIDENT
+open360Focus: (mdid, name, level, picUrl) => {
+        // 1. ดักสิทธิ์ผู้ประเมิน: ถ้าตัวเองเป็น NEW_RESIDENT จะกดประเมินคนอื่นไม่ได้
         if (app.user.level === 'NEW_RESIDENT') {
             return Swal.fire({ title: 'โหมดเปิดดูรายชื่อ', text: 'ท่านสามารถเข้าดูรายชื่อบอร์ดได้เท่านั้น ระบบยังไม่อนุญาตให้ประเมินคะแนนจนกว่าจะเปิดปีการศึกษาครับ', icon: 'info' });
         }
-        document.getElementById('sel-360-resident').value = mdid; document.getElementById('focus-360-name').innerText = name; document.getElementById('focus-360-level').innerText = level;
-        const imgEl = document.getElementById('focus-360-pic'); imgEl.src = picUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-        document.getElementById('txt-360-comment').value = ''; document.getElementById('score-teamwork').value = '3'; document.getElementById('score-communication').value = '3'; document.getElementById('score-punctuality').value = '3';
-        app.showView('view-360-focus'); window.scrollTo(0, 0); 
+
+        // 2. 🟢 ดักสิทธิ์ผู้ถูกประเมิน: ถ้าเป้าหมายเป็น NEW_RESIDENT จะโชว์ชื่อได้ แต่ห้ามเข้าฟอร์มคะแนน
+        if (level === 'NEW_RESIDENT') {
+            return Swal.fire({ 
+                title: 'แพทย์ยังไม่เริ่มปฏิบัติงาน', 
+                text: 'แพทย์ท่านนี้เป็น Resident ใหม่ (รอกำหนดเปิดปีการศึกษา) สามารถดูทำเนียบรายชื่อได้ แต่ยังไม่สามารถรับการประเมินคะแนน 360 องศาได้ครับ', 
+                icon: 'warning' 
+            });
+        }
+
+        // --- โค้ดเดิมด้านล่างคงไว้ตามปกติ ---
+        document.getElementById('sel-360-resident').value = mdid; 
+        document.getElementById('focus-360-name').innerText = name; 
+        document.getElementById('focus-360-level').innerText = level;
+        
+        const imgEl = document.getElementById('focus-360-pic'); 
+        imgEl.src = picUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+        
+        document.getElementById('txt-360-comment').value = ''; 
+        document.getElementById('score-teamwork').value = '3'; 
+        document.getElementById('score-communication').value = '3'; 
+        document.getElementById('score-punctuality').value = '3';
+        
+        app.showView('view-360-focus'); 
+        window.scrollTo(0, 0); 
     },
 
     cancel360Eval: (isNotApplicable = false) => {
