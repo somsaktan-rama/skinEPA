@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.29B</title>
+    <title>EPA Skin App 1.29C</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -22,11 +22,11 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.29B</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.29C</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
-                <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข">
+                <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข 4-10 หลัก">
             </div>
             <button onclick="app.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">เข้าสู่ระบบ</button>
         </div>
@@ -123,6 +123,7 @@
             <div class="space-y-4">
                 <select id="create-act-id" class="w-full border rounded p-2 bg-gray-50"></select>
                 <div><label class="block text-sm font-bold mb-1">หัวข้อกิจกรรม (Topic)</label><textarea id="create-act-topic" rows="3" class="w-full border rounded p-2 bg-gray-50"></textarea></div>
+                <div><label class="block text-sm font-bold mb-1">อาจารย์ผู้คุม (ถ้ามี)</label><select id="create-act-instructor" class="w-full border rounded p-2 bg-gray-50"></select></div>
                 <div><label class="block text-sm font-bold mb-1">วัน-เวลาเริ่มต้น</label><input type="datetime-local" id="create-act-begin" class="w-full border rounded p-2 bg-gray-50"></div>
                 <div><label class="block text-sm font-bold mb-1">ระยะเวลากิจกรรม</label><select id="create-act-duration" class="w-full border rounded p-2 bg-gray-50"><option value="30">30 นาที</option><option value="60" selected>60 นาที</option><option value="90">90 นาที</option><option value="120">120 นาที</option><option value="180">180 นาที</option></select></div>
                 
@@ -282,15 +283,22 @@ const app = {
     },
 
     login: async () => {
-        const mdid = document.getElementById('mdid-input').value;
-        if (mdid.length < 4 || mdid.length > 6) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 4-6 หลัก', 'warning');
-        const data = await app.api({ action: 'login', mdid: mdid }, 'ตรวจสอบข้อมูล...');
+        let mdidRaw = document.getElementById('mdid-input').value;
+        if (mdidRaw.length < 4 || mdidRaw.length > 10) return Swal.fire('เตือน', 'กรุณาระบุ MDID ให้ถูกต้อง (4-10 หลัก)', 'warning');
+        
+        // แปลงตัวเลขเพื่อตัด 0 ด้านหน้าออก
+        const mdid = parseInt(mdidRaw, 10).toString();
+        
+        const data = await app.api({ action: 'login', payload: { mdid: mdid, lineUid: app.lineUid, lineName: app.lineName } }, 'ตรวจสอบ...');
         if (data) {
-            app.user = data.user;
-            document.getElementById('display-name').innerText = app.user.name;
-            document.getElementById('display-inst').innerText = app.user.institute;
-            document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-            app.renderMenu(); app.showView('view-menu');
+            if (data.requireReset) {
+                Swal.fire({ title: 'ข้อผิดพลาด', text: data.message, icon: 'error', showCancelButton: true, confirmButtonText: 'รีเซ็ต', cancelButtonText: 'ปิด' })
+                .then((r) => { if (r.isConfirmed) { app.openResetModal(); document.getElementById('reset-mdid').value = mdid; } });
+            } else {
+                app.user = data.user;
+                document.getElementById('display-name').innerText = app.user.name; document.getElementById('display-inst').innerText = app.user.institute; document.getElementById('display-role').innerText = app.user.role.toUpperCase();
+                app.renderMenu(); app.showView('view-menu');
+            }
         }
     },
 
@@ -367,20 +375,19 @@ renderMenu: () => {
 
 
     // --- Activity Flow ---
-    loadStaffCreateActivity: async () => { 
-        const data = await app.api({ action: 'get_activity_form_data' });
+     loadStaffCreateActivity: async () => { 
+        const data = await app.api({ action: 'get_activity_form_data', user: app.user });
         if(data) { 
-            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join('');
-            document.getElementById('create-act-topic').value = ''; 
-            document.getElementById('create-act-begin').value = ''; 
+            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join(''); 
+            document.getElementById('create-act-instructor').innerHTML = '<option value="">-- ไม่ระบุ --</option>' + data.instructors.map(i => `<option value="${i.mdid}">อ. ${i.name}</option>`).join('');
             app.showView('view-staff-create-activity'); 
         } 
     },
     
     saveActivity: async () => { 
-        const actEl = document.getElementById('create-act-id'), topicEl = document.getElementById('create-act-topic'), beginEl = document.getElementById('create-act-begin'), durationEl = document.getElementById('create-act-duration');
+        const actEl = document.getElementById('create-act-id'), topicEl = document.getElementById('create-act-topic'), beginEl = document.getElementById('create-act-begin'), durationEl = document.getElementById('create-act-duration'), instEl = document.getElementById('create-act-instructor');
         if(!actEl.value || !beginEl.value || !topicEl.value.trim()) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning'); 
-        const res = await app.api({ action: 'create_activity', payload: { user: app.user, act_id: actEl.value, topic: topicEl.value, act_begin: beginEl.value, duration_mins: durationEl.value } });
+        const res = await app.api({ action: 'create_activity', payload: { user: app.user, act_id: actEl.value, topic: topicEl.value, act_begin: beginEl.value, duration_mins: durationEl.value, instructor_mdid: instEl.value } });
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
     },
     
@@ -639,31 +646,13 @@ _render360Data: async (targetMdid) => {
     loadCheckin: async () => {
         const data = await app.api({ action: 'get_open_checkins', user: app.user });
         if(data) {
-            const list = document.getElementById('checkin-list');
-            if(data.activities.length === 0) {
-                list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมที่เปิดให้ลงชื่อในขณะนี้</p>';
-            } else {
-                list.innerHTML = data.activities.map(a => {
-                    // กำหนดปุ่มกดตามสถานะเวลา
-                    let btnHtml = '';
-                    if (a.already_joined) {
-                        btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center">✔️ เข้าร่วมแล้ว</span>`;
-                    } else if (!a.is_ready) {
-                        btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full">รอกำหนดเวลาเปิดลงชื่อ</button>`;
-                    } else {
-                        btnHtml = `<button onclick="app.joinActivity('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full">ลงชื่อ (Join)</button>`;
-                    }
-
-                    return `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 ${a.is_ready ? 'border-l-orange-500' : 'border-l-gray-300'}">
-                        <div class="flex-1 pr-2 mb-3 md:mb-0">
-                            <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
-                            <div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div>
-                            <div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div>
-                        </div>
-                        <div class="flex items-center">${btnHtml}</div>
-                    </div>`;
-                }).join('');
-            }
+            document.getElementById('checkin-list').innerHTML = data.activities.length ? data.activities.map(a => `
+            <div class="border p-3 rounded bg-white mb-2 shadow-sm">
+                <div class="font-bold text-gray-800">${a.topic}</div>
+                ${a.instructor_name ? `<div class="text-xs text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : ''}
+                <div class="text-xs text-gray-600 mt-1 mb-2">${formatThaiDateTime(a.act_begin)}</div>
+                ${a.already_joined ? '<div class="text-center text-sm text-gray-500 font-bold bg-gray-100 p-2 rounded">✔️ เช็คอินแล้ว</div>' : (!a.is_ready ? '<div class="text-center text-sm text-gray-400 font-bold bg-gray-100 p-2 rounded">รอกำหนดเวลา</div>' : `<button onclick="app.joinActivity('${a.act_ref_id}')" class="w-full bg-green-500 text-white font-bold py-2 rounded">ลงชื่อ</button>`)}
+            </div>`).join('') : '<p class="text-center text-gray-500 py-4">ไม่มีกิจกรรมให้ลงชื่อ</p>';
             app.showView('view-checkin');
         }
     },
