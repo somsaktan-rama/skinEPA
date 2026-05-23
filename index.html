@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.25</title>
+    <title>EPA Skin App 1.30</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -22,7 +22,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.25</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.30</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,6}" maxlength="6" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);"
@@ -297,28 +297,33 @@ const app = {
     logout: () => { app.user = null; document.getElementById('mdid-input').value = ''; app.showView('view-login'); },
 
     // 🟢 จดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
-    renderMenu: () => {
+renderMenu: () => {
         const container = document.getElementById('menu-buttons');
         container.innerHTML = '';
-        
-        // 1. จัดการข้อความ Role ให้เป็นตัวพิมพ์เล็กและตัดช่องว่าง/ขีดล่างออก เพื่อป้องกันการพิมพ์ผิดใน Sheet
         const roleRaw = app.user.role.toLowerCase().replace(/[\s_]/g, '');
-        
-        // แยกเช็คสิทธิ์แต่ละกลุ่มอย่างละเอียด
         const isResident = roleRaw.includes('resident');
         const isFellowDermSurg = roleRaw.includes('fellowdermsurg');
         const isFellowResearch = roleRaw.includes('fellowresearch');
-        
-        // จัดกลุ่มผู้เรียน (Trainee) ทั้งหมดเข้าด้วยกัน สำหรับเมนูที่ใช้ร่วมกัน
         const isTrainee = isResident || isFellowDermSurg || isFellowResearch;
-        
         const isInstructor = roleRaw.includes('instructor');
         const isStaff = roleRaw.includes('staff');
         const isAdmin = roleRaw.includes('admin');
 
-        // ==========================================
-        // วาดปุ่มเมนูตามเงื่อนไข
-        // ==========================================
+        // 🟢 1. เงื่อนไขเพิ่มใหม่: สำหรับ Resident ใหม่ (ข้อมูลล่วงหน้า)
+        if (isResident && app.user.level === 'NEW_RESIDENT') {
+            // ให้เห็นหน้าประเมิน 360 องศาได้หน้าเดียวเท่านั้น สำหรับเข้ามาดูรายชื่อบอร์ดล่วงหน้า
+            container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 เข้าดูรายชื่อแพทย์ (หน้าประเมิน 360 องศา)</button>`;
+            return; // หยุดการทำงานของฟังก์ชันทันทีเพื่อให้เห็นแค่ปุ่มเดียวตามเงื่อนไข
+        }
+
+        // 🟢 2. เงื่อนไขเพิ่มใหม่: สำหรับ Resident เก่าที่จบไปแล้ว (ALUMNI)
+        if (isResident && app.user.level === 'ALUMNI') {
+            // ดูประวัติ EPA / My Progress / ผล 360 (Anonymous) ได้เท่านั้น สร้างฟอร์มหรือประเมินคนอื่นไม่ได้แล้ว
+            container.innerHTML += `<button onclick="app.loadResidentHistory()" class="w-full bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📜 ดูประวัติการส่ง EPA</button>`;
+            container.innerHTML += `<button onclick="app.loadMyProgress()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📈 ดูความก้าวหน้าของฉัน (My Progress)</button>`;
+            container.innerHTML += `<button onclick="app.loadMy360Feedback()" class="w-full bg-teal-800 hover:bg-teal-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm">📊 ดูผลตอบรับ 360 องศา (Anonymous)</button>`;
+            return; // หยุดการทำงานของฟังก์ชันทันที
+        }
 
         // เมนูที่ 1: การประเมิน 360 (ทุกคนเห็นเมนูนี้ เพื่อเข้าไปประเมินผู้อื่น)
         container.innerHTML += `<button onclick="app.load360Form()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded text-left shadow-sm">🔄 ทำแบบประเมิน 360 องศา</button>`;
@@ -400,6 +405,14 @@ const app = {
     },
     
     open360Focus: (mdid, name, level, picUrl) => {
+        // 🟢 ดักสิทธิ์เพิ่มใหม่: หากเป็น Resident ใหม่ ให้เปิดดูได้เฉพาะรายชื่อ ห้ามทำแบบประเมินคะแนน
+        if (app.user.level === 'NEW_RESIDENT') {
+            return Swal.fire({
+                title: 'โหมดเปิดดูรายชื่อเท่านั้น',
+                text: 'ท่านได้รับสิทธิ์สถานะแพทย์ประจำบ้านใหม่ (ยังไม่เปิดปีการศึกษา) สามารถเข้าดูรายชื่อบอร์ดเพื่อทำความคุ้นเคยได้เท่านั้น แต่ระบบยังไม่อนุญาตให้ทำและส่งแบบประเมินคะแนนครับ',
+                icon: 'info'
+            });
+        }
         document.getElementById('sel-360-resident').value = mdid;
         document.getElementById('focus-360-name').innerText = name;
         document.getElementById('focus-360-level').innerText = level;
