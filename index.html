@@ -404,31 +404,20 @@ renderMenu: () => {
         } 
     },
     
-    open360Focus: (mdid, name, level, picUrl) => {
-        // 🟢 ดักสิทธิ์เพิ่มใหม่: หากเป็น Resident ใหม่ ให้เปิดดูได้เฉพาะรายชื่อ ห้ามทำแบบประเมินคะแนน
+   open360Focus: (mdid, name, level, picUrl) => {
+        // ดักสิทธิ์คนประเมิน
         if (app.user.level === 'NEW_RESIDENT') {
-            return Swal.fire({
-                title: 'โหมดเปิดดูรายชื่อเท่านั้น',
-                text: 'ท่านได้รับสิทธิ์สถานะแพทย์ประจำบ้านใหม่ (ยังไม่เปิดปีการศึกษา) สามารถเข้าดูรายชื่อบอร์ดเพื่อทำความคุ้นเคยได้เท่านั้น แต่ระบบยังไม่อนุญาตให้ทำและส่งแบบประเมินคะแนนครับ',
-                icon: 'info'
-            });
+            return Swal.fire({ title: 'โหมดเปิดดูรายชื่อ', text: 'ท่านสามารถเข้าดูรายชื่อบอร์ดได้เท่านั้น ระบบยังไม่อนุญาตให้ประเมินคะแนนจนกว่าจะเปิดปีการศึกษาครับ', icon: 'info' });
         }
-        document.getElementById('sel-360-resident').value = mdid;
-        document.getElementById('focus-360-name').innerText = name;
-        document.getElementById('focus-360-level').innerText = level;
-        
-        const fallbackPic = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
-        const imgEl = document.getElementById('focus-360-pic');
-        imgEl.src = picUrl || fallbackPic;
-        imgEl.onerror = function() { this.src = fallbackPic; };
+        // ดักสิทธิ์คนถูกประเมิน
+        if (level === 'NEW_RESIDENT') {
+            return Swal.fire({ title: 'แพทย์ยังไม่เริ่มปฏิบัติงาน', text: 'แพทย์ท่านนี้เป็น Resident ใหม่ (รอกำหนดเปิดปีการศึกษา) สามารถดูทำเนียบรายชื่อได้ แต่ยังไม่สามารถรับการประเมินได้ครับ', icon: 'warning' });
+        }
 
-        document.getElementById('txt-360-comment').value = '';
-        document.getElementById('score-teamwork').value = '3';
-        document.getElementById('score-communication').value = '3';
-        document.getElementById('score-punctuality').value = '3';
-        
-        app.showView('view-360-focus');
-        window.scrollTo(0, 0); 
+        document.getElementById('sel-360-resident').value = mdid; document.getElementById('focus-360-name').innerText = name; document.getElementById('focus-360-level').innerText = level;
+        const imgEl = document.getElementById('focus-360-pic'); imgEl.src = picUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+        document.getElementById('txt-360-comment').value = ''; document.getElementById('score-teamwork').value = '3'; document.getElementById('score-communication').value = '3'; document.getElementById('score-punctuality').value = '3';
+        app.showView('view-360-focus'); window.scrollTo(0, 0); 
     },
 
     cancel360Eval: (isNotApplicable = false) => {
