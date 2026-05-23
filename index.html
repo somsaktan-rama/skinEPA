@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.29C</title>
+    <title>EPA Skin App 1.29D LIFF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         select {
         -webkit-appearance: menulist-button !important;
@@ -22,13 +23,14 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.29C</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.29D LIFF</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสเลข ว.)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข 4-10 หลัก">
             </div>
             <button onclick="app.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">เข้าสู่ระบบ</button>
+            <button onclick="app.openResetModal()" class="text-sm text-blue-500 underline text-center w-full block bg-transparent mt-3">ต้องการรีเซ็ตการผูกบัญชี LINE?</button>
         </div>
 
         <div id="view-menu" class="hidden">
@@ -252,6 +254,19 @@
         </div>
     </div>
 
+    </div> <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-sm">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">รีเซ็ตบัญชี LINE</h3>
+            <p class="text-sm text-gray-500 mb-4">ระบบจะส่งลิงก์ยืนยันไปที่อีเมลที่ลงทะเบียนไว้</p>
+            <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">MDID</label><input type="text" id="reset-mdid" class="w-full border rounded p-2 focus:ring"></div>
+            <div class="mb-4"><label class="block text-sm font-bold text-gray-700 mb-1">Email</label><input type="email" id="reset-email" class="w-full border rounded p-2 focus:ring"></div>
+            <div class="flex space-x-2">
+                <button onclick="app.requestResetLine()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">ส่งลิงก์</button>
+                <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
+            </div>
+        </div>
+    </div>    
+    
 <script>
 // ==========================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxF8IMDGnOdSTQ_mOVZOJE4MmEiRQjCpBUkVKX5Ge01-2elgJnVXO2xLkAC8xrr9oSx/exec';
@@ -265,8 +280,37 @@ const formatThaiDateTime = (isoStr) => {
 };
 
 const app = {
-    user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
+user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
     cachedTasks: {}, 
+    
+    // 🟢 เพิ่มตัวแปรเก็บ UID และ Name
+    lineUid: null, lineName: null,
+
+    // 🟢 เพิ่มฟังก์ชัน init สำหรับ LIFF
+    init: async () => {
+        const LIFF_ID = 'ใส่_LIFF_ID_ของคุณที่นี่'; // 🔴 อย่าลืมเปลี่ยนเป็น LIFF ID จริง
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) {
+                liff.login(); 
+            } else {
+                const profile = await liff.getProfile();
+                app.lineUid = profile.userId;
+                app.lineName = profile.displayName;
+                console.log("✅ ดึงข้อมูล LINE UID สำเร็จ: " + app.lineUid);
+            }
+        } catch (err) { console.error("LIFF Error:", err); }
+    },
+
+    // 🟢 เพิ่มฟังก์ชันควบคุม Modal รีเซ็ต
+    openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
+    closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
+    requestResetLine: async () => {
+        const mdid = document.getElementById('reset-mdid').value.trim(); const email = document.getElementById('reset-email').value.trim();
+        if (!mdid || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรอกรหัสและอีเมล', 'warning');
+        const data = await app.api({ action: 'request_reset_line', payload: { mdid: mdid, email: email } }, 'ตรวจสอบ...');
+        if (data) { app.closeResetModal(); Swal.fire('สำเร็จ', data.message, 'success'); }
+    },
 
     showView: (id) => {
         document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
@@ -1057,6 +1101,8 @@ loadDashboard: async () => {
         }
     }
 };
+// 🟢 สั่งให้ระบบเริ่มทำงาน (init) ทันทีที่โหลดหน้าเว็บเสร็จ
+window.onload = () => app.init();    
 </script>
 </body>
 </html>
