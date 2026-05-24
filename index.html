@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.32B</title>
+    <title>EPA Skin App 1.32C</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32B</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32C</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -227,7 +227,7 @@
                 <label class="block text-sm font-bold text-red-700 mb-1">ความคิดเห็นเพิ่มเติม / คำแนะนำ</label>
                 <textarea id="eval-freetext" class="w-full border rounded p-2 text-sm bg-white" rows="2"></textarea>
             </div>
-            <div class="flex space-x-2"><button onclick="app.submitEvaluation()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold">ยืนยันผล</button><button onclick="app.showView('view-instructor-list')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button></div>
+            <div class="flex space-x-2"><button onclick="app.()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold">ยืนยันผล</button><button onclick="app.showView('view-instructor-list')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button></div>
         </div>
 
         <div id="view-staff-dashboard" class="hidden">
@@ -1026,15 +1026,15 @@ submitEvaluation: async () => {
         } 
         
         // 🟢 แนบค่าคู่ข้อมูลครบถ้วน รวมถึง resident_mdid เพื่อส่งให้ระบบหลังบ้านใช้ยิง LINE แจ้งเตือนกลับ
-        const res = await app.api({ 
-            action: 'save_evaluation', 
-            payload: { 
-                rowId: app.currentEvalTask.rowId, 
-                resident_mdid: app.currentEvalTask.resident_mdid, 
-                score: score, 
-                reason: reasons.join(' | ') 
+    const res = await app.api({ 
+    action: 'save_evaluation', 
+    payload: { 
+        rowId: app.currentEvalTask.rowId, 
+        resident_mdid: app.currentEvalTask.resident_mdid, // 👈 ตรวจสอบว่าบรรทัดนี้มีและมีค่าอยู่จริง
+        score: score, 
+        reason: reasons.join(' | ') 
             }
-        }, 'กำลังบันทบินผลการประเมิน...');
+    }, 'กำลังบันทึกผลการประเมิน...');
         
         if(res) {
             Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
