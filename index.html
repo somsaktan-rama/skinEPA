@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.32I</title>
+    <title>EPA Skin App 1.40</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32I</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.40</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -337,28 +337,38 @@ init: async () => {
         } catch (err) { Swal.fire('ข้อผิดพลาด', err.message || 'เกิดข้อผิดพลาด', 'error'); return null; }
     },
 
-    login: async () => {
+login: async () => {
         let mdidInput = document.getElementById('mdid-input').value;
         if (mdidInput.length < 4 || mdidInput.length > 10) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 4-10 หลักให้ถูกต้อง', 'warning');
         
-        // ตัดเลขศูนย์ด้านหน้าออกกรณีผู้กรอกเผลอระบุพิมพ์ติดมาด้วย
         const cleanMdid = parseInt(mdidInput, 10).toString();
         
-        const data = await app.api({ 
+        const res = await app.api({ 
             action: 'login', 
             payload: { mdid: cleanMdid, lineUid: app.lineUid, lineName: app.lineName } 
         }, 'ตรวจสอบข้อมูล...');
         
-        if (data) {
-            if (data.requireReset) {
-                Swal.fire({ title: 'ข้อผิดพลาด', text: data.message, icon: 'error', showCancelButton: true, confirmButtonText: 'ดำเนินการรีเซ็ต', cancelButtonText: 'ปิดหน้าต่าง' })
+        if (res) {
+            if (res.requireReset) {
+                Swal.fire({ title: 'ข้อผิดพลาด', text: res.message, icon: 'error', showCancelButton: true, confirmButtonText: 'ดำเนินการรีเซ็ต', cancelButtonText: 'ปิดหน้าต่าง' })
                 .then((r) => { if (r.isConfirmed) { app.openResetModal(); document.getElementById('reset-mdid').value = cleanMdid; } });
-            } else {
-                app.user = data.user;
+            } else if (res.success) {
+                app.user = res.user;
                 document.getElementById('display-name').innerText = app.user.name;
                 document.getElementById('display-inst').innerText = app.user.institute;
                 document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-                app.renderMenu(); app.showView('view-menu');
+                
+                // 🟢 ลอจิกใหม่: แสดงข้อความต้อนรับอย่างเป็นมิตรเมื่อล็อกอินครั้งแรก
+                if (res.isFirstTime) {
+                    Swal.fire('สำเร็จ', res.message, 'success').then(() => {
+                        app.renderMenu(); app.showView('view-menu');
+                    });
+                } else {
+                    app.renderMenu(); app.showView('view-menu');
+                }
+            } else {
+                // 🟢 เปลี่ยนจาก Error น่ากลัวๆ เป็น Warning เบาๆ กรณีพิมพ์รหัสผิดหรือไม่พบข้อมูล
+                Swal.fire('แจ้งเตือน', res.message || 'ไม่พบข้อมูลผู้ใช้ในระบบ', 'warning');
             }
         }
     },
