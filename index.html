@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.31</title>
+    <title>EPA Skin App 1.32</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.31</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสตัวเลข ว. 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -266,7 +266,7 @@
                 </div>
         </div>
     </div>    
-    </div> ```
+    </div> 
 <script>
 // ==========================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyNAgIIbUnG2NAD05eIsXQY25ChVOCx8lZ9snPT18NvAnvB6Nltj80czLvegG9-gQ0S/exec';
@@ -279,7 +279,6 @@ const formatThaiDateTime = (isoStr) => {
            ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
 };
 
-```javascript
 const app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
     cachedTasks: {}, 
@@ -998,13 +997,22 @@ loadManageActivities: async () => {
     checkEvalScore: () => { const s = parseInt(document.getElementById('eval-score').value), m = parseInt(app.currentEvalCriteria.minLevel);
         document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
     
-    submitEvaluation: async () => { const score = parseInt(document.getElementById('eval-score').value);
-        if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning'); let reasons = []; const customText = document.getElementById('eval-freetext').value.trim();
-        if (score < parseInt(app.currentEvalCriteria.minLevel)) { document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); if(customText) reasons.push(`ความเห็น: ${customText}`); if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุเหตุผล', 'warning');
-        } else { if(customText) reasons.push(`ความเห็น: ${customText}`); } const res = await app.api({ action: 'save_evaluation', payload: { rowId: app.currentEvalTask.rowId, score: score, reason: reasons.join(' | ') }});
-        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); },
-
-    // 🟢 เพิ่มตัวแปรบันทึกเป้ารหัส เพื่อดึงมาเป็นหลักใช้ยิง LINE Push Message กลับสู่แพทย์ประจำบ้าน
+submitEvaluation: async () => { 
+        const score = parseInt(document.getElementById('eval-score').value);
+        if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning'); 
+        
+        let reasons = []; 
+        const customText = document.getElementById('eval-freetext').value.trim();
+        
+        if (score < parseInt(app.currentEvalCriteria.minLevel)) { 
+            document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); 
+            if(customText) reasons.push(`ความเห็น: ${customText}`); 
+            if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุเหตุผลที่ไม่ผ่าน', 'warning');
+        } else { 
+            if(customText) reasons.push(`ความเห็น: ${customText}`); 
+        } 
+        
+        // ส่งคู่ข้อมูลแบบจัดเต็มไปหลังบ้าน รวมถึง resident_mdid เพื่อใช้ยิง LINE แจ้งเตือนกลับ
         const res = await app.api({ 
             action: 'save_evaluation', 
             payload: { 
@@ -1013,8 +1021,12 @@ loadManageActivities: async () => {
                 score: score, 
                 reason: reasons.join(' | ') 
             }
-        });
-        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks());         
+        }, 'กำลังบันทึกผลการประเมิน...');
+        
+        if(res) {
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
+        }
+    },    
          
     // --- Dashboard ---
 loadDashboard: async () => { 
