@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.32A</title>
+    <title>EPA Skin App 1.32B</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32A</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32B</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1020,12 +1020,12 @@ submitEvaluation: async () => {
         if (score < parseInt(app.currentEvalCriteria.minLevel)) { 
             document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); 
             if(customText) reasons.push(`ความเห็น: ${customText}`); 
-            if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุเหตุผลที่ไม่ผ่าน', 'warning');
+            if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุเหตุผลที่ไม่ผ่าน', 'warning');
         } else { 
             if(customText) reasons.push(`ความเห็น: ${customText}`); 
         } 
         
-        // ส่งคู่ข้อมูลแบบจัดเต็มไปหลังบ้าน รวมถึง resident_mdid เพื่อใช้ยิง LINE แจ้งเตือนกลับ
+        // 🟢 แนบค่าคู่ข้อมูลครบถ้วน รวมถึง resident_mdid เพื่อส่งให้ระบบหลังบ้านใช้ยิง LINE แจ้งเตือนกลับ
         const res = await app.api({ 
             action: 'save_evaluation', 
             payload: { 
@@ -1034,12 +1034,12 @@ submitEvaluation: async () => {
                 score: score, 
                 reason: reasons.join(' | ') 
             }
-        }, 'กำลังบันทึกผลการประเมิน...');
+        }, 'กำลังบันทบินผลการประเมิน...');
         
         if(res) {
             Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
         }
-    },    
+    }, 
          
     // --- Dashboard ---
 loadDashboard: async () => { 
