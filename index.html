@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.32</title>
+    <title>EPA Skin App 1.32A</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,9 +23,9 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32A</h2>
             <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสตัวเลข ว. 4-10 หลัก)</label>
+                <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
                 class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุรหัสประจำตัว">
             </div>
@@ -286,17 +286,30 @@ const app = {
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-    init: async () => {
-        const LIFF_ID = '2010106383-UKz3SgNA'; // 🔴 นำรหัสจากแถบ LINE Developers มาใส่จุดนี้แทน
+init: async () => {
+        const LIFF_ID = '2010106383-UKz3SgNA';
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) {
-                liff.login(); // บังคับเด้งหน้าต่างขอสิทธิ์เข้าถึงบัญชี (LINE Authorization) ทันทีในครั้งแรก
+                liff.login();
             } else {
                 const profile = await liff.getProfile();
                 app.lineUid = profile.userId;
                 app.lineName = profile.displayName;
                 console.log("✅ ดึงข้อมูลสำเร็จ: " + app.lineUid);
+
+                // 🟢 ลอจิกใหม่: สั่ง Auto-login ทันที
+                const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
+                if (loginCheck && loginCheck.success) {
+                    app.user = loginCheck.user;
+                    document.getElementById('display-name').innerText = app.user.name;
+                    document.getElementById('display-inst').innerText = app.user.institute;
+                    document.getElementById('display-role').innerText = app.user.role.toUpperCase();
+                    app.renderMenu(); 
+                    app.showView('view-menu'); // 👈 เข้าหน้าเมนูเลย
+                } else {
+                    app.showView('view-login'); // 👈 ไม่เจอสิทธิ์ ถึงจะโชว์หน้ากรอก MDID
+                }
             }
         } catch (err) { console.error("LIFF Init Error:", err); }
     },
