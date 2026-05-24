@@ -1010,7 +1010,7 @@ loadManageActivities: async () => {
     checkEvalScore: () => { const s = parseInt(document.getElementById('eval-score').value), m = parseInt(app.currentEvalCriteria.minLevel);
         document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
     
-scheckEvalScore: () => { 
+checkEvalScore: () => { 
         const s = parseInt(document.getElementById('eval-score').value);
         const m = parseInt(app.currentEvalCriteria.minLevel);
         document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); 
