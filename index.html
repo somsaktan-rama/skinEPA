@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.32H</title>
+    <title>EPA Skin App 1.32I</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32H</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32I</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1021,22 +1021,13 @@ checkEvalScore: () => {
     
  submitEvaluation: async () => { 
         try {
-            // 1. ตรวจสอบช่องกรอกคะแนน
-            const scoreEl = document.getElementById('eval-score');
-            if (!scoreEl) return Swal.fire('ข้อผิดพลาด', 'หาช่องกรอกคะแนนไม่พบในระบบ', 'error');
-            
-            const score = parseInt(scoreEl.value);
-            if (!score || isNaN(score)) return Swal.fire('เตือน', 'กรุณาระบุผลคะแนนก่อนกดยืนยัน', 'warning'); 
-            
-            // 2. ดึงค่าข้อความเหตุผล
-            let reasons = []; 
-            const textEl = document.getElementById('eval-freetext');
-            const customText = textEl ? textEl.value.trim() : "";
-            
-            // 3. ดึงเกณฑ์คะแนนขั้นต่ำ (ดัก Error กรณีข้อมูลเกณฑ์หาย)
+            const score = parseInt(document.getElementById('eval-score').value);
             const minLvl = app.currentEvalCriteria ? parseInt(app.currentEvalCriteria.minLevel) : 0;
+            if(!score || isNaN(score)) return Swal.fire('เตือน', 'กรุณาระบุผลคะแนนก่อนกดยืนยัน', 'warning'); 
             
-            // 4. ตรวจสอบลอจิกการให้เหตุผล
+            let reasons = []; 
+            const customText = document.getElementById('eval-freetext') ? document.getElementById('eval-freetext').value.trim() : "";
+            
             if (score < minLvl) { 
                 document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); 
                 if(customText) reasons.push(`ความเห็น: ${customText}`); 
@@ -1044,36 +1035,32 @@ checkEvalScore: () => {
             } else { 
                 if(customText) reasons.push(`ความเห็น: ${customText}`); 
             } 
-            
-            // 5. ตรวจสอบข้อมูลแถวที่จะประเมิน (ดัก Error กรณีเชื่อมโยงผิดพลาด)
-            if (!app.currentEvalTask || !app.currentEvalTask.rowId) {
-                return Swal.fire('ข้อผิดพลาด', 'สูญหายข้อมูลรหัสแถว (rowId) กรุณากดถอยหลังแล้วเลือกรายการประเมินใหม่ครับ', 'error');
+
+            // 🟢 ดึงรหัส Resident แบบบังคับแปลงเป็นข้อความ (ป้องกันค่าสูญหายตอนส่ง API)
+            let targetMdid = "";
+            if (app.currentEvalTask && app.currentEvalTask.resident_mdid) {
+                targetMdid = app.currentEvalTask.resident_mdid.toString().trim();
+            } else if (app.currentEvalTask && app.currentEvalTask.mdid) {
+                targetMdid = app.currentEvalTask.mdid.toString().trim();
             }
-
-            // 6. ส่งข้อมูลไปที่ Code.gs
-            // 🟢 เพิ่มระบบดึงรหัส Resident แบบเหนียวแน่น (ดึงจากตัวแปรตรงๆ เพื่อกันพลาด)
-            const targetMdid = app.currentEvalTask.resident_mdid || app.currentEvalTask.mdid || "";
-
+            
+            // ส่งข้อมูลไปที่ Code.gs
             const res = await app.api({ 
                 action: 'save_evaluation', 
                 payload: { 
                     rowId: app.currentEvalTask.rowId, 
-                    resident_mdid: targetMdid, // 👈 ส่งรหัสเป้าหมายไปให้หลังบ้าน
+                    resident_mdid: targetMdid, // 👈 ส่งรหัสที่แปลงเป็นข้อความแล้ว
                     score: score, 
                     reason: reasons.join(' | ') 
                 }
             }, 'กำลังบันทึกผลการประเมิน...');
             
-            // 7. จัดการผลลัพธ์ที่ตอบกลับมา
             if (res && res.success) {
                 Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
             } else if (res && !res.success) {
                 Swal.fire('ข้อผิดพลาด', res.message, 'error');
-            } 
-            // ถ้า res เป็น null แสดงว่า app.api จัดการแสดง Error ให้แล้ว
-            
+            }
         } catch (error) {
-            console.error("Submit Error:", error);
             Swal.fire('ข้อผิดพลาดระบบ', error.message, 'error');
         }
     },
