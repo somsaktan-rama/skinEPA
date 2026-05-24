@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.32D</title>
+    <title>EPA Skin App 1.32E</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,7 +23,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32D</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.32E</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1011,44 +1011,62 @@ loadManageActivities: async () => {
         document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
     
 checkEvalScore: () => { 
-        const s = parseInt(document.getElementById('eval-score').value);
-        const m = parseInt(app.currentEvalCriteria.minLevel);
-        document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); 
+        try {
+            const s = parseInt(document.getElementById('eval-score').value);
+            // ป้องกัน Error หากดึงเกณฑ์ไม่ได้
+            const m = app.currentEvalCriteria ? parseInt(app.currentEvalCriteria.minLevel) : 0;
+            document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m || isNaN(s)); 
+        } catch (e) { console.log(e); }
     },
     
     submitEvaluation: async () => { 
-        const score = parseInt(document.getElementById('eval-score').value);
-        if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning'); 
-        
-        let reasons = []; 
-        const customText = document.getElementById('eval-freetext').value.trim();
-        
-        if (score < parseInt(app.currentEvalCriteria.minLevel)) { 
-            document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); 
-            if(customText) reasons.push(`ความเห็น: ${customText}`); 
-            if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุเหตุผลที่ไม่ผ่าน', 'warning');
-        } else { 
-            if(customText) reasons.push(`ความเห็น: ${customText}`); 
-        } 
-        
-        // 🟢 แนบค่าคู่ข้อมูลครบถ้วน
-        const res = await app.api({ 
-            action: 'save_evaluation', 
-            payload: { 
-                rowId: app.currentEvalTask.rowId, 
-                resident_mdid: app.currentEvalTask.resident_mdid, 
-                score: score, 
-                reason: reasons.join(' | ') 
+        try {
+            const score = parseInt(document.getElementById('eval-score').value);
+            if(!score || isNaN(score)) return Swal.fire('เตือน', 'กรุณาระบุผลคะแนนก่อนกดยืนยัน', 'warning'); 
+            
+            let reasons = []; 
+            const customText = document.getElementById('eval-freetext').value.trim();
+            
+            // ดึงเกณฑ์คะแนนอย่างปลอดภัย
+            const minLvl = app.currentEvalCriteria ? parseInt(app.currentEvalCriteria.minLevel) : 0;
+            
+            if (score < minLvl) { 
+                document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); 
+                if(customText) reasons.push(`ความเห็น: ${customText}`); 
+                if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุเหตุผลที่ไม่ผ่าน หรือพิมพ์ความเห็นเพิ่มเติม', 'warning');
+            } else { 
+                if(customText) reasons.push(`ความเห็น: ${customText}`); 
+            } 
+            
+            // ตรวจสอบความปลอดภัยว่ามีรหัสแถว (rowId) อยู่จริง
+            if (!app.currentEvalTask || !app.currentEvalTask.rowId) {
+                return Swal.fire('ข้อผิดพลาด', 'สูญหายข้อมูลแถว (rowId) กรุณากดถอยหลังแล้วเลือกรายการใหม่ครับ', 'error');
             }
-        }, 'กำลังบันทึกผลการประเมิน...');
-        
-        if(res) {
-            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
+
+            // 🟢 แนบค่าคู่ข้อมูลครบถ้วน ส่งขึ้นระบบหลังบ้าน
+            const res = await app.api({ 
+                action: 'save_evaluation', 
+                payload: { 
+                    rowId: app.currentEvalTask.rowId, 
+                    resident_mdid: app.currentEvalTask.resident_mdid || "", 
+                    score: score, 
+                    reason: reasons.join(' | ') 
+                }
+            }, 'กำลังบันทึกผลการประเมิน...');
+            
+            if(res && res.success) {
+                Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
+            } else if (res) {
+                Swal.fire('ข้อผิดพลาด', res.message, 'error');
+            }
+        } catch (error) {
+            console.error("Submit Error:", error);
+            Swal.fire('ข้อผิดพลาดระบบ', error.message, 'error');
         }
     },
-                 
+    
     // --- Dashboard ---
-loadDashboard: async () => { 
+    loadDashboard: async () => { 
         const res = await app.api({ action: 'get_dashboard_data', user: app.user });
         if(res && res.success) { 
             app.dashboardData = res.data; 
