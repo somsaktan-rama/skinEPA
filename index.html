@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.29E LIFF</title>
+    <title>EPA Skin App 1.29F LIFF</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -23,11 +23,11 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.29E LIFF</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.30</h2>
             <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">MDID (เลข ว./เบอร์มือถือ)</label>
+                <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัสตัวเลข ว. 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุตัวเลข 4-10 หลัก">
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 text-center text-lg tracking-widest focus:outline-none focus:ring focus:border-blue-300" placeholder="ระบุรหัสประจำตัว">
             </div>
             <button onclick="app.login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">เข้าสู่ระบบ</button>
             <button onclick="app.openResetModal()" class="text-sm text-blue-500 underline text-center w-full block bg-transparent mt-3">ต้องการรีเซ็ตการผูกบัญชี LINE?</button>
@@ -254,19 +254,19 @@
         </div>
     </div>
 
-    </div> <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-sm">
-            <h3 class="text-xl font-bold text-gray-800 mb-2">รีเซ็ตบัญชี LINE</h3>
-            <p class="text-sm text-gray-500 mb-4">ระบบจะส่งลิงก์ยืนยันไปที่อีเมลที่ลงทะเบียนไว้</p>
-            <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">MDID</label><input type="text" id="reset-mdid" class="w-full border rounded p-2 focus:ring"></div>
-            <div class="mb-4"><label class="block text-sm font-bold text-gray-700 mb-1">Email</label><input type="email" id="reset-email" class="w-full border rounded p-2 focus:ring"></div>
-            <div class="flex space-x-2">
-                <button onclick="app.requestResetLine()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">ส่งลิงก์</button>
-                <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
-            </div>
+        <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-sm">
+                <h3 class="text-xl font-bold text-gray-800 mb-2">รีเซ็ตบัญชี LINE</h3>
+                <p class="text-sm text-gray-500 mb-4">ระบบจะส่งลิงก์ยืนยันไปที่อีเมลที่ลงทะเบียนไว้</p>
+                <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">MDID</label><input type="text" id="reset-mdid" class="w-full border rounded p-2 focus:ring"></div>
+                <div class="mb-4"><label class="block text-sm font-bold text-gray-700 mb-1">Email</label><input type="email" id="reset-email" class="w-full border rounded p-2 focus:ring"></div>
+                <div class="flex space-x-2">
+                    <button onclick="app.requestResetLine()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">ส่งลิงก์</button>
+                    <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
+                </div>
         </div>
     </div>    
-    
+    </div> ```
 <script>
 // ==========================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxF8IMDGnOdSTQ_mOVZOJE4MmEiRQjCpBUkVKX5Ge01-2elgJnVXO2xLkAC8xrr9oSx/exec';
@@ -279,36 +279,35 @@ const formatThaiDateTime = (isoStr) => {
            ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
 };
 
+```javascript
 const app = {
-user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
+    user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
     cachedTasks: {}, 
     
-    // 🟢 เพิ่มตัวแปรเก็บ UID และ Name
+    // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-    // 🟢 เพิ่มฟังก์ชัน init สำหรับ LIFF
     init: async () => {
-        const LIFF_ID = '2010106383-UKz3SgNA'; // 🔴 อย่าลืมเปลี่ยนเป็น LIFF ID จริง
+        const LIFF_ID = '2010106383-UKz3SgNA'; // 🔴 นำรหัสจากแถบ LINE Developers มาใส่จุดนี้แทน
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) {
-                liff.login(); 
+                liff.login(); // บังคับเด้งหน้าต่างขอสิทธิ์เข้าถึงบัญชี (LINE Authorization) ทันทีในครั้งแรก
             } else {
                 const profile = await liff.getProfile();
                 app.lineUid = profile.userId;
                 app.lineName = profile.displayName;
-                console.log("✅ ดึงข้อมูล LINE UID สำเร็จ: " + app.lineUid);
+                console.log("✅ ดึงข้อมูลสำเร็จ: " + app.lineUid);
             }
-        } catch (err) { console.error("LIFF Error:", err); }
+        } catch (err) { console.error("LIFF Init Error:", err); }
     },
 
-    // 🟢 เพิ่มฟังก์ชันควบคุม Modal รีเซ็ต
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
     closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
     requestResetLine: async () => {
         const mdid = document.getElementById('reset-mdid').value.trim(); const email = document.getElementById('reset-email').value.trim();
-        if (!mdid || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรอกรหัสและอีเมล', 'warning');
-        const data = await app.api({ action: 'request_reset_line', payload: { mdid: mdid, email: email } }, 'ตรวจสอบ...');
+        if (!mdid || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรอกรหัสและอีเมลให้เรียบร้อย', 'warning');
+        const data = await app.api({ action: 'request_reset_line', payload: { mdid: mdid, email: email } }, 'กำลังตรวจสอบระบบ...');
         if (data) { app.closeResetModal(); Swal.fire('สำเร็จ', data.message, 'success'); }
     },
 
@@ -327,20 +326,26 @@ user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: n
     },
 
     login: async () => {
-        let mdidRaw = document.getElementById('mdid-input').value;
-        if (mdidRaw.length < 4 || mdidRaw.length > 10) return Swal.fire('เตือน', 'กรุณาระบุ MDID ให้ถูกต้อง (4-10 หลัก)', 'warning');
+        let mdidInput = document.getElementById('mdid-input').value;
+        if (mdidInput.length < 4 || mdidInput.length > 10) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 4-10 หลักให้ถูกต้อง', 'warning');
         
-        // แปลงตัวเลขเพื่อตัด 0 ด้านหน้าออก
-        const mdid = parseInt(mdidRaw, 10).toString();
+        // ตัดเลขศูนย์ด้านหน้าออกกรณีผู้กรอกเผลอระบุพิมพ์ติดมาด้วย
+        const cleanMdid = parseInt(mdidInput, 10).toString();
         
-        const data = await app.api({ action: 'login', payload: { mdid: mdid, lineUid: app.lineUid, lineName: app.lineName } }, 'ตรวจสอบ...');
+        const data = await app.api({ 
+            action: 'login', 
+            payload: { mdid: cleanMdid, lineUid: app.lineUid, lineName: app.lineName } 
+        }, 'ตรวจสอบข้อมูล...');
+        
         if (data) {
             if (data.requireReset) {
-                Swal.fire({ title: 'ข้อผิดพลาด', text: data.message, icon: 'error', showCancelButton: true, confirmButtonText: 'รีเซ็ต', cancelButtonText: 'ปิด' })
-                .then((r) => { if (r.isConfirmed) { app.openResetModal(); document.getElementById('reset-mdid').value = mdid; } });
+                Swal.fire({ title: 'ข้อผิดพลาด', text: data.message, icon: 'error', showCancelButton: true, confirmButtonText: 'ดำเนินการรีเซ็ต', cancelButtonText: 'ปิดหน้าต่าง' })
+                .then((r) => { if (r.isConfirmed) { app.openResetModal(); document.getElementById('reset-mdid').value = cleanMdid; } });
             } else {
                 app.user = data.user;
-                document.getElementById('display-name').innerText = app.user.name; document.getElementById('display-inst').innerText = app.user.institute; document.getElementById('display-role').innerText = app.user.role.toUpperCase();
+                document.getElementById('display-name').innerText = app.user.name;
+                document.getElementById('display-inst').innerText = app.user.institute;
+                document.getElementById('display-role').innerText = app.user.role.toUpperCase();
                 app.renderMenu(); app.showView('view-menu');
             }
         }
@@ -992,12 +997,25 @@ loadManageActivities: async () => {
     },
     checkEvalScore: () => { const s = parseInt(document.getElementById('eval-score').value), m = parseInt(app.currentEvalCriteria.minLevel);
         document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
+    
     submitEvaluation: async () => { const score = parseInt(document.getElementById('eval-score').value);
         if(!score) return Swal.fire('เตือน', 'กรุณาระบุคะแนน', 'warning'); let reasons = []; const customText = document.getElementById('eval-freetext').value.trim();
         if (score < parseInt(app.currentEvalCriteria.minLevel)) { document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); if(customText) reasons.push(`ความเห็น: ${customText}`); if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุเหตุผล', 'warning');
         } else { if(customText) reasons.push(`ความเห็น: ${customText}`); } const res = await app.api({ action: 'save_evaluation', payload: { rowId: app.currentEvalTask.rowId, score: score, reason: reasons.join(' | ') }});
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); },
 
+    // 🟢 เพิ่มตัวแปรบันทึกเป้ารหัส เพื่อดึงมาเป็นหลักใช้ยิง LINE Push Message กลับสู่แพทย์ประจำบ้าน
+        const res = await app.api({ 
+            action: 'save_evaluation', 
+            payload: { 
+                rowId: app.currentEvalTask.rowId, 
+                resident_mdid: app.currentEvalTask.resident_mdid, 
+                score: score, 
+                reason: reasons.join(' | ') 
+            }
+        });
+        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks());         
+         
     // --- Dashboard ---
 loadDashboard: async () => { 
         const res = await app.api({ action: 'get_dashboard_data', user: app.user });
@@ -1097,12 +1115,13 @@ loadDashboard: async () => {
             if(res.data.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>'; } else {
                 container.innerHTML = res.data.map(r => `<div class="border p-4 rounded-lg bg-white shadow-sm border-l-4 ${r.total < 5 ? 'border-l-red-500' : 'border-l-green-500'}"><div class="flex justify-between items-center mb-3"><span class="font-bold text-gray-800 text-base">${r.name} <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">${r.level}</span></span><span class="text-xs font-bold ${r.total < 5 ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'} px-2 py-1 rounded border">รวม ${r.total} ฉบับ</span></div><div class="grid grid-cols-4 gap-2 text-xs"><div class="bg-blue-50 p-2 rounded text-center border border-blue-100"><div class="text-blue-800 mb-1">อาจารย์</div><div class="font-bold text-lg text-blue-900">${r.counts['อาจารย์แพทย์'] || 0}</div></div><div class="bg-purple-50 p-2 rounded text-center border border-purple-100"><div class="text-purple-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">เพื่อนแพทย์</div><div class="font-bold text-lg text-purple-900">${r.counts['เพื่อนแพทย์ประจำบ้าน'] || 0}</div></div><div class="bg-pink-50 p-2 rounded text-center border border-pink-100"><div class="text-pink-800 mb-1">พยาบาล</div><div class="font-bold text-lg text-pink-900">${r.counts['พยาบาลวิชาชีพ'] || 0}</div></div><div class="bg-orange-50 p-2 rounded text-center border border-orange-100"><div class="text-orange-800 mb-1">สนับสนุน</div><div class="font-bold text-lg text-orange-900">${r.counts['เจ้าหน้าที่/สายสนับสนุน'] || 0}</div></div></div></div>`).join('');
             }
-            app.showView('view-admin-tracking');
+    app.showView('view-admin-tracking');
         }
     }
 };
-// 🟢 สั่งให้ระบบเริ่มทำงาน (init) ทันทีที่โหลดหน้าเว็บเสร็จ
-window.onload = () => app.init();    
+
+// 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
+window.onload = () => app.init();
 </script>
 </body>
 </html>
