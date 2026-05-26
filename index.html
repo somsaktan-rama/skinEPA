@@ -3,19 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.40</title>
+    <title>EPA Skin App 1.41</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        select {
-        -webkit-appearance: menulist-button !important;
-        appearance: menulist-button !important;
-        }
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap');
         body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
         .hidden { display: none !important; }
         .progress-bar-fill { transition: width 1s ease-in-out; }
+
+        /* 🟢 คลาสใหม่สำหรับไอคอนสี่เหลี่ยมขอบมน (ขนาดเล็ก) */
+        .avatar-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px; /* 👈 ปรับความมนตรงนี้ (10px กำลังสวย) */
+            object-fit: cover;
+            border: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+
+        /* 🟢 คลาสใหม่สำหรับไอคอนสี่เหลี่ยมขอบมน (ขนาดกลาง/ใหญ่) */
+        .avatar-mid {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px; /* 👈 สี่เหลี่ยมขอบมนสำหรับรูปใหญ่ */
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+            background-color: #ffffff;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -23,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.40</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.41สน</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -57,7 +73,7 @@
                 <button onclick="app.cancel360Eval()" class="text-gray-500 hover:text-gray-700 font-bold text-xl">✕</button>
             </div>
             <div class="bg-gradient-to-b from-teal-50 to-white border border-teal-200 rounded-xl p-5 mb-5 flex flex-col items-center text-center shadow-sm">
-                <img id="focus-360-pic" src="" class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md mb-3">
+                <img id="focus-360-pic" src="" class="w-28 h-28 rounded-2xl object-cover border-4 border-white shadow-md mb-3">
                 <h3 id="focus-360-name" class="text-xl font-bold text-gray-800 mb-1"></h3>
                 <p id="focus-360-level" class="text-sm text-teal-800 bg-teal-100 px-4 py-1 rounded-full font-bold shadow-sm"></p>
             </div>
@@ -288,6 +304,14 @@ const app = {
 
 init: async () => {
         const LIFF_ID = '2010106383-UKz3SgNA';
+        const mdidInput = document.getElementById('mdid-input');
+
+        // 🔴 1. ล็อกช่องกรอกรหัสไว้ก่อน เพื่อกันผู้ใช้พิมพ์แทรกระหว่างโหลดระบบ
+        if (mdidInput) {
+            mdidInput.disabled = true;
+            mdidInput.placeholder = "กำลังตรวจสอบสิทธิ์...";
+        }
+
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) {
@@ -296,22 +320,40 @@ init: async () => {
                 const profile = await liff.getProfile();
                 app.lineUid = profile.userId;
                 app.lineName = profile.displayName;
-                console.log("✅ ดึงข้อมูลสำเร็จ: " + app.lineUid);
 
-                // 🟢 ลอจิกใหม่: สั่ง Auto-login ทันที
+                // 2. ยิงไปเช็คหลังบ้าน
                 const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
+                
                 if (loginCheck && loginCheck.success) {
+                    // 🟢 ลอจิก 3: พบ LINE UID ในระบบ -> ทะลุเข้าโปรแกรมเลย
                     app.user = loginCheck.user;
                     document.getElementById('display-name').innerText = app.user.name;
                     document.getElementById('display-inst').innerText = app.user.institute;
                     document.getElementById('display-role').innerText = app.user.role.toUpperCase();
                     app.renderMenu(); 
-                    app.showView('view-menu'); // 👈 เข้าหน้าเมนูเลย
+                    app.showView('view-menu'); 
                 } else {
-                    app.showView('view-login'); // 👈 ไม่เจอสิทธิ์ ถึงจะโชว์หน้ากรอก MDID
+                    // 🟢 ลอจิก 1: ไม่พบในระบบ -> โชว์หน้า Login 
+                    app.showView('view-login');
+                    
+                    // ปลดล็อกช่องกรอกรหัสให้ผู้ใช้พิมพ์ได้ตามปกติ
+                    if (mdidInput) {
+                        mdidInput.disabled = false;
+                        mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
+                        mdidInput.value = ""; 
+                        mdidInput.focus(); // ให้เคอร์เซอร์กระพริบรอพิมพ์ทันที
+                    }
                 }
             }
-        } catch (err) { console.error("LIFF Init Error:", err); }
+        } catch (err) { 
+            console.error("LIFF Init Error:", err); 
+            // กรณีเกิด Error สัญญาณอินเทอร์เน็ต ก็ต้องปลดล็อกให้ผู้ใช้พิมพ์เข้าปกติ
+            app.showView('view-login');
+            if (mdidInput) {
+                mdidInput.disabled = false;
+                mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
+            }
+        }
     },
 
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
@@ -472,7 +514,7 @@ renderMenu: () => {
             } else { 
                 grid.innerHTML = data.residents.map(r => `
                     <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
-                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
+                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
                         <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
                         <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
                     </div>
