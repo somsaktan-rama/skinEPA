@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.41</title>
+    <title>EPA Skin App 1.42</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.41</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.42</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -370,47 +370,83 @@ init: async () => {
         document.getElementById(id).classList.remove('hidden');
     },
 
-    api: async (payload, loadingMsg = 'กำลังประมวลผล...') => {
-        Swal.fire({ title: loadingMsg, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+api: async (req, loading = null) => {
+        if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const data = await res.json(); Swal.close();
-            if(!data.success) throw new Error(data.message); return data;
-        } catch (err) { Swal.fire('ข้อผิดพลาด', err.message || 'เกิดข้อผิดพลาด', 'error'); return null; }
+            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
+            const json = await res.json();
+            if(loading) Swal.close();
+            
+            // 🟢 ปรับลอจิก: ถ้าหลังบ้านตอบล้มเหลว แต่เป็นคำสั่งตรวจสิทธิ์อัตโนมัติ (auto_login) 
+            // ให้ข้ามป๊อปอัปสีแดงตัวนี้ไป เพื่อให้ไปแสดงคำแนะนำที่ฟังก์ชัน init แทน ผู้ใช้จะได้ไม่ตกใจ
+            if(!json.success && req.action !== 'auto_login') {
+                Swal.fire('เกิดข้อผิดพลาด', json.message || 'เกิดข้อผิดพลาดในระบบ', 'error');
+            }
+            return json;
+        } catch(e) {
+            if(loading) Swal.close();
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            return null;
+        }
     },
 
-login: async () => {
-        let mdidInput = document.getElementById('mdid-input').value;
-        if (mdidInput.length < 4 || mdidInput.length > 10) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID 4-10 หลักให้ถูกต้อง', 'warning');
-        
-        const cleanMdid = parseInt(mdidInput, 10).toString();
-        
-        const res = await app.api({ 
-            action: 'login', 
-            payload: { mdid: cleanMdid, lineUid: app.lineUid, lineName: app.lineName } 
-        }, 'ตรวจสอบข้อมูล...');
-        
-        if (res) {
-            if (res.requireReset) {
-                Swal.fire({ title: 'ข้อผิดพลาด', text: res.message, icon: 'error', showCancelButton: true, confirmButtonText: 'ดำเนินการรีเซ็ต', cancelButtonText: 'ปิดหน้าต่าง' })
-                .then((r) => { if (r.isConfirmed) { app.openResetModal(); document.getElementById('reset-mdid').value = cleanMdid; } });
-            } else if (res.success) {
-                app.user = res.user;
-                document.getElementById('display-name').innerText = app.user.name;
-                document.getElementById('display-inst').innerText = app.user.institute;
-                document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-                
-                // 🟢 ลอจิกใหม่: แสดงข้อความต้อนรับอย่างเป็นมิตรเมื่อล็อกอินครั้งแรก
-                if (res.isFirstTime) {
-                    Swal.fire('สำเร็จ', res.message, 'success').then(() => {
-                        app.renderMenu(); app.showView('view-menu');
-                    });
-                } else {
-                    app.renderMenu(); app.showView('view-menu');
-                }
+    init: async () => {
+        const LIFF_ID = '2010106383-UKz3SgNA';
+        const mdidInput = document.getElementById('mdid-input');
+
+        // ล็อกช่องกรอกรหัสไว้ก่อนระหว่างตรวจสิทธิ์
+        if (mdidInput) {
+            mdidInput.disabled = true;
+            mdidInput.placeholder = "กำลังตรวจสอบสิทธิ์...";
+        }
+
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) {
+                liff.login();
             } else {
-                // 🟢 เปลี่ยนจาก Error น่ากลัวๆ เป็น Warning เบาๆ กรณีพิมพ์รหัสผิดหรือไม่พบข้อมูล
-                Swal.fire('แจ้งเตือน', res.message || 'ไม่พบข้อมูลผู้ใช้ในระบบ', 'warning');
+                const profile = await liff.getProfile();
+                app.lineUid = profile.userId;
+                app.lineName = profile.displayName;
+
+                // ยิงตรวจสอบ LINE UID หลังบ้าน
+                const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
+                
+                if (loginCheck && loginCheck.success) {
+                    // 🟢 ลอจิก 3: พบ LINE UID ตรงในระบบ -> ทะลุเข้าโปรแกรมเลย
+                    app.user = loginCheck.user;
+                    document.getElementById('display-name').innerText = app.user.name;
+                    document.getElementById('display-inst').innerText = app.user.institute;
+                    document.getElementById('display-role').innerText = app.user.role.toUpperCase();
+                    app.renderMenu(); 
+                    app.showView('view-menu'); 
+                } else {
+                    // 🟢 ลอจิก 1: บัญชีไลน์เข้ามาไม่ตรงกับ line_uid ใดๆ (เครื่องนี้ยังไม่เคยล็อกอินผูกบัญชี)
+                    app.showView('view-login');
+                    
+                    // เปลี่ยนกล่องข้อความเป็นแจ้งเตือนสีน้ำเงินแบบเป็นมิตรแทนคำว่า เกิดข้อผิดพลาด
+                    Swal.fire({
+                        title: 'คำแนะนำการใช้งาน',
+                        text: 'เครื่องนี้ยังไม่เคย login กรุณาป้อนรหัส',
+                        icon: 'info',
+                        confirmButtonText: 'ตกลง'
+                    });
+                    
+                    // ปลดล็อกช่องอินพุตให้พิมพ์รหัสแพทย์ผูกบัญชีได้ทันที
+                    if (mdidInput) {
+                        mdidInput.disabled = false;
+                        mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
+                        mdidInput.value = ""; 
+                        mdidInput.focus();
+                    }
+                }
+            }
+        } catch (err) { 
+            console.error("LIFF Init Error:", err); 
+            app.showView('view-login');
+            if (mdidInput) {
+                mdidInput.disabled = false;
+                mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
             }
         }
     },
