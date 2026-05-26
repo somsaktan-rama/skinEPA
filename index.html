@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.42</title>
+    <title>EPA Skin App 1.43</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.42</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.43</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -356,6 +356,73 @@ init: async () => {
         }
     },
 
+login: async () => {
+        try {
+            let mdidInput = document.getElementById('mdid-input').value;
+            
+            // 1. ดักจับกรณีไม่ได้กรอกรหัส หรือกรอกสั้นเกินไป
+            if (!mdidInput || mdidInput.trim() === '' || mdidInput.length < 4) {
+                return Swal.fire('แจ้งเตือน', 'กรุณาระบุรหัส MDID ให้ถูกต้อง (4 หลักขึ้นไป)', 'warning');
+            }
+            
+            // 2. แปลงเป็นข้อความที่ปลอดภัย (ลบช่องว่าง)
+            const cleanMdid = parseInt(mdidInput, 10).toString();
+            if (cleanMdid === "NaN") {
+                return Swal.fire('ข้อผิดพลาด', 'กรุณากรอกเฉพาะตัวเลขเท่านั้นครับ', 'error');
+            }
+            
+            // 3. ยิงไปตรวจสอบและผูกบัญชีกับหลังบ้าน
+            const res = await app.api({ 
+                action: 'login', 
+                payload: { 
+                    mdid: cleanMdid, 
+                    lineUid: app.lineUid || "", // ส่ง LINE UID เพื่อไปผูกบัญชีด้วย
+                    lineName: app.lineName || "" 
+                } 
+            }, 'กำลังเข้าสู่ระบบและผูกบัญชี...');
+            
+            // 4. จัดการผลลัพธ์
+            if (res) {
+                if (res.requireReset) {
+                    Swal.fire({ 
+                        title: 'ผูกบัญชีซ้ำ', 
+                        text: res.message, 
+                        icon: 'error', 
+                        showCancelButton: true, 
+                        confirmButtonText: 'ดำเนินการรีเซ็ต', 
+                        cancelButtonText: 'ปิดหน้าต่าง' 
+                    }).then((r) => { 
+                        if (r.isConfirmed) { 
+                            app.openResetModal(); 
+                            document.getElementById('reset-mdid').value = mdidInput; 
+                        } 
+                    });
+                } else if (res.success) {
+                    // ล็อกอินผ่าน! บันทึกข้อมูลลงแอป
+                    app.user = res.user;
+                    document.getElementById('display-name').innerText = app.user.name || "-";
+                    document.getElementById('display-inst').innerText = app.user.institute || "-";
+                    document.getElementById('display-role').innerText = app.user.role ? app.user.role.toUpperCase() : "-";
+                    
+                    if (res.isFirstTime) {
+                        Swal.fire('สำเร็จ', res.message, 'success').then(() => {
+                            app.renderMenu(); 
+                            app.showView('view-menu');
+                        });
+                    } else {
+                        app.renderMenu(); 
+                        app.showView('view-menu');
+                    }
+                } else {
+                    Swal.fire('แจ้งเตือน', res.message || 'รหัสไม่ถูกต้อง หรือไม่พบข้อมูลในระบบ', 'warning');
+                }
+            }
+        } catch (err) {
+            console.error("Login Error:", err);
+            Swal.fire('ข้อผิดพลาดระบบ', 'การเข้าสู่ระบบล้มเหลว: ' + err.message, 'error');
+        }
+    },
+    
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
     closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
     requestResetLine: async () => {
