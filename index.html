@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.47BGeo</title>
+    <title>EPA Skin App 1.48</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -143,7 +143,7 @@
                 
 <div class="bg-gray-50 p-3 rounded border">
     <label class="block font-bold mb-2 text-teal-900">1. การทำงานเป็นทีม (Teamwork)</label>
-    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm">
+    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" onchange="app.check360CommentLength()">
         <option value="5">5 = ดีเยี่ยม</option>
         <option value="4">4 = ดีมาก</option>
         <option value="3" selected>3 = มาตรฐาน</option>
@@ -153,7 +153,7 @@
 </div>
 <div class="bg-gray-50 p-3 rounded border">
     <label class="block font-bold mb-2 text-teal-900">2. การสื่อสาร (Communication)</label>
-    <select id="score-communication" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm">
+    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" onchange="app.check360CommentLength()">
         <option value="5">5 = ดีเยี่ยม</option>
         <option value="4">4 = ดีมาก</option>
         <option value="3" selected>3 = มาตรฐาน</option>
@@ -163,7 +163,7 @@
 </div>
 <div class="bg-gray-50 p-3 rounded border">
     <label class="block font-bold mb-2 text-teal-900">3. ความรับผิดชอบ (Punctuality)</label>
-    <select id="score-punctuality" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm">
+    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" onchange="app.check360CommentLength()">
         <option value="5">5 = ดีเยี่ยม</option>
         <option value="4">4 = ดีมาก</option>
         <option value="3" selected>3 = มาตรฐาน</option>
@@ -171,10 +171,25 @@
         <option value="1">1 = ต้องปรับปรุง</option>
     </select>
 </div>
-                <div class="bg-gray-50 p-3 rounded border"><label class="block font-bold mb-2 text-teal-900">ข้อคิดเห็น / คำแนะนำเพิ่มเติม</label><textarea id="txt-360-comment" rows="3" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" placeholder="ระบุสิ่งที่ทำได้ดี หรือสิ่งที่ควรปรับปรุง..."></textarea></div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-4">
+    <label class="block font-bold mb-2 text-teal-900">ข้อเสนอแนะเพิ่มเติม / จุดเด่น / จุดที่ควรพัฒนา</label>
+    
+    <p id="comment-helper" class="text-xs text-gray-500 mb-2 transition-colors duration-300">
+        * ระดับมาตรฐาน: กรุณาระบุข้อเสนอแนะขั้นต่ำ <span class="font-bold text-teal-600">5 ตัวอักษร</span>
+    </p>
+
+    <textarea id="feedback-comment" rows="4" 
+              class="w-full border-gray-300 rounded p-3 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 transition" 
+              placeholder="พิมพ์ข้อเสนอแนะเพื่อการพัฒนาที่นี่..."
+              oninput="app.check360CommentLength()"></textarea>
+    
+    <div class="text-right mt-1">
+        <span id="char-count" class="text-xs font-bold text-red-500">0 / 5</span>
+    </div>
+</div>
                 
                 <div class="flex flex-col space-y-3 pt-4 pb-6">
-                    <button onclick="app.save360Eval()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
+                    <button onclick="app.save360Evaluation()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
                     <div class="flex space-x-2">
                         <button onclick="app.cancel360Eval(false)" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-bold transition">ถอยกลับ</button>
                         <button onclick="app.cancel360Eval(true)" class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-bold transition border border-red-200">ไม่รู้จัก (N/A)</button>
@@ -384,12 +399,31 @@
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyNAgIIbUnG2NAD05eIsXQY25ChVOCx8lZ9snPT18NvAnvB6Nltj80czLvegG9-gQ0S/exec';
 // ==========================================
 
-const formatThaiDateTime = (isoStr) => {
-    if(!isoStr) return ''; const d = new Date(isoStr);
-    if(isNaN(d.getTime())) return isoStr;
-    return ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + (d.getFullYear()+543) + ' ' + 
-           ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
-};
+// 🟢 ฟังก์ชันแปลงวันที่ (แก้ไขบั๊ก iOS Safari ทะลุปรุโปร่ง)
+function formatThaiDateTime(dateStr) {
+    if (!dateStr) return ''; 
+    
+    // แปลงรูปแบบให้ iOS รู้จัก (แก้ปัญหา Invalid Date และหน้าจอขาวบน iPhone)
+    let safeStr = typeof dateStr === 'string' ? dateStr.replace(/-/g, '/').replace('T', ' ') : dateStr;
+    const d = new Date(safeStr);
+    
+    if (isNaN(d.getTime())) return dateStr;
+    
+    // คืนค่ารูปแบบเดิม (DD-MM-YYYY HH:mm:ss) ตามดีไซน์เดิมของคุณหมอ
+    return ('0' + d.getDate()).slice(-2) + '-' + 
+           ('0' + (d.getMonth() + 1)).slice(-2) + '-' + 
+           (d.getFullYear() + 543) + ' ' + 
+           ('0' + d.getHours()).slice(-2) + ':' + 
+           ('0' + d.getMinutes()).slice(-2) + ':' + 
+           ('0' + d.getSeconds()).slice(-2);
+}
+
+// 🟢 เพิ่มฟังก์ชันนี้ต่อท้ายไว้ใช้เทียบเวลา (เพื่อแก้ปัญหาปุ่ม "แก้ไขกิจกรรม" หายบนมือถือ)
+function safeDateIOS(dateStr) {
+    if (!dateStr) return new Date();
+    let safeStr = typeof dateStr === 'string' ? dateStr.replace(/-/g, '/').replace('T', ' ') : dateStr;
+    return new Date(safeStr);
+}
 
 const app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
@@ -519,7 +553,6 @@ login: async () => {
         }
     },
 
-    // 🟢 ฟังก์ชันกลางสำหรับขอพิกัด GPS (Promise based)
 // 🟢 ฟังก์ชันดึงพิกัดสำหรับ iOS + LINE WebView
     getCurrentLocation: () => {
         return new Promise((resolve) => {
@@ -556,6 +589,7 @@ login: async () => {
 
    // 🟢 ฟังก์ชันส่งสร้างกิจกรรมใหม่
     handleCreateActivity: async () => {
+        // ดึงค่าจากฟอร์ม...
         const actId = document.getElementById('select-act-id').value;
         const topic = document.getElementById('input-topic').value.trim();
         const begin = document.getElementById('input-begin').value;
@@ -566,21 +600,17 @@ login: async () => {
             return Swal.fire('เตือน', 'กรุณากรอกข้อมูลให้ครบถ้วนครับ', 'warning');
         }
 
-        // เรียกขอพิกัด GPS อาจารย์แบบ Asynchronous (รอจนกว่าจะได้พิกัดหรือหลุด Timeout)
-        const latLongStr = await app.getCurrentLocation(); 
+        // 🟢 ดึง GPS ที่เก็บไว้ตอนล็อกอินมาใช้ทันที
+        const latLongStr = app.userLocation || ""; 
 
         const res = await app.api({
             action: 'create_activity',
             payload: { 
-                act_id: actId, 
-                topic: topic, 
-                act_begin: begin, 
-                duration_mins: mins, 
-                instructor_mdid: instructor,
-                user: app.user,
-                lat_long: latLongStr // ส่งพิกัดที่ดึงได้ไปบันทึกคอลัมน์ J
+                act_id: actId, topic: topic, act_begin: begin, duration_mins: mins, 
+                instructor_mdid: instructor, user: app.user,
+                lat_long: latLongStr // ส่งพิกัดไปเลย
             }
-        }, 'กำลังเปิดกิจกรรมและบันทึกพิกัด...');
+        }, 'กำลังเปิดกิจกรรม...');
 
         if (res && res.success) {
             Swal.fire('สำเร็จ', 'เปิดกิจกรรมเรียบร้อยแล้ว', 'success').then(() => app.loadManageActivities());
@@ -837,16 +867,72 @@ api: async (req, loading = null) => {
                      </div>`;
         }
 
-        // นำปุ่มทั้งหมดไปแสดงผลในหน้าจอ
+// นำปุ่มทั้งหมดไปแสดงผลในหน้าจอ
         menuArea.innerHTML = html;
         
-        // (ฟังก์ชันเสริมของเก่า) โหลดตัวเลขค้างประเมิน EPA สำหรับ Instructor
-        if (isInstructor && typeof app.loadInstructorTasks === 'function') {
+        // ❌ ลบหรือคอมเมนต์ app.loadInstructorTasks() ทิ้งไปเลยครับ เพื่อไม่ให้มันเด้งสลับหน้าจอเอง
+        /* if (isInstructor && typeof app.loadInstructorTasks === 'function') {
             app.loadInstructorTasks(); 
+        }
+        */
+
+        // 🟢 ดึงพิกัด GPS แค่ครั้งเดียวตอนล็อกอินสำเร็จ (ขอพิกัดแบบ Background)
+        if (!app.userLocation) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => { 
+                        app.userLocation = `${pos.coords.latitude},${pos.coords.longitude}`; 
+                        console.log("GPS Cached:", app.userLocation);
+                    },
+                    (err) => { console.warn("GPS Background Error:", err.message); },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
         }
     },
 
+   // 🟢 ตรวจสอบและอัปเดตเกณฑ์ความยาวตัวอักษรแบบเรียลไทม์
+    check360CommentLength: () => {
+        const tw = parseInt(document.getElementById('score-teamwork').value) || 3;
+        const comm = parseInt(document.getElementById('score-communication').value) || 3;
+        const punc = parseInt(document.getElementById('score-punctuality').value) || 3;
+        const commentEl = document.getElementById('feedback-comment');
+        if (!commentEl) return { current: 0, required: 5 };
+        
+        const comment = commentEl.value.trim();
 
+        let reqLength = 5;
+        let reasonText = "ระดับมาตรฐาน (3)";
+
+        // เช็คว่ามีคะแนนสุดโต่งหรือไม่ (ยึดเกณฑ์สูงสุดเป็นหลัก)
+        if (tw === 1 || tw === 5 || comm === 1 || comm === 5 || punc === 1 || punc === 5) {
+            reqLength = 100;
+            reasonText = "ดีเยี่ยม (5) หรือ ต้องปรับปรุง (1)";
+        } else if (tw === 2 || tw === 4 || comm === 2 || comm === 4 || punc === 2 || punc === 4) {
+            reqLength = 30;
+            reasonText = "ดีมาก (4) หรือ พอใช้ (2)";
+        }
+
+        // อัปเดต UI ข้อความแจ้งเตือน
+        const helperEl = document.getElementById('comment-helper');
+        if (helperEl) {
+            helperEl.innerHTML = `* เนื่องจากมีการให้คะแนน${reasonText} กรุณาระบุข้อเสนอแนะขั้นต่ำ <span class="font-bold text-red-600">${reqLength} ตัวอักษร</span>`;
+        }
+
+        // อัปเดต UI ตัวนับคำ
+        const countEl = document.getElementById('char-count');
+        if (countEl) {
+            countEl.innerText = `${comment.length} / ${reqLength}`;
+            if (comment.length >= reqLength) {
+                countEl.className = "text-xs font-bold text-emerald-600"; // ผ่านเกณฑ์
+            } else {
+                countEl.className = "text-xs font-bold text-red-500"; // ยังไม่ผ่านเกณฑ์
+            }
+        }
+
+        return { current: comment.length, required: reqLength };
+    }, 
+    
     // --- Activity Flow ---
      loadStaffCreateActivity: async () => { 
         const data = await app.api({ action: 'get_activity_form_data', user: app.user });
@@ -910,20 +996,34 @@ api: async (req, loading = null) => {
         app.showView('view-360-grid');
     },
 
-    save360Eval: async () => { 
-        const resMdid = document.getElementById('sel-360-resident').value;
-        const comment = document.getElementById('txt-360-comment').value.trim(); 
+save360Evaluation: async () => {
+        // 1. ตรวจสอบความยาวตัวอักษรก่อนบันทึก
+        const lengthStatus = app.check360CommentLength();
+        if (lengthStatus.current < lengthStatus.required) {
+            return Swal.fire({
+                title: 'ข้อเสนอแนะสั้นเกินไป',
+                html: `ระบบต้องการข้อเสนอแนะอย่างน้อย <b>${lengthStatus.required}</b> ตัวอักษร<br><span class="text-sm text-gray-500">(ปัจจุบันพิมพ์มาเพียง ${lengthStatus.current} ตัวอักษร)</span>`,
+                icon: 'warning',
+                confirmButtonColor: '#0d9488',
+                confirmButtonText: 'กลับไปแก้ไข'
+            });
+        }
+
+        // 2. ดึงข้อมูลเตรียมส่งหลังบ้าน (ให้เช็คว่าใช้ id="feedback-comment" ครับ)
+        const payload = {
+            resident_mdid: app.current360Resident,
+            user: app.user,
+            score_teamwork: document.getElementById('score-teamwork').value,
+            score_communication: document.getElementById('score-communication').value,
+            score_punctuality: document.getElementById('score-punctuality').value,
+            feedback_comment: document.getElementById('feedback-comment').value // 👈 ตรงนี้ครับ
+        };
+
+        const res = await app.api({ action: 'save_360_evaluation', payload: payload }, 'กำลังส่งแบบประเมิน...');
         
-        if(!resMdid) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสแพทย์เป้าหมาย', 'error'); 
-        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำเชิงสร้างสรรค์', 'warning');
-        const res = await app.api({ 
-            action: 'save_360_evaluation', 
-            payload: { 
-                user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, 
-                score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment 
-            } 
-        });
-        if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
+        if (res && res.success) {
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
+        }
     },
 
     loadMy360Feedback: async () => { 
@@ -1343,18 +1443,17 @@ loadCheckin: async () => {
 
     
     joinActivity: async (actRefId) => {
-        // เรียกดึงพิกัดจากมือถือ Resident
-        const rLatLong = await app.getCurrentLocation();
+        // 🟢 ดึง GPS ที่เก็บไว้ตอนล็อกอินมาใช้ทันที
+        const rLatLong = app.userLocation || ""; 
         
         if (!rLatLong) {
-            // หากดึงพิกัดไม่ได้และผู้ใช้กดยกเลิกสิทธิ์ จะไม่ส่งข้อมูลเพื่อป้องกันการบันทึกแถวเปล่า
-            return; 
+            return Swal.fire('ไม่พบพิกัด', 'ระบบไม่สามารถระบุตำแหน่งของคุณได้ตอนล็อกอิน กรุณาอนุญาตสิทธิ์ GPS แล้วรีเฟรชหน้าเว็บใหม่ครับ', 'warning');
         }
         
         const res = await app.api({
             action: 'join_activity',
             payload: { act_ref_id: actRefId, user: app.user, lat_long: rLatLong }
-        }, 'กำลังตรวจสอบพิกัดและเช็คoin...');
+        }, 'กำลังบันทึกการเข้าร่วม...');
         
         if (res && res.success) {
             Swal.fire('ผลการเช็คอิน', res.message, 'info').then(() => app.loadOpenCheckins());
