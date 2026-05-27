@@ -1485,42 +1485,55 @@ app.showView('view-admin-tracking');
     // ==========================================
     // 🔧 JS Logic สำหรับ Superstaff
     // ==========================================
-    fetchSuperUser: async () => {
-        const mdid = document.getElementById('super-search-input').value.trim();
-        if (!mdid) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID', 'warning');
+fetchSuperUserWithValidation: async () => {
+        const mdidInput = document.getElementById('super-search-input').value.trim();
         
-        const res = await app.api({ action: 'search_staff_full', payload: { mdid: mdid } }, 'กำลังดึงข้อมูล...');
-        if (res && res.success) {
-            const d = res.data;
-            app.currentSuperEditMdid = d.mdid; // จำคีย์ตั้งต้นไว้
-            
-            document.getElementById('super-pic').src = res.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=random`;
-            document.getElementById('super-lastlogin').innerText = d.lastlogin;
-            
-            document.getElementById('edit-mdid').value = d.mdid;
-            document.getElementById('edit-name').value = d.name;
-            document.getElementById('edit-institute').value = d.institute;
-            document.getElementById('edit-role').value = d.role;
-            document.getElementById('edit-r2').value = d.r2;
-            document.getElementById('edit-r3').value = d.r3;
-            document.getElementById('edit-r4').value = d.r4;
-            document.getElementById('edit-admyear').value = d.admission_year;
-            document.getElementById('edit-status').value = d.status;
-            document.getElementById('edit-lineuid').value = d.line_uid;
-            document.getElementById('edit-linename').value = d.line_displayname;
-            document.getElementById('edit-email').value = d.email;
-            document.getElementById('edit-mobile').value = d.mobile;
-            document.getElementById('edit-advisor').value = d.advisor_mdid;
-            document.getElementById('edit-evaltarget').value = d.eval_target;
-            document.getElementById('edit-viewtarget').value = d.view_target;
-
-            document.getElementById('super-search-box').classList.add('hidden');
-            document.getElementById('super-edit-form').classList.remove('hidden');
+        // 🚨 ดักจับความยาวตัวเลข 4-10 หลัก
+        if (!mdidInput) {
+            return Swal.fire('แจ้งเตือน', 'กรุณาระบุรหัส MDID', 'warning');
+        }
+        if (mdidInput.length < 4 || mdidInput.length > 10) {
+            return Swal.fire('ข้อมูลไม่ถูกต้อง', 'รหัส MDID ต้องมีความยาวระหว่าง 4 ถึง 10 หลักครับ<br>(คุณกรอกมา: ' + mdidInput.length + ' หลัก)', 'warning');
+        }
+        
+        // หากผ่านเงื่อนไข ให้เรียกฟังก์ชันดึงข้อมูลเดิมที่คุณหมอตั้งค่าไว้ได้เลยครับ
+        if (typeof app.fetchSuperUser === 'function') {
+            // ส่งค่าไปรันต่อที่ฟังก์ชันเดิม
+            app.fetchSuperUser(); 
         } else {
-            Swal.fire('ไม่พบข้อมูล', 'ไม่มี MDID นี้ในระบบ', 'error');
+            // กรณีรันตรงโดยไม่มีฟังก์ชันแยก
+            const res = await app.api({ action: 'search_staff_full', payload: { mdid: mdidInput } }, 'กำลังดึงข้อมูล...');
+            if (res && res.success) {
+                const d = res.data;
+                app.currentSuperEditMdid = d.mdid;
+                
+                document.getElementById('super-pic').src = res.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=random`;
+                document.getElementById('super-lastlogin').innerText = d.lastlogin;
+                
+                document.getElementById('edit-mdid').value = d.mdid;
+                document.getElementById('edit-name').value = d.name;
+                document.getElementById('edit-institute').value = d.institute;
+                document.getElementById('edit-role').value = d.role;
+                document.getElementById('edit-r2').value = d.r2;
+                document.getElementById('edit-r3').value = d.r3;
+                document.getElementById('edit-r4').value = d.r4;
+                document.getElementById('edit-admyear').value = d.admission_year;
+                document.getElementById('edit-status').value = d.status;
+                document.getElementById('edit-lineuid').value = d.line_uid;
+                document.getElementById('edit-linename').value = d.line_displayname;
+                document.getElementById('edit-email').value = d.email;
+                document.getElementById('edit-mobile').value = d.mobile;
+                document.getElementById('edit-advisor').value = d.advisor_mdid;
+                document.getElementById('edit-evaltarget').value = d.eval_target;
+                document.getElementById('edit-viewtarget').value = d.view_target;
+
+                document.getElementById('super-search-box').classList.add('hidden');
+                document.getElementById('super-edit-form').classList.remove('hidden');
+            } else {
+                Swal.fire('ไม่พบข้อมูล', 'ไม่มี MDID นี้ในระบบ', 'error');
+            }
         }
     },
-
     saveSuperUser: async () => {
         const newData = {
             mdid: document.getElementById('edit-mdid').value,
