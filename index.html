@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.47Geo</title>
+    <title>EPA Skin App 1.47BGeo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.47Geo</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.47BGeo</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -520,19 +520,73 @@ login: async () => {
     },
 
     // 🟢 ฟังก์ชันกลางสำหรับขอพิกัด GPS (Promise based)
+// 🟢 ฟังก์ชันดึงพิกัดสำหรับ iOS + LINE WebView
     getCurrentLocation: () => {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             if (!navigator.geolocation) {
-                return reject(new Error("อุปกรณ์ไม่รองรับการระบุพิกัด GPS"));
+                Swal.fire('GPS Error', 'อุปกรณ์นี้ไม่รองรับระบบพิกัดระบุตำแหน่ง', 'error');
+                resolve("");
+                return;
             }
+            
             navigator.geolocation.getCurrentPosition(
-                (pos) => resolve(`${pos.coords.latitude},${pos.coords.longitude}`),
-                (err) => reject(err),
-                { enableHighAccuracy: true, timeout: 7000 }
+                (pos) => {
+                    // ดึงพิกัดสำเร็จ
+                    resolve(`${pos.coords.latitude},${pos.coords.longitude}`);
+                },
+                (err) => {
+                    // ดักจับและแจ้ง Error บนหน้าจอ iPhone ทันทีเพื่อความง่ายในการตรวจสอบ
+                    let msg = "ไม่สามารถเข้าถึงพิกัดได้";
+                    if (err.code === 1) msg = "กรุณาอนุญาตสิทธิ์ให้แอปเข้าถึงตำแหน่ง (Permission Denied)";
+                    if (err.code === 2) msg = "ไม่สามารถระบุตำแหน่งพิกัดในจุดนี้ได้ (Position Unavailable)";
+                    if (err.code === 3) msg = "สัญญาณ GPS หมดเวลาดึงข้อมูล (Timeout)";
+                    
+                    console.error("GPS Error:", err.code, err.message);
+                    Swal.fire('ตั้งค่า GPS บน iPhone', msg + '<br><br>แนะนำให้เปิดผ่าน LINE LIFF เต็มหน้าจอ หรือเบราว์เซอร์มาตรฐานของเครื่องครับ', 'warning');
+                    resolve("");
+                },
+                { 
+                    enableHighAccuracy: true, // บังคับใช้ GPS ความแม่นยำสูง
+                    timeout: 10000,           // เพิ่มเวลาให้ iPhone ค้นหาสัญญาณดาวเทียม (10 วินาที)
+                    maximumAge: 0             // ไม่ใช้พิกัดเก่าที่ค้างในแคช
+                }
             );
         });
     },
 
+   // 🟢 ฟังก์ชันส่งสร้างกิจกรรมใหม่
+    handleCreateActivity: async () => {
+        const actId = document.getElementById('select-act-id').value;
+        const topic = document.getElementById('input-topic').value.trim();
+        const begin = document.getElementById('input-begin').value;
+        const mins = document.getElementById('input-duration').value;
+        const instructor = document.getElementById('select-instructor').value;
+
+        if(!actId || !topic || !begin || !mins) {
+            return Swal.fire('เตือน', 'กรุณากรอกข้อมูลให้ครบถ้วนครับ', 'warning');
+        }
+
+        // เรียกขอพิกัด GPS อาจารย์แบบ Asynchronous (รอจนกว่าจะได้พิกัดหรือหลุด Timeout)
+        const latLongStr = await app.getCurrentLocation(); 
+
+        const res = await app.api({
+            action: 'create_activity',
+            payload: { 
+                act_id: actId, 
+                topic: topic, 
+                act_begin: begin, 
+                duration_mins: mins, 
+                instructor_mdid: instructor,
+                user: app.user,
+                lat_long: latLongStr // ส่งพิกัดที่ดึงได้ไปบันทึกคอลัมน์ J
+            }
+        }, 'กำลังเปิดกิจกรรมและบันทึกพิกัด...');
+
+        if (res && res.success) {
+            Swal.fire('สำเร็จ', 'เปิดกิจกรรมเรียบร้อยแล้ว', 'success').then(() => app.loadManageActivities());
+        }
+    },
+    
     updateActivityLocation: async () => {
         try {
             // ดึงพิกัดจากเครื่องอาจารย์
@@ -1288,16 +1342,22 @@ loadCheckin: async () => {
     },
 
     
-    joinActivity: async (actRefId) => { const res = await app.api({ action: 'join_activity', payload: { user: app.user, act_ref_id: actRefId }});
-        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin()); },
-loadManageActivities: async () => {
-        const data = await app.api({ action: 'get_manage_activities', user: app.user });
-        if(data) {
-            const list = document.getElementById('manage-act-list');
-            if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
-            // 🟢 เพิ่มการส่งตัวแปร a.act_begin เข้าไปในฟังก์ชันคลิก viewAttendees
-            else list.innerHTML = data.activities.map(a => `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_begin}', '${a.act_finish}')"><div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div><div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div><div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div><div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div><div class="text-xs mt-1 font-semibold text-green-700">สถานะ: ${a.status}</div><div class="text-xs text-gray-700 mt-2 font-bold bg-gray-100 p-2 rounded text-center">👥 จำนวนผู้เข้าร่วม: แพทย์ ${a.resident_count} | อาจารย์ ${a.instructor_count}</div></div>`).join('');
-            app.showView('view-manage-activities');
+    joinActivity: async (actRefId) => {
+        // เรียกดึงพิกัดจากมือถือ Resident
+        const rLatLong = await app.getCurrentLocation();
+        
+        if (!rLatLong) {
+            // หากดึงพิกัดไม่ได้และผู้ใช้กดยกเลิกสิทธิ์ จะไม่ส่งข้อมูลเพื่อป้องกันการบันทึกแถวเปล่า
+            return; 
+        }
+        
+        const res = await app.api({
+            action: 'join_activity',
+            payload: { act_ref_id: actRefId, user: app.user, lat_long: rLatLong }
+        }, 'กำลังตรวจสอบพิกัดและเช็คoin...');
+        
+        if (res && res.success) {
+            Swal.fire('ผลการเช็คอิน', res.message, 'info').then(() => app.loadOpenCheckins());
         }
     },
 
