@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.49A</title>
+    <title>EPA Skin App 1.46</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.49A</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.46</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -55,19 +55,10 @@
         <button onclick="app.showView('view-menu')" class="text-gray-500 font-bold bg-gray-100 px-3 py-1 rounded">ออก</button>
     </div>
 
-<div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
-        <label class="block text-xs font-bold text-gray-500 mb-2">ระบุ MDID เพื่อดึงข้อมูล (4-10 หลัก)</label>
-        
-        <input type="text" 
-               id="super-search-input" 
-               inputmode="numeric" 
-               pattern="[0-8]*"
-               maxlength="10"
-               oninput="this.value = this.value.replace(/[^0-9]/g, '');"
-               class="w-full p-3 border rounded-lg mb-3 font-mono tracking-wider text-lg" 
-               placeholder="กรอกรหัสตัวเลข ว./เบอร์ เท่านั้น">
-               
-        <button onclick="app.fetchSuperUserWithValidation()" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-bold shadow-sm">ดึงข้อมูล</button>
+    <div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
+        <label class="block text-xs font-bold text-gray-500 mb-2">ระบุ MDID เพื่อดึงข้อมูล</label>
+        <input type="number" id="super-search-input" class="w-full p-3 border rounded-lg mb-3" placeholder="MDID">
+        <button onclick="app.fetchSuperUser()" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-bold">ดึงข้อมูล</button>
     </div>
 
     <div id="super-edit-form" class="hidden space-y-4">
@@ -143,7 +134,7 @@
                 
 <div class="bg-gray-50 p-3 rounded border">
     <label class="block font-bold mb-2 text-teal-900">1. การทำงานเป็นทีม (Teamwork)</label>
-    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" onchange="app.check360CommentLength()">
+    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm">
         <option value="5">5 = ดีเยี่ยม</option>
         <option value="4">4 = ดีมาก</option>
         <option value="3" selected>3 = มาตรฐาน</option>
@@ -153,7 +144,7 @@
 </div>
 <div class="bg-gray-50 p-3 rounded border">
     <label class="block font-bold mb-2 text-teal-900">2. การสื่อสาร (Communication)</label>
-    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" onchange="app.check360CommentLength()">
+    <select id="score-communication" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm">
         <option value="5">5 = ดีเยี่ยม</option>
         <option value="4">4 = ดีมาก</option>
         <option value="3" selected>3 = มาตรฐาน</option>
@@ -163,7 +154,7 @@
 </div>
 <div class="bg-gray-50 p-3 rounded border">
     <label class="block font-bold mb-2 text-teal-900">3. ความรับผิดชอบ (Punctuality)</label>
-    <select id="score-teamwork" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" onchange="app.check360CommentLength()">
+    <select id="score-punctuality" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm">
         <option value="5">5 = ดีเยี่ยม</option>
         <option value="4">4 = ดีมาก</option>
         <option value="3" selected>3 = มาตรฐาน</option>
@@ -171,25 +162,10 @@
         <option value="1">1 = ต้องปรับปรุง</option>
     </select>
 </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mt-4">
-    <label class="block font-bold mb-2 text-teal-900">ข้อเสนอแนะเพิ่มเติม / จุดเด่น / จุดที่ควรพัฒนา</label>
-    
-    <p id="comment-helper" class="text-xs text-gray-500 mb-2 transition-colors duration-300">
-        * ระดับมาตรฐาน: กรุณาระบุข้อเสนอแนะขั้นต่ำ <span class="font-bold text-teal-600">5 ตัวอักษร</span>
-    </p>
-
-    <textarea id="feedback-comment" rows="4" 
-              class="w-full border-gray-300 rounded p-3 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500 transition" 
-              placeholder="พิมพ์ข้อเสนอแนะเพื่อการพัฒนาที่นี่..."
-              oninput="app.check360CommentLength()"></textarea>
-    
-    <div class="text-right mt-1">
-        <span id="char-count" class="text-xs font-bold text-red-500">0 / 5</span>
-    </div>
-</div>
+                <div class="bg-gray-50 p-3 rounded border"><label class="block font-bold mb-2 text-teal-900">ข้อคิดเห็น / คำแนะนำเพิ่มเติม</label><textarea id="txt-360-comment" rows="3" class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" placeholder="ระบุสิ่งที่ทำได้ดี หรือสิ่งที่ควรปรับปรุง..."></textarea></div>
                 
                 <div class="flex flex-col space-y-3 pt-4 pb-6">
-                    <button onclick="app.save360Evaluation()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
+                    <button onclick="app.save360Eval()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
                     <div class="flex space-x-2">
                         <button onclick="app.cancel360Eval(false)" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-bold transition">ถอยกลับ</button>
                         <button onclick="app.cancel360Eval(true)" class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-bold transition border border-red-200">ไม่รู้จัก (N/A)</button>
@@ -304,30 +280,12 @@
             </div>
         </div>
 
-<div id="view-manage-activities" class="hidden">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-bold text-amber-800 flex items-center">
-                <span class="text-3xl mr-2">⚙️</span> จัดการกิจกรรม
-            </h2>
+        <div id="view-manage-activities" class="hidden">
+            <h2 class="text-xl font-bold mb-4 text-red-700">⚙️ จัดการกิจกรรมที่เปิดอยู่</h2>
+            <div id="manage-act-list" class="space-y-3 mb-4 max-h-[65vh] overflow-y-auto pr-1"></div>
+            <button onclick="app.showView('view-menu')" class="w-full bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
-        <p class="text-sm text-gray-500 mb-4">คลิกที่กิจกรรมเพื่อตรวจสอบรายชื่อผู้เข้าร่วม บันทึกพิกัด หรือปิดกิจกรรม</p>
 
-        <div id="manage-activities-container"></div>
-
-        <button onclick="app.showView('view-menu')" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-xl mt-6 shadow-sm transition">
-            กลับหน้าเมนูหลัก
-        </button>
-    </div>
-
-        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 mb-4">
-    <label class="block text-sm font-bold text-blue-800 mb-2">📍 ตำแหน่งการจัดกิจกรรม (Geofencing)</label>
-    <div id="display-act-latlong" class="text-xs text-gray-500 mb-2 font-mono">พิกัดปัจจุบัน: ไม่ระบุ</div>
-    <button onclick="app.updateActivityLocation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-sm flex items-center justify-center">
-        <i class="fa-solid fa-location-dot mr-2"></i> บันทึกพิกัดตำแหน่งปัจจุบันของฉัน
-    </button>
-    <p class="text-[10px] text-blue-600 mt-2 text-center">* อาจารย์ควรบันทึกพิกัด ณ จุดที่สอนจริงเพื่อให้ระบบคำนวณระยะห่าง Resident ได้แม่นยำ</p>
-        </div>
-        
         <div id="view-activity-attendees" class="hidden">
             <h2 class="text-lg font-bold mb-2 text-gray-800">รายชื่อผู้เข้าร่วม</h2>
             <p id="attendee-topic" class="text-sm text-blue-700 font-semibold mb-2"></p><p id="attendee-time-info" class="text-xs text-red-600 font-semibold mb-4"></p>
@@ -408,31 +366,12 @@
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyNAgIIbUnG2NAD05eIsXQY25ChVOCx8lZ9snPT18NvAnvB6Nltj80czLvegG9-gQ0S/exec';
 // ==========================================
 
-// 🟢 ฟังก์ชันแปลงวันที่ (แก้ไขบั๊ก iOS Safari ทะลุปรุโปร่ง)
-function formatThaiDateTime(dateStr) {
-    if (!dateStr) return ''; 
-    
-    // แปลงรูปแบบให้ iOS รู้จัก (แก้ปัญหา Invalid Date และหน้าจอขาวบน iPhone)
-    let safeStr = typeof dateStr === 'string' ? dateStr.replace(/-/g, '/').replace('T', ' ') : dateStr;
-    const d = new Date(safeStr);
-    
-    if (isNaN(d.getTime())) return dateStr;
-    
-    // คืนค่ารูปแบบเดิม (DD-MM-YYYY HH:mm:ss) ตามดีไซน์เดิมของคุณหมอ
-    return ('0' + d.getDate()).slice(-2) + '-' + 
-           ('0' + (d.getMonth() + 1)).slice(-2) + '-' + 
-           (d.getFullYear() + 543) + ' ' + 
-           ('0' + d.getHours()).slice(-2) + ':' + 
-           ('0' + d.getMinutes()).slice(-2) + ':' + 
-           ('0' + d.getSeconds()).slice(-2);
-}
-
-// 🟢 เพิ่มฟังก์ชันนี้ต่อท้ายไว้ใช้เทียบเวลา (เพื่อแก้ปัญหาปุ่ม "แก้ไขกิจกรรม" หายบนมือถือ)
-function safeDateIOS(dateStr) {
-    if (!dateStr) return new Date();
-    let safeStr = typeof dateStr === 'string' ? dateStr.replace(/-/g, '/').replace('T', ' ') : dateStr;
-    return new Date(safeStr);
-}
+const formatThaiDateTime = (isoStr) => {
+    if(!isoStr) return ''; const d = new Date(isoStr);
+    if(isNaN(d.getTime())) return isoStr;
+    return ('0'+d.getDate()).slice(-2) + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + (d.getFullYear()+543) + ' ' + 
+           ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
+};
 
 const app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
@@ -559,91 +498,6 @@ login: async () => {
         } catch (err) {
             console.error("Login Error:", err);
             Swal.fire('ข้อผิดพลาดระบบ', 'การเข้าสู่ระบบล้มเหลว: ' + err.message, 'error');
-        }
-    },
-
-// 🟢 ฟังก์ชันดึงพิกัดสำหรับ iOS + LINE WebView
-    getCurrentLocation: () => {
-        return new Promise((resolve) => {
-            if (!navigator.geolocation) {
-                Swal.fire('GPS Error', 'อุปกรณ์นี้ไม่รองรับระบบพิกัดระบุตำแหน่ง', 'error');
-                resolve("");
-                return;
-            }
-            
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    // ดึงพิกัดสำเร็จ
-                    resolve(`${pos.coords.latitude},${pos.coords.longitude}`);
-                },
-                (err) => {
-                    // ดักจับและแจ้ง Error บนหน้าจอ iPhone ทันทีเพื่อความง่ายในการตรวจสอบ
-                    let msg = "ไม่สามารถเข้าถึงพิกัดได้";
-                    if (err.code === 1) msg = "กรุณาอนุญาตสิทธิ์ให้แอปเข้าถึงตำแหน่ง (Permission Denied)";
-                    if (err.code === 2) msg = "ไม่สามารถระบุตำแหน่งพิกัดในจุดนี้ได้ (Position Unavailable)";
-                    if (err.code === 3) msg = "สัญญาณ GPS หมดเวลาดึงข้อมูล (Timeout)";
-                    
-                    console.error("GPS Error:", err.code, err.message);
-                    Swal.fire('ตั้งค่า GPS บน iPhone', msg + '<br><br>แนะนำให้เปิดผ่าน LINE LIFF เต็มหน้าจอ หรือเบราว์เซอร์มาตรฐานของเครื่องครับ', 'warning');
-                    resolve("");
-                },
-                { 
-                    enableHighAccuracy: true, // บังคับใช้ GPS ความแม่นยำสูง
-                    timeout: 10000,           // เพิ่มเวลาให้ iPhone ค้นหาสัญญาณดาวเทียม (10 วินาที)
-                    maximumAge: 0             // ไม่ใช้พิกัดเก่าที่ค้างในแคช
-                }
-            );
-        });
-    },
-
-   // 🟢 ฟังก์ชันส่งสร้างกิจกรรมใหม่
-    handleCreateActivity: async () => {
-        // ดึงค่าจากฟอร์ม...
-        const actId = document.getElementById('select-act-id').value;
-        const topic = document.getElementById('input-topic').value.trim();
-        const begin = document.getElementById('input-begin').value;
-        const mins = document.getElementById('input-duration').value;
-        const instructor = document.getElementById('select-instructor').value;
-
-        if(!actId || !topic || !begin || !mins) {
-            return Swal.fire('เตือน', 'กรุณากรอกข้อมูลให้ครบถ้วนครับ', 'warning');
-        }
-
-        // 🟢 ดึง GPS ที่เก็บไว้ตอนล็อกอินมาใช้ทันที
-        const latLongStr = app.userLocation || ""; 
-
-        const res = await app.api({
-            action: 'create_activity',
-            payload: { 
-                act_id: actId, topic: topic, act_begin: begin, duration_mins: mins, 
-                instructor_mdid: instructor, user: app.user,
-                lat_long: latLongStr // ส่งพิกัดไปเลย
-            }
-        }, 'กำลังเปิดกิจกรรม...');
-
-        if (res && res.success) {
-            Swal.fire('สำเร็จ', 'เปิดกิจกรรมเรียบร้อยแล้ว', 'success').then(() => app.loadManageActivities());
-        }
-    },
-    
-    updateActivityLocation: async () => {
-        try {
-            // ดึงพิกัดจากเครื่องอาจารย์
-            const latLong = await app.getCurrentLocation();
-            // act_ref_id ต้องได้มาจากการเลือกกิจกรรมในหน้าก่อนหน้า
-            const actRefId = app.currentManagingActId; 
-            
-            const res = await app.api({
-                action: 'update_activity_location', // 👈 ต้องเพิ่ม action นี้ใน Code.gs
-                payload: { act_ref_id: actRefId, lat_long: latLong }
-            }, 'กำลังบันทึกพิกัดพื้นที่...');
-            
-            if (res && res.success) {
-                document.getElementById('display-act-latlong').innerText = `พิกัดปัจจุบัน: ${latLong}`;
-                Swal.fire('สำเร็จ', 'บันทึกพิกัดพิกัดพื้นที่เรียบร้อยแล้ว', 'success');
-            }
-        } catch (err) {
-            Swal.fire('พิกัดผิดพลาด', 'กรุณาเปิด GPS และอนุญาตให้แอปเข้าถึงตำแหน่งครับ', 'error');
         }
     },
     
@@ -876,72 +730,16 @@ api: async (req, loading = null) => {
                      </div>`;
         }
 
-// นำปุ่มทั้งหมดไปแสดงผลในหน้าจอ
+        // นำปุ่มทั้งหมดไปแสดงผลในหน้าจอ
         menuArea.innerHTML = html;
         
-        // ❌ ลบหรือคอมเมนต์ app.loadInstructorTasks() ทิ้งไปเลยครับ เพื่อไม่ให้มันเด้งสลับหน้าจอเอง
-        /* if (isInstructor && typeof app.loadInstructorTasks === 'function') {
+        // (ฟังก์ชันเสริมของเก่า) โหลดตัวเลขค้างประเมิน EPA สำหรับ Instructor
+        if (isInstructor && typeof app.loadInstructorTasks === 'function') {
             app.loadInstructorTasks(); 
-        }
-        */
-
-        // 🟢 ดึงพิกัด GPS แค่ครั้งเดียวตอนล็อกอินสำเร็จ (ขอพิกัดแบบ Background)
-        if (!app.userLocation) {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => { 
-                        app.userLocation = `${pos.coords.latitude},${pos.coords.longitude}`; 
-                        console.log("GPS Cached:", app.userLocation);
-                    },
-                    (err) => { console.warn("GPS Background Error:", err.message); },
-                    { enableHighAccuracy: true, timeout: 10000 }
-                );
-            }
         }
     },
 
-   // 🟢 ตรวจสอบและอัปเดตเกณฑ์ความยาวตัวอักษรแบบเรียลไทม์
-    check360CommentLength: () => {
-        const tw = parseInt(document.getElementById('score-teamwork').value) || 3;
-        const comm = parseInt(document.getElementById('score-communication').value) || 3;
-        const punc = parseInt(document.getElementById('score-punctuality').value) || 3;
-        const commentEl = document.getElementById('feedback-comment');
-        if (!commentEl) return { current: 0, required: 5 };
-        
-        const comment = commentEl.value.trim();
 
-        let reqLength = 5;
-        let reasonText = "ระดับมาตรฐาน (3)";
-
-        // เช็คว่ามีคะแนนสุดโต่งหรือไม่ (ยึดเกณฑ์สูงสุดเป็นหลัก)
-        if (tw === 1 || tw === 5 || comm === 1 || comm === 5 || punc === 1 || punc === 5) {
-            reqLength = 100;
-            reasonText = "ดีเยี่ยม (5) หรือ ต้องปรับปรุง (1)";
-        } else if (tw === 2 || tw === 4 || comm === 2 || comm === 4 || punc === 2 || punc === 4) {
-            reqLength = 30;
-            reasonText = "ดีมาก (4) หรือ พอใช้ (2)";
-        }
-
-        // อัปเดต UI ข้อความแจ้งเตือน
-        const helperEl = document.getElementById('comment-helper');
-        if (helperEl) {
-            helperEl.innerHTML = `* เนื่องจากมีการให้คะแนน${reasonText} กรุณาระบุข้อเสนอแนะขั้นต่ำ <span class="font-bold text-red-600">${reqLength} ตัวอักษร</span>`;
-        }
-
-        // อัปเดต UI ตัวนับคำ
-        const countEl = document.getElementById('char-count');
-        if (countEl) {
-            countEl.innerText = `${comment.length} / ${reqLength}`;
-            if (comment.length >= reqLength) {
-                countEl.className = "text-xs font-bold text-emerald-600"; // ผ่านเกณฑ์
-            } else {
-                countEl.className = "text-xs font-bold text-red-500"; // ยังไม่ผ่านเกณฑ์
-            }
-        }
-
-        return { current: comment.length, required: reqLength };
-    }, 
-    
     // --- Activity Flow ---
      loadStaffCreateActivity: async () => { 
         const data = await app.api({ action: 'get_activity_form_data', user: app.user });
@@ -960,30 +758,20 @@ api: async (req, loading = null) => {
     },
     
     // --- 360 Eval Flow ---
-   load360Form: async () => { 
+    load360Form: async () => { 
         const data = await app.api({ action: 'get_360_form_data', user: app.user });
         if(data) { 
             const grid = document.getElementById('grid-360-residents');
             if(data.residents.length === 0) { 
-                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินในเทอมนี้ครบทุกคนแล้วครับ</p></div>`;
+                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินแพทย์ประจำบ้านในเทอมนี้ครบทุกคนแล้วครับ</p></div>`;
             } else { 
-                grid.innerHTML = data.residents.map(r => {
-                    // เข้ารหัสตัวแปรเผื่อชื่อมีเว้นวรรค
-                    const safeName = r.name ? r.name.replace(/'/g, "\\'") : '';
-                    const safeLevel = r.level ? r.level.replace(/'/g, "\\'") : '';
-                    const safePic = r.pic ? r.pic.replace(/'/g, "\\'") : '';
-                    
-                    return `
-                    <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${safeName}', '${safeLevel}', '${safePic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1 relative group">
-                        
-                        <div class="absolute inset-0 z-10 w-full h-full"></div>
-                        
-                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm relative z-0">
-                        <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1 relative z-0">${r.name}</p>
-                        <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold relative z-0">${r.level}</p>
+                grid.innerHTML = data.residents.map(r => `
+                    <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
+                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
+                        <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
+                        <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
                     </div>
-                    `;
-                }).join('');
+                `).join('');
             } 
             app.showView('view-360-grid');
         } 
@@ -1015,34 +803,20 @@ api: async (req, loading = null) => {
         app.showView('view-360-grid');
     },
 
-save360Evaluation: async () => {
-        // 1. ตรวจสอบความยาวตัวอักษรก่อนบันทึก
-        const lengthStatus = app.check360CommentLength();
-        if (lengthStatus.current < lengthStatus.required) {
-            return Swal.fire({
-                title: 'ข้อเสนอแนะสั้นเกินไป',
-                html: `ระบบต้องการข้อเสนอแนะอย่างน้อย <b>${lengthStatus.required}</b> ตัวอักษร<br><span class="text-sm text-gray-500">(ปัจจุบันพิมพ์มาเพียง ${lengthStatus.current} ตัวอักษร)</span>`,
-                icon: 'warning',
-                confirmButtonColor: '#0d9488',
-                confirmButtonText: 'กลับไปแก้ไข'
-            });
-        }
-
-        // 2. ดึงข้อมูลเตรียมส่งหลังบ้าน (ให้เช็คว่าใช้ id="feedback-comment" ครับ)
-        const payload = {
-            resident_mdid: app.current360Resident,
-            user: app.user,
-            score_teamwork: document.getElementById('score-teamwork').value,
-            score_communication: document.getElementById('score-communication').value,
-            score_punctuality: document.getElementById('score-punctuality').value,
-            feedback_comment: document.getElementById('feedback-comment').value // 👈 ตรงนี้ครับ
-        };
-
-        const res = await app.api({ action: 'save_360_evaluation', payload: payload }, 'กำลังส่งแบบประเมิน...');
+    save360Eval: async () => { 
+        const resMdid = document.getElementById('sel-360-resident').value;
+        const comment = document.getElementById('txt-360-comment').value.trim(); 
         
-        if (res && res.success) {
-            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
-        }
+        if(!resMdid) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสแพทย์เป้าหมาย', 'error'); 
+        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำเชิงสร้างสรรค์', 'warning');
+        const res = await app.api({ 
+            action: 'save_360_evaluation', 
+            payload: { 
+                user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, 
+                score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment 
+            } 
+        });
+        if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
     },
 
     loadMy360Feedback: async () => { 
@@ -1461,55 +1235,29 @@ loadCheckin: async () => {
     },
 
     
-    joinActivity: async (actRefId) => {
-        // 🟢 ดึง GPS ที่เก็บไว้ตอนล็อกอินมาใช้ทันที
-        const rLatLong = app.userLocation || ""; 
-        
-        if (!rLatLong) {
-            return Swal.fire('ไม่พบพิกัด', 'ระบบไม่สามารถระบุตำแหน่งของคุณได้ตอนล็อกอิน กรุณาอนุญาตสิทธิ์ GPS แล้วรีเฟรชหน้าเว็บใหม่ครับ', 'warning');
-        }
-        
-        const res = await app.api({
-            action: 'join_activity',
-            payload: { act_ref_id: actRefId, user: app.user, lat_long: rLatLong }
-        }, 'กำลังบันทึกการเข้าร่วม...');
-        
-        if (res && res.success) {
-            Swal.fire('ผลการเช็คอิน', res.message, 'info').then(() => app.loadOpenCheckins());
+    joinActivity: async (actRefId) => { const res = await app.api({ action: 'join_activity', payload: { user: app.user, act_ref_id: actRefId }});
+        if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin()); },
+loadManageActivities: async () => {
+        const data = await app.api({ action: 'get_manage_activities', user: app.user });
+        if(data) {
+            const list = document.getElementById('manage-act-list');
+            if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
+            // 🟢 เพิ่มการส่งตัวแปร a.act_begin เข้าไปในฟังก์ชันคลิก viewAttendees
+            else list.innerHTML = data.activities.map(a => `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_begin}', '${a.act_finish}')"><div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div><div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div><div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div><div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div><div class="text-xs mt-1 font-semibold text-green-700">สถานะ: ${a.status}</div><div class="text-xs text-gray-700 mt-2 font-bold bg-gray-100 p-2 rounded text-center">👥 จำนวนผู้เข้าร่วม: แพทย์ ${a.resident_count} | อาจารย์ ${a.instructor_count}</div></div>`).join('');
+            app.showView('view-manage-activities');
         }
     },
 
-viewAttendees: async (actRefId, topicName, actBegin, actFinish) => { 
+    viewAttendees: async (actRefId, topicName, actBegin, actFinish) => { 
         // 🟢 ผูกค่าตัวแปร act_begin เพิ่มเข้า Context ล่าสุด
         app.currentManageAct = { act_ref_id: actRefId, topic: topicName, act_begin: actBegin, act_finish: actFinish };
         document.getElementById('attendee-topic').innerText = `กิจกรรม: ${topicName}`; 
         document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(actFinish)}`; 
-        
         const data = await app.api({ action: 'get_activity_attendees', act_ref_id: actRefId });
-        
         if(data) { 
             const list = document.getElementById('attendees-container'); 
-            if(data.attendees.length === 0) {
-                list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
-            } else {
-                // 🟢 สร้างลิสต์รายชื่อ พร้อมคำนวณระยะทางและสถานะ
-                list.innerHTML = data.attendees.map(u => {
-                    const dist = parseFloat(u.distance_km || 0);
-                    const distText = dist > 0 ? `<span class="text-[11px] ml-1 ${u.status === 'AWAY' ? 'text-red-500' : 'text-emerald-600'}">(ห่าง ${dist.toFixed(2)} กม.)</span>` : '';
-                    const statusColor = u.status === 'AWAY' ? 'text-red-700 bg-red-100 border-red-200' : 'text-emerald-700 bg-emerald-100 border-emerald-200';
-                    const statusText = u.status || 'PASS';
-
-                    return `
-                    <div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1">
-                        <div>
-                            <b>${u.name}</b>
-                            ${distText}
-                            <span class="text-[10px] ml-1 px-1.5 py-0.5 rounded border ${statusColor} font-bold">${statusText}</span>
-                        </div>
-                        <button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold hover:bg-red-200 transition">นำออก</button>
-                    </div>`;
-                }).join('');
-            }
+            if(data.attendees.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
+            else list.innerHTML = data.attendees.map(u => `<div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1"><div><b>${u.name}</b></div><button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold">นำออก</button></div>`).join('');
             
             // 🟢 ลอจิกตรวจสอบว่ากิจกรรมเริ่มไปแล้วหรือยัง เพื่อเปิดสิทธิ์การโชว์ปุ่มแก้ไขข้อมูล
             let now = new Date().getTime();
@@ -1692,61 +1440,6 @@ checkEvalScore: () => {
         } 
     },
     
-    // 🟢 ฟังก์ชันโหลดรายการกิจกรรมเพื่อจัดการ (สำหรับ Instructor และ Staff)
-    loadManageActivities: async () => {
-        // 1. เรียกดึงข้อมูลจากหลังบ้าน
-        const res = await app.api({ action: 'get_manage_activities', user: app.user }, 'กำลังโหลดรายการกิจกรรม...');
-        
-        if (res && res.success) {
-            // 2. หากล่อง container สำหรับแสดงผล (อิงจากโครงสร้างเดิมน่าจะชื่อ manage-activities-container)
-            const container = document.getElementById('manage-activities-container') || document.getElementById('manage-activity-list');
-            
-            if (!container) {
-                console.error('ไม่พบ Container สำหรับแสดงรายการจัดการกิจกรรมใน HTML');
-                return Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบส่วนแสดงผลในหน้าจอ กรุณาตรวจสอบ ID ของ HTML ครับ', 'error');
-            }
-
-            // 3. วาดการ์ดกิจกรรม
-            if (res.activities.length === 0) {
-                container.innerHTML = `
-                    <div class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200 border-dashed mt-4">
-                        <span class="text-4xl mb-3 block">📭</span>
-                        <p class="font-bold">ยังไม่มีกิจกรรมที่เปิดอยู่</p>
-                        <p class="text-xs mt-1">คุณสามารถสร้างกิจกรรมใหม่ได้จากเมนูหลักครับ</p>
-                    </div>`;
-            } else {
-                container.innerHTML = res.activities.map(a => `
-                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4 relative overflow-hidden">
-                        <div class="absolute left-0 top-0 bottom-0 w-1 ${a.status === 'OPEN' ? 'bg-amber-400' : 'bg-gray-400'}"></div>
-                        
-                        <div class="flex justify-between items-start mb-2 pl-2">
-                            <div>
-                                <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">${a.desc}</span>
-                                <h3 class="font-bold text-gray-800 mt-2 text-lg leading-tight">${a.topic}</h3>
-                            </div>
-                            <span class="text-[10px] font-bold px-2 py-1 rounded ${a.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}">${a.status}</span>
-                        </div>
-                        
-                        <div class="text-sm text-gray-600 mb-4 space-y-1 pl-2">
-                            <p class="flex items-center"><span class="w-5 text-center mr-1 text-gray-400">🕒</span> เริ่ม: ${formatThaiDateTime(a.act_begin)}</p>
-                            <p class="flex items-center"><span class="w-5 text-center mr-1 text-gray-400">🏁</span> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</p>
-                            <p class="flex items-center"><span class="w-5 text-center mr-1 text-teal-500">👥</span> ผู้เข้าร่วม: <b class="mx-1">${a.resident_count}</b> / อาจารย์ <b class="ml-1">${a.instructor_count}</b></p>
-                        </div>
-                        
-                        <div class="pl-2">
-                            <button onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_begin}', '${a.act_finish}')" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold py-2.5 rounded-lg transition shadow-sm">
-                                ⚙️ จัดการ / ดูรายชื่อเช็คอิน
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            
-            // 4. สลับหน้าจอไปที่หน้าจัดการกิจกรรม
-            app.showView('view-manage-activities');
-        }
-    },
-    
     toggleRes: (id) => { 
         const div = document.getElementById(`det-${id}`);
         div.classList.toggle('hidden'); 
@@ -1783,55 +1476,42 @@ app.showView('view-admin-tracking');
     // ==========================================
     // 🔧 JS Logic สำหรับ Superstaff
     // ==========================================
-fetchSuperUserWithValidation: async () => {
-        const mdidInput = document.getElementById('super-search-input').value.trim();
+    fetchSuperUser: async () => {
+        const mdid = document.getElementById('super-search-input').value.trim();
+        if (!mdid) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID', 'warning');
         
-        // 🚨 ดักจับความยาวตัวเลข 4-10 หลัก
-        if (!mdidInput) {
-            return Swal.fire('แจ้งเตือน', 'กรุณาระบุรหัส MDID', 'warning');
-        }
-        if (mdidInput.length < 4 || mdidInput.length > 10) {
-            return Swal.fire('ข้อมูลไม่ถูกต้อง', 'รหัส MDID ต้องมีความยาวระหว่าง 4 ถึง 10 หลักครับ<br>(คุณกรอกมา: ' + mdidInput.length + ' หลัก)', 'warning');
-        }
-        
-        // หากผ่านเงื่อนไข ให้เรียกฟังก์ชันดึงข้อมูลเดิมที่คุณหมอตั้งค่าไว้ได้เลยครับ
-        if (typeof app.fetchSuperUser === 'function') {
-            // ส่งค่าไปรันต่อที่ฟังก์ชันเดิม
-            app.fetchSuperUser(); 
-        } else {
-            // กรณีรันตรงโดยไม่มีฟังก์ชันแยก
-            const res = await app.api({ action: 'search_staff_full', payload: { mdid: mdidInput } }, 'กำลังดึงข้อมูล...');
-            if (res && res.success) {
-                const d = res.data;
-                app.currentSuperEditMdid = d.mdid;
-                
-                document.getElementById('super-pic').src = res.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=random`;
-                document.getElementById('super-lastlogin').innerText = d.lastlogin;
-                
-                document.getElementById('edit-mdid').value = d.mdid;
-                document.getElementById('edit-name').value = d.name;
-                document.getElementById('edit-institute').value = d.institute;
-                document.getElementById('edit-role').value = d.role;
-                document.getElementById('edit-r2').value = d.r2;
-                document.getElementById('edit-r3').value = d.r3;
-                document.getElementById('edit-r4').value = d.r4;
-                document.getElementById('edit-admyear').value = d.admission_year;
-                document.getElementById('edit-status').value = d.status;
-                document.getElementById('edit-lineuid').value = d.line_uid;
-                document.getElementById('edit-linename').value = d.line_displayname;
-                document.getElementById('edit-email').value = d.email;
-                document.getElementById('edit-mobile').value = d.mobile;
-                document.getElementById('edit-advisor').value = d.advisor_mdid;
-                document.getElementById('edit-evaltarget').value = d.eval_target;
-                document.getElementById('edit-viewtarget').value = d.view_target;
+        const res = await app.api({ action: 'search_staff_full', payload: { mdid: mdid } }, 'กำลังดึงข้อมูล...');
+        if (res && res.success) {
+            const d = res.data;
+            app.currentSuperEditMdid = d.mdid; // จำคีย์ตั้งต้นไว้
+            
+            document.getElementById('super-pic').src = res.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=random`;
+            document.getElementById('super-lastlogin').innerText = d.lastlogin;
+            
+            document.getElementById('edit-mdid').value = d.mdid;
+            document.getElementById('edit-name').value = d.name;
+            document.getElementById('edit-institute').value = d.institute;
+            document.getElementById('edit-role').value = d.role;
+            document.getElementById('edit-r2').value = d.r2;
+            document.getElementById('edit-r3').value = d.r3;
+            document.getElementById('edit-r4').value = d.r4;
+            document.getElementById('edit-admyear').value = d.admission_year;
+            document.getElementById('edit-status').value = d.status;
+            document.getElementById('edit-lineuid').value = d.line_uid;
+            document.getElementById('edit-linename').value = d.line_displayname;
+            document.getElementById('edit-email').value = d.email;
+            document.getElementById('edit-mobile').value = d.mobile;
+            document.getElementById('edit-advisor').value = d.advisor_mdid;
+            document.getElementById('edit-evaltarget').value = d.eval_target;
+            document.getElementById('edit-viewtarget').value = d.view_target;
 
-                document.getElementById('super-search-box').classList.add('hidden');
-                document.getElementById('super-edit-form').classList.remove('hidden');
-            } else {
-                Swal.fire('ไม่พบข้อมูล', 'ไม่มี MDID นี้ในระบบ', 'error');
-            }
+            document.getElementById('super-search-box').classList.add('hidden');
+            document.getElementById('super-edit-form').classList.remove('hidden');
+        } else {
+            Swal.fire('ไม่พบข้อมูล', 'ไม่มี MDID นี้ในระบบ', 'error');
         }
     },
+
     saveSuperUser: async () => {
         const newData = {
             mdid: document.getElementById('edit-mdid').value,
