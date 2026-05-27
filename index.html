@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.00</title>
+    <title>EPA Skin App 2.01</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.00</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.01</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1270,9 +1270,12 @@ loadManageActivities: async () => {
             if(data.activities.length === 0) {
                 list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
             } else {
-                app.cachedManageActs = {}; // 🟢 สร้าง Cache เพื่อป้องกันบั๊ก String 
+                // 🟢 สร้างตัวแปร Cache เก็บข้อมูลไว้ ป้องกันบั๊กเครื่องหมายคำพูด
+                app.cachedManageActs = {}; 
                 list.innerHTML = data.activities.map(a => {
                     app.cachedManageActs[a.act_ref_id] = a; 
+                    
+                    // 🟢 แก้ไข onclick ให้ส่งไปแค่รหัส ID สั้นๆ แทน
                     return `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}')">
                         <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
                         <div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div>
@@ -1288,10 +1291,11 @@ loadManageActivities: async () => {
     },
 
     viewAttendees: async (actRefId) => { 
+        // 🟢 ดึงข้อมูลจาก Cache ที่เก็บไว้
         const act = app.cachedManageActs[actRefId];
         if (!act) return;
         
-        app.currentManageAct = act; // 🟢 ผูกค่าตัวแปรเข้า Context ล่าสุด (ใช้สำหรับการแก้ไข/ลบ ต่อไป)
+        app.currentManageAct = act; 
         document.getElementById('attendee-topic').innerText = `กิจกรรม: ${act.topic}`; 
         document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(act.act_finish)}`; 
         
@@ -1301,7 +1305,6 @@ loadManageActivities: async () => {
             if(data.attendees.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
             else list.innerHTML = data.attendees.map(u => `<div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1"><div><b>${u.name}</b></div><button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold">นำออก</button></div>`).join('');
             
-            // เช็คว่ากิจกรรมเริ่มไปแล้วหรือยัง เพื่อเปิดสิทธิ์ปุ่มแก้ไข
             let now = new Date().getTime();
             let bTime = new Date(act.act_begin).getTime();
             let showEditBtn = now < bTime;
