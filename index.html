@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.46</title>
+    <title>EPA Skin App 2.00</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.46</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.00</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -732,11 +732,6 @@ api: async (req, loading = null) => {
 
         // นำปุ่มทั้งหมดไปแสดงผลในหน้าจอ
         menuArea.innerHTML = html;
-        
-        // (ฟังก์ชันเสริมของเก่า) โหลดตัวเลขค้างประเมิน EPA สำหรับ Instructor
-        if (isInstructor && typeof app.loadInstructorTasks === 'function') {
-            app.loadInstructorTasks(); 
-        }
     },
 
 
@@ -803,19 +798,48 @@ api: async (req, loading = null) => {
         app.showView('view-360-grid');
     },
 
-    save360Eval: async () => { 
+save360Eval: async () => { 
         const resMdid = document.getElementById('sel-360-resident').value;
         const comment = document.getElementById('txt-360-comment').value.trim(); 
         
         if(!resMdid) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสแพทย์เป้าหมาย', 'error'); 
-        if(!comment) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุข้อคิดเห็น/คำแนะนำเชิงสร้างสรรค์', 'warning');
+        
+        // 🟢 อ่านค่าคะแนนทั้ง 3 หัวข้อ
+        const scoreT = parseInt(document.getElementById('score-teamwork').value);
+        const scoreC = parseInt(document.getElementById('score-communication').value);
+        const scoreP = parseInt(document.getElementById('score-punctuality').value);
+        
+        // 🟢 ฟังก์ชันคำนวณขั้นต่ำตัวอักษร
+        const getRequiredLength = (score) => {
+            if (score === 1 || score === 5) return 100;
+            if (score === 2 || score === 4) return 30;
+            return 5;
+        };
+        
+        // 🟢 หาเกณฑ์ที่สูงที่สุดจากคะแนนที่ให้
+        const minReqChars = Math.max(getRequiredLength(scoreT), getRequiredLength(scoreC), getRequiredLength(scoreP));
+        
+        // 🟢 ตรวจสอบ Validation
+        if (comment.length < minReqChars) {
+            return Swal.fire(
+                'ข้อความสั้นเกินไป', 
+                `เกณฑ์คะแนนที่ท่านระบุ จำเป็นต้องอธิบายเพิ่มเติมครับ\nกรุณาพิมพ์ข้อเสนอแนะอย่างน้อย ${minReqChars} ตัวอักษร\n(ปัจจุบันพิมพ์แล้ว ${comment.length} ตัวอักษร)`, 
+                'warning'
+            );
+        }
+
         const res = await app.api({ 
             action: 'save_360_evaluation', 
             payload: { 
-                user: app.user, resident_mdid: resMdid, score_teamwork: document.getElementById('score-teamwork').value, 
-                score_communication: document.getElementById('score-communication').value, score_punctuality: document.getElementById('score-punctuality').value, feedback_comment: comment 
+                user: app.user, 
+                resident_mdid: resMdid, 
+                score_teamwork: scoreT, 
+                score_communication: scoreC, 
+                score_punctuality: scoreP, 
+                feedback_comment: comment 
             } 
-        });
+        }, 'กำลังบันทึกผลการประเมิน...');
+
         if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
     },
 
@@ -823,6 +847,7 @@ api: async (req, loading = null) => {
         document.getElementById('inst-360-selector').classList.add('hidden');
         app._render360Data(app.user.mdid); 
     },
+    
     initInst360: async () => {
         const data = await app.api({ action: 'get_inst_360_residents', user: app.user }, 'ดึงรายชื่อ...');
         if (data && data.success) {
@@ -834,6 +859,7 @@ api: async (req, loading = null) => {
             app.showView('view-my-360');
         }
     },
+    
     fetchInstructor360: () => { 
         const target = document.getElementById('sel-inst-360-target').value;
         if(target) app._render360Data(target); 
@@ -1241,27 +1267,43 @@ loadManageActivities: async () => {
         const data = await app.api({ action: 'get_manage_activities', user: app.user });
         if(data) {
             const list = document.getElementById('manage-act-list');
-            if(data.activities.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
-            // 🟢 เพิ่มการส่งตัวแปร a.act_begin เข้าไปในฟังก์ชันคลิก viewAttendees
-            else list.innerHTML = data.activities.map(a => `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_begin}', '${a.act_finish}')"><div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div><div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div><div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div><div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div><div class="text-xs mt-1 font-semibold text-green-700">สถานะ: ${a.status}</div><div class="text-xs text-gray-700 mt-2 font-bold bg-gray-100 p-2 rounded text-center">👥 จำนวนผู้เข้าร่วม: แพทย์ ${a.resident_count} | อาจารย์ ${a.instructor_count}</div></div>`).join('');
+            if(data.activities.length === 0) {
+                list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
+            } else {
+                app.cachedManageActs = {}; // 🟢 สร้าง Cache เพื่อป้องกันบั๊ก String 
+                list.innerHTML = data.activities.map(a => {
+                    app.cachedManageActs[a.act_ref_id] = a; 
+                    return `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}')">
+                        <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
+                        <div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div>
+                        <div class="text-xs text-purple-600 mt-1">สถาบัน: ${a.institute}</div>
+                        <div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เริ่ม: ${formatThaiDateTime(a.act_begin)} <br> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</div>
+                        <div class="text-xs mt-1 font-semibold text-green-700">สถานะ: ${a.status}</div>
+                        <div class="text-xs text-gray-700 mt-2 font-bold bg-gray-100 p-2 rounded text-center">👥 จำนวนผู้เข้าร่วม: แพทย์ ${a.resident_count} | อาจารย์ ${a.instructor_count}</div>
+                    </div>`;
+                }).join('');
+            }
             app.showView('view-manage-activities');
         }
     },
 
-    viewAttendees: async (actRefId, topicName, actBegin, actFinish) => { 
-        // 🟢 ผูกค่าตัวแปร act_begin เพิ่มเข้า Context ล่าสุด
-        app.currentManageAct = { act_ref_id: actRefId, topic: topicName, act_begin: actBegin, act_finish: actFinish };
-        document.getElementById('attendee-topic').innerText = `กิจกรรม: ${topicName}`; 
-        document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(actFinish)}`; 
+    viewAttendees: async (actRefId) => { 
+        const act = app.cachedManageActs[actRefId];
+        if (!act) return;
+        
+        app.currentManageAct = act; // 🟢 ผูกค่าตัวแปรเข้า Context ล่าสุด (ใช้สำหรับการแก้ไข/ลบ ต่อไป)
+        document.getElementById('attendee-topic').innerText = `กิจกรรม: ${act.topic}`; 
+        document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(act.act_finish)}`; 
+        
         const data = await app.api({ action: 'get_activity_attendees', act_ref_id: actRefId });
         if(data) { 
-            const list = document.getElementById('attendees-container'); 
+            const list = document.getElementById('attendees-container');
             if(data.attendees.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
             else list.innerHTML = data.attendees.map(u => `<div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1"><div><b>${u.name}</b></div><button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold">นำออก</button></div>`).join('');
             
-            // 🟢 ลอจิกตรวจสอบว่ากิจกรรมเริ่มไปแล้วหรือยัง เพื่อเปิดสิทธิ์การโชว์ปุ่มแก้ไขข้อมูล
+            // เช็คว่ากิจกรรมเริ่มไปแล้วหรือยัง เพื่อเปิดสิทธิ์ปุ่มแก้ไข
             let now = new Date().getTime();
-            let bTime = new Date(actBegin).getTime();
+            let bTime = new Date(act.act_begin).getTime();
             let showEditBtn = now < bTime;
             
             let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
