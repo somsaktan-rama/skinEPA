@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.44</title>
+    <title>EPA Skin App 1.46</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.44</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.46</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -49,6 +49,57 @@
             <button onclick="app.openResetModal()" class="text-sm text-blue-500 underline text-center w-full block bg-transparent mt-3">ต้องการรีเซ็ตการผูกบัญชี LINE?</button>
         </div>
 
+        <div id="view-superstaff-edit" class="hidden animate-fade-in pb-10">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-red-700">🔧 ข้อมูลบุคลากร (Superstaff)</h2>
+        <button onclick="app.showView('view-menu')" class="text-gray-500 font-bold bg-gray-100 px-3 py-1 rounded">ออก</button>
+    </div>
+
+    <div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
+        <label class="block text-xs font-bold text-gray-500 mb-2">ระบุ MDID เพื่อดึงข้อมูล</label>
+        <input type="number" id="super-search-input" class="w-full p-3 border rounded-lg mb-3" placeholder="MDID">
+        <button onclick="app.fetchSuperUser()" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-bold">ดึงข้อมูล</button>
+    </div>
+
+    <div id="super-edit-form" class="hidden space-y-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border text-center">
+            <img id="super-pic" src="" class="avatar-mid mx-auto mb-2 border-2 border-gray-200">
+            <p class="text-xs text-gray-500">เข้าสู่ระบบล่าสุด (Last Login): <br><span id="super-lastlogin" class="text-emerald-600 font-bold text-sm"></span></p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-3">
+            <div><label class="text-xs font-bold text-gray-500">MDID</label><input type="text" id="edit-mdid" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Name</label><input type="text" id="edit-name" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Institute</label><input type="text" id="edit-institute" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Role</label><input type="text" id="edit-role" class="w-full p-2 border rounded"></div>
+            
+            <div class="grid grid-cols-3 gap-2">
+                <div><label class="text-xs font-bold text-gray-500">R2</label><input type="text" id="edit-r2" class="w-full p-2 border rounded"></div>
+                <div><label class="text-xs font-bold text-gray-500">R3</label><input type="text" id="edit-r3" class="w-full p-2 border rounded"></div>
+                <div><label class="text-xs font-bold text-gray-500">R4</label><input type="text" id="edit-r4" class="w-full p-2 border rounded"></div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-xs font-bold text-gray-500">Admission Year</label><input type="text" id="edit-admyear" class="w-full p-2 border rounded"></div>
+                <div><label class="text-xs font-bold text-gray-500">Status</label><input type="text" id="edit-status" class="w-full p-2 border rounded"></div>
+            </div>
+
+            <div><label class="text-xs font-bold text-gray-500">LINE UID (ลบออกเพื่อรีเซ็ตเครื่องใหม่ได้)</label><input type="text" id="edit-lineuid" class="w-full p-2 border rounded text-xs"></div>
+            <div><label class="text-xs font-bold text-gray-500">LINE Display Name</label><input type="text" id="edit-linename" class="w-full p-2 border rounded text-xs bg-gray-50" readonly></div>
+            <div><label class="text-xs font-bold text-gray-500">Email</label><input type="text" id="edit-email" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Mobile</label><input type="text" id="edit-mobile" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Advisor MDID</label><input type="text" id="edit-advisor" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Eval Target (ใส่ MDID / คั่นด้วยลูกน้ำ)</label><textarea id="edit-evaltarget" class="w-full p-2 border rounded text-sm"></textarea></div>
+            <div><label class="text-xs font-bold text-gray-500">View Target (ใส่ MDID / คั่นด้วยลูกน้ำ)</label><textarea id="edit-viewtarget" class="w-full p-2 border rounded text-sm"></textarea></div>
+        </div>
+
+        <div class="flex space-x-2 pb-4">
+            <button onclick="app.saveSuperUser()" class="flex-1 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-bold shadow-sm">บันทึกข้อมูล</button>
+            <button onclick="app.resetSuperSearch()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 p-3 rounded-lg font-bold shadow-sm">ค้นหาใหม่</button>
+        </div>
+    </div>
+</div>
+        
         <div id="view-menu" class="hidden">
             <div class="mb-6 border-b pb-4">
                 <h2 class="text-xl font-bold text-gray-800">สวัสดี <span id="display-name" class="text-blue-600"></span></h2>
@@ -614,6 +665,14 @@ renderMenu: () => {
             container.innerHTML += `<button onclick="app.loadDashboard()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-blue-400">📊 Dashboard ความก้าวหน้า EPA</button>`;
             container.innerHTML += `<button onclick="app.loadAdminTracking()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded text-left shadow-sm border-2 border-gray-600">🕵️‍♂️ ติดตามสถานะ 360 องศา (Admin)</button>`;
         }
+        // เมนูที่ 8: เมนูพิเศษสำหรับ superstaff
+        if (roleRaw.includes('superstaff')) {
+            html += `<button onclick="app.showView('view-superstaff-edit')" class="w-full bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mt-4">
+                        <span class="font-bold flex items-center"><span class="text-xl mr-3">🔧</span> จัดการข้อมูลบุคลากร</span>
+                        <span class="text-red-400">→</span>
+                     </button>`;
+        }
+    
     },
 
 
@@ -1346,10 +1405,92 @@ checkEvalScore: () => {
             if(res.data.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>'; } else {
                 container.innerHTML = res.data.map(r => `<div class="border p-4 rounded-lg bg-white shadow-sm border-l-4 ${r.total < 5 ? 'border-l-red-500' : 'border-l-green-500'}"><div class="flex justify-between items-center mb-3"><span class="font-bold text-gray-800 text-base">${r.name} <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">${r.level}</span></span><span class="text-xs font-bold ${r.total < 5 ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'} px-2 py-1 rounded border">รวม ${r.total} ฉบับ</span></div><div class="grid grid-cols-4 gap-2 text-xs"><div class="bg-blue-50 p-2 rounded text-center border border-blue-100"><div class="text-blue-800 mb-1">อาจารย์</div><div class="font-bold text-lg text-blue-900">${r.counts['อาจารย์แพทย์'] || 0}</div></div><div class="bg-purple-50 p-2 rounded text-center border border-purple-100"><div class="text-purple-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">เพื่อนแพทย์</div><div class="font-bold text-lg text-purple-900">${r.counts['เพื่อนแพทย์ประจำบ้าน'] || 0}</div></div><div class="bg-pink-50 p-2 rounded text-center border border-pink-100"><div class="text-pink-800 mb-1">พยาบาล</div><div class="font-bold text-lg text-pink-900">${r.counts['พยาบาลวิชาชีพ'] || 0}</div></div><div class="bg-orange-50 p-2 rounded text-center border border-orange-100"><div class="text-orange-800 mb-1">สนับสนุน</div><div class="font-bold text-lg text-orange-900">${r.counts['เจ้าหน้าที่/สายสนับสนุน'] || 0}</div></div></div></div>`).join('');
             }
-    app.showView('view-admin-tracking');
+app.showView('view-admin-tracking');
         }
+    }, // 👈 🟢 สำคัญมาก: ใส่ลูกน้ำตรงนี้เพื่อเชื่อมไปหาฟังก์ชันแอดมินด้านล่าง
+
+    // ==========================================
+    // 🔧 JS Logic สำหรับ Superstaff
+    // ==========================================
+    fetchSuperUser: async () => {
+        const mdid = document.getElementById('super-search-input').value.trim();
+        if (!mdid) return Swal.fire('แจ้งเตือน', 'กรุณาระบุ MDID', 'warning');
+        
+        const res = await app.api({ action: 'search_staff_full', payload: { mdid: mdid } }, 'กำลังดึงข้อมูล...');
+        if (res && res.success) {
+            const d = res.data;
+            app.currentSuperEditMdid = d.mdid; // จำคีย์ตั้งต้นไว้
+            
+            document.getElementById('super-pic').src = res.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=random`;
+            document.getElementById('super-lastlogin').innerText = d.lastlogin;
+            
+            document.getElementById('edit-mdid').value = d.mdid;
+            document.getElementById('edit-name').value = d.name;
+            document.getElementById('edit-institute').value = d.institute;
+            document.getElementById('edit-role').value = d.role;
+            document.getElementById('edit-r2').value = d.r2;
+            document.getElementById('edit-r3').value = d.r3;
+            document.getElementById('edit-r4').value = d.r4;
+            document.getElementById('edit-admyear').value = d.admission_year;
+            document.getElementById('edit-status').value = d.status;
+            document.getElementById('edit-lineuid').value = d.line_uid;
+            document.getElementById('edit-linename').value = d.line_displayname;
+            document.getElementById('edit-email').value = d.email;
+            document.getElementById('edit-mobile').value = d.mobile;
+            document.getElementById('edit-advisor').value = d.advisor_mdid;
+            document.getElementById('edit-evaltarget').value = d.eval_target;
+            document.getElementById('edit-viewtarget').value = d.view_target;
+
+            document.getElementById('super-search-box').classList.add('hidden');
+            document.getElementById('super-edit-form').classList.remove('hidden');
+        } else {
+            Swal.fire('ไม่พบข้อมูล', 'ไม่มี MDID นี้ในระบบ', 'error');
+        }
+    },
+
+    saveSuperUser: async () => {
+        const newData = {
+            mdid: document.getElementById('edit-mdid').value,
+            name: document.getElementById('edit-name').value,
+            institute: document.getElementById('edit-institute').value,
+            role: document.getElementById('edit-role').value,
+            r2: document.getElementById('edit-r2').value,
+            r3: document.getElementById('edit-r3').value,
+            r4: document.getElementById('edit-r4').value,
+            admission_year: document.getElementById('edit-admyear').value,
+            status: document.getElementById('edit-status').value,
+            line_uid: document.getElementById('edit-lineuid').value, 
+            line_displayname: document.getElementById('edit-linename').value,
+            email: document.getElementById('edit-email').value,
+            mobile: document.getElementById('edit-mobile').value,
+            advisor_mdid: document.getElementById('edit-advisor').value,
+            eval_target: document.getElementById('edit-evaltarget').value,
+            view_target: document.getElementById('edit-viewtarget').value
+        };
+
+        const res = await app.api({
+            action: 'update_staff_full',
+            payload: { originalMdid: app.currentSuperEditMdid, newData: newData }
+        }, 'กำลังบันทึก...');
+
+        if (res && res.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: res.message,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => app.resetSuperSearch());
+        }
+    },
+
+    resetSuperSearch: () => {
+        document.getElementById('super-search-input').value = "";
+        document.getElementById('super-search-box').classList.remove('hidden');
+        document.getElementById('super-edit-form').classList.add('hidden');
     }
-};
+
+}; // 👈 🟢 ปิดท้าย Object app อย่างสมบูรณ์ตรงนี้
 
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
