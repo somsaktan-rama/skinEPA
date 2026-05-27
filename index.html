@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.44</title>
+    <title>EPA Skin App 1.45</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.44</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.45</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -58,6 +58,129 @@
             <button onclick="app.logout()" class="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">ออกจากระบบ</button>
         </div>
 
+        <div id="view-superstaff" class="hidden animate-fade-in pb-10">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-red-700 flex items-center">
+            <span class="text-2xl mr-2">🔧</span> เมนูผู้ดูแลระบบ (Superstaff)
+        </h2>
+        <button onclick="app.showView('view-menu')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm shadow-sm">
+            ออก
+        </button>
+    </div>
+
+    <button onclick="app.showView('view-superstaff-edit')" class="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white p-4 rounded-xl font-bold shadow-md mb-6 flex items-center justify-between text-left">
+        <span class="flex items-center">
+            <span class="text-xl mr-3">✏️</span> แก้ไขข้อมูลสมาชิกรายคน (คอลัมน์ A-P)
+        </span>
+        <span class="text-xl">→</span>
+    </button>
+
+    <div class="border-b my-4 opacity-50"></div>
+
+    <div class="bg-white rounded-xl shadow-sm border p-4 mb-4">
+        <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center">
+            <span class="mr-2">🔄</span> ค้นหาเพื่อรีเซ็ตการผูกบัญชี LINE
+        </h3>
+        <label class="block text-xs font-bold text-gray-500 mb-1">ระบุรหัสแพทย์ประจำบ้าน / บุคลากร (MDID)</label>
+        <input type="number" id="super-search-mdid" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="กรอก MDID ตัวเลขเท่านั้น">
+        
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="app.searchSuperstaff()" class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-bold shadow-sm">
+                ค้นหาข้อมูล
+            </button>
+            <button onclick="app.clearSuperstaff()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg font-bold shadow-sm">
+                ค้นหาใหม่
+            </button>
+        </div>
+    </div>
+
+    <div id="super-result-area" class="hidden bg-white p-5 border border-blue-200 rounded-xl shadow-sm space-y-3">
+        <div class="border-b pb-2 mb-2 flex items-center justify-between">
+            <span class="text-base font-bold text-blue-900" id="super-name-mdid">รหัสแพทย์ (MDID)</span>
+            <span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold" id="super-role">ROLE</span>
+        </div>
+        
+        <div class="grid grid-cols-1 gap-2 text-sm text-gray-700">
+            <p class="flex justify-between border-b border-gray-50 py-1">
+                <span class="text-gray-400">สถาบัน:</span> 
+                <span id="super-inst" class="font-medium text-gray-900">-</span>
+            </p>
+            <p class="flex flex-col border-b border-gray-50 py-1">
+                <span class="text-gray-400 mb-0.5">LINE UID:</span> 
+                <span id="super-uid" class="font-mono text-xs text-gray-500 bg-gray-50 p-1.5 rounded break-all">-</span>
+            </p>
+            <p class="flex justify-between border-b border-gray-50 py-1">
+                <span class="text-gray-400">LINE Display Name:</span> 
+                <span id="super-linename" class="font-medium text-gray-900">-</span>
+            </p>
+            <p class="flex justify-between border-b border-gray-50 py-1">
+                <span class="text-gray-400">Email:</span> 
+                <span id="super-email" class="font-medium text-gray-900">-</span>
+            </p>
+            <p class="flex justify-between border-b border-gray-50 py-1">
+                <span class="text-gray-400">เบอร์โทรศัพท์:</span> 
+                <span id="super-mobile" class="font-medium text-gray-900">-</span>
+            </p>
+            <p class="flex flex-col py-1">
+                <span class="text-gray-400 mb-0.5">เข้าสู่ระบบล่าสุด (Last Login):</span> 
+                <span id="super-lastlogin" class="font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-center border border-emerald-100">-</span>
+            </p>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-gray-100">
+            <button onclick="app.confirmResetSuper()" id="btn-super-reset" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-bold shadow-md hidden flex items-center justify-center">
+                ⚠️ ยืนยันลบข้อมูล LINE UID (ปลดล็อกเครื่อง)
+            </button>
+        </div>
+    </div>
+</div>
+
+        <div id="view-superstaff-edit" class="hidden animate-fade-in pb-10">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-red-700">🔧 แก้ไขข้อมูลรายคน</h2>
+        <button onclick="app.showView('view-menu')" class="text-gray-500 font-bold">ออก</button>
+    </div>
+
+    <div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
+        <input type="number" id="super-edit-search-mdid" class="w-full p-3 border rounded-lg mb-3" placeholder="ระบุ MDID ที่ต้องการแก้ไข">
+        <button onclick="app.fetchStaffFull()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold">ค้นหาข้อมูล</button>
+    </div>
+
+    <div id="super-edit-form" class="hidden space-y-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border text-center">
+            <img id="super-edit-pic" src="" class="avatar-mid mx-auto mb-2 onerror-this">
+            <p class="text-sm text-gray-500">Last Login: <span id="super-edit-lastlogin"></span></p>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-sm border space-y-3">
+            <div><label class="text-xs font-bold text-gray-500">MDID</label><input type="text" id="edit-mdid" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">ชื่อ-นามสกุล</label><input type="text" id="edit-name" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">สถาบัน</label><input type="text" id="edit-institute" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Role (staff, instructor, resident...)</label><input type="text" id="edit-role" class="w-full p-2 border rounded"></div>
+            <div class="grid grid-cols-3 gap-2">
+                <div><label class="text-xs font-bold text-gray-500">R2</label><input type="text" id="edit-r2" class="w-full p-2 border rounded"></div>
+                <div><label class="text-xs font-bold text-gray-500">R3</label><input type="text" id="edit-r3" class="w-full p-2 border rounded"></div>
+                <div><label class="text-xs font-bold text-gray-500">R4</label><input type="text" id="edit-r4" class="w-full p-2 border rounded"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div><label class="text-xs font-bold text-gray-500">Admission Year</label><input type="text" id="edit-year" class="w-full p-2 border rounded"></div>
+                <div><label class="text-xs font-bold text-gray-500">Status (ACTIVE/OFF)</label><input type="text" id="edit-status" class="w-full p-2 border rounded"></div>
+            </div>
+            <div><label class="text-xs font-bold text-gray-500">LINE UID</label><input type="text" id="edit-uid" class="w-full p-2 border rounded bg-gray-50 text-gray-400" readonly></div>
+            <div><label class="text-xs font-bold text-gray-500">Email</label><input type="text" id="edit-email" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Mobile</label><input type="text" id="edit-mobile" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Advisor MDID</label><input type="text" id="edit-advisor" class="w-full p-2 border rounded"></div>
+            <div><label class="text-xs font-bold text-gray-500">Eval Target (MDID คั่นด้วยจุลภาค)</label><textarea id="edit-eval-target" class="w-full p-2 border rounded text-sm"></textarea></div>
+            <div><label class="text-xs font-bold text-gray-500">View Target (MDID คั่นด้วยจุลภาค)</label><textarea id="edit-view-target" class="w-full p-2 border rounded text-sm"></textarea></div>
+        </div>
+
+        <div class="flex space-x-2">
+            <button onclick="app.saveStaffFull()" class="flex-1 bg-green-600 text-white p-4 rounded-xl font-bold">ยืนยันบันทึก</button>
+            <button onclick="app.resetSuperEdit()" class="flex-1 bg-gray-200 text-gray-700 p-4 rounded-xl font-bold">ค้นหาใหม่</button>
+        </div>
+    </div>
+</div>
+        
         <div id="view-360-grid" class="hidden">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-xl font-bold text-teal-800">🔄 เลือกแพทย์เพื่อประเมิน</h2>
@@ -1323,6 +1446,159 @@ checkEvalScore: () => {
         document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲'; 
     },
     
+   // ==========================================
+    // 🔧 หมวดฟังก์ชันสำหรับแอดมิน (Superstaff)
+    // ==========================================
+
+    // 🟢 1. ค้นหาผู้ใช้เพื่อรีเซ็ต LINE UID
+    searchSuperstaff: async () => {
+        const mdid = document.getElementById('super-search-mdid').value.trim();
+        if(!mdid) return Swal.fire('เตือน', 'กรุณากรอก MDID', 'warning');
+        
+        const res = await app.api({ action: 'search_staff_for_reset', payload: { mdid: mdid } }, 'กำลังค้นหา...');
+        if(res && res.success) {
+            document.getElementById('super-result-area').classList.remove('hidden');
+            const d = res.data;
+            document.getElementById('super-name-mdid').innerText = `${d.name} (ว.${d.mdid})`;
+            document.getElementById('super-inst').innerText = d.institute;
+            document.getElementById('super-role').innerText = d.role;
+            document.getElementById('super-uid').innerText = d.lineUid;
+            document.getElementById('super-linename').innerText = d.lineName;
+            document.getElementById('super-email').innerText = d.email;
+            document.getElementById('super-mobile').innerText = d.mobile;
+            
+            let loginText = d.lastlogin;
+            if(loginText && loginText !== "-") {
+                try {
+                   let dateObj = new Date(loginText);
+                   if(!isNaN(dateObj)) {
+                       // ถ้ามีฟังก์ชัน formatThaiDateTime ให้ใช้ ถ้าไม่มีให้โชว์ text เดิม
+                       loginText = typeof formatThaiDateTime === 'function' ? formatThaiDateTime(loginText) : loginText;
+                   }
+                } catch(e){}
+            }
+            document.getElementById('super-lastlogin').innerText = loginText;
+            
+            const btnReset = document.getElementById('btn-super-reset');
+            if(d.lineUid && d.lineUid !== "-") {
+                btnReset.classList.remove('hidden');
+                btnReset.setAttribute('data-mdid', d.mdid);
+            } else {
+                btnReset.classList.add('hidden');
+            }
+        } else {
+            Swal.fire('ไม่พบข้อมูล', 'ไม่พบรหัส MDID นี้ในระบบ', 'warning');
+            app.clearSuperstaff();
+        }
+    },
+    
+    // 🟢 2. ล้างค่าหน้าจอค้นหา
+    clearSuperstaff: () => {
+        document.getElementById('super-search-mdid').value = '';
+        document.getElementById('super-result-area').classList.add('hidden');
+        document.getElementById('btn-super-reset').classList.add('hidden');
+        document.getElementById('super-search-mdid').focus();
+    },
+    
+    // 🟢 3. ยืนยันการลบ LINE UID
+    confirmResetSuper: async () => {
+        const mdid = document.getElementById('btn-super-reset').getAttribute('data-mdid');
+        const conf = await Swal.fire({ 
+            title: 'ยืนยันการรีเซ็ต?', 
+            text: `ต้องการลบข้อมูล LINE ของรหัส ${mdid} ใช่หรือไม่?`, 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonText: 'ยืนยันลบข้อมูล', 
+            confirmButtonColor: '#d33',
+            cancelButtonText: 'ยกเลิก' 
+        });
+        
+        if(conf.isConfirmed) {
+            const res = await app.api({ action: 'confirm_reset_line_uid', payload: { mdid: mdid } }, 'กำลังลบข้อมูล...');
+            if(res && res.success) {
+                Swal.fire('สำเร็จ', res.message, 'success');
+                app.clearSuperstaff();
+            }
+        }
+    },
+
+    // 🟢 4. ค้นหาและดึงข้อมูลมาแก้ไขแบบ 16 คอลัมน์ (A-P)
+    fetchStaffFull: async () => {
+        const mdid = document.getElementById('super-edit-search-mdid').value.trim();
+        if (!mdid) return Swal.fire('เตือน', 'กรุณาระบุ MDID', 'warning');
+        
+        const res = await app.api({ action: 'search_staff_full', payload: { mdid: mdid } }, 'กำลังดึงข้อมูล...');
+        if (res && res.success) {
+            const d = res.data;
+            app.currentEditMdid = d.mdid; // เก็บคีย์เดิมไว้
+            
+            const picEl = document.getElementById('super-edit-pic');
+            if (picEl) picEl.src = res.pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=random`;
+            
+            document.getElementById('edit-mdid').value = d.mdid;
+            document.getElementById('edit-name').value = d.name;
+            document.getElementById('edit-institute').value = d.institute;
+            document.getElementById('edit-role').value = d.role;
+            document.getElementById('edit-r2').value = d.r2;
+            document.getElementById('edit-r3').value = d.r3;
+            document.getElementById('edit-r4').value = d.r4;
+            document.getElementById('edit-year').value = d.year;
+            document.getElementById('edit-status').value = d.status;
+            document.getElementById('edit-uid').value = d.uid;
+            document.getElementById('edit-email').value = d.email;
+            document.getElementById('edit-mobile').value = d.mobile;
+            document.getElementById('edit-advisor').value = d.advisor;
+            document.getElementById('edit-eval-target').value = d.eval_target;
+            document.getElementById('edit-view-target').value = d.view_target;
+            document.getElementById('super-edit-lastlogin').innerText = d.lastlogin;
+
+            document.getElementById('super-search-box').classList.add('hidden');
+            document.getElementById('super-edit-form').classList.remove('hidden');
+        } else {
+            Swal.fire('ไม่พบข้อมูล', res.message, 'error');
+        }
+    },
+
+    // 🟢 5. ยืนยันการบันทึกข้อมูลทับ 16 คอลัมน์ (A-P)
+    saveStaffFull: async () => {
+        const newData = {
+            mdid: document.getElementById('edit-mdid').value,
+            name: document.getElementById('edit-name').value,
+            institute: document.getElementById('edit-institute').value,
+            role: document.getElementById('edit-role').value,
+            r2: document.getElementById('edit-r2').value,
+            r3: document.getElementById('edit-r3').value,
+            r4: document.getElementById('edit-r4').value,
+            year: document.getElementById('edit-year').value,
+            status: document.getElementById('edit-status').value,
+            uid: document.getElementById('edit-uid').value,
+            linename: "", 
+            email: document.getElementById('edit-email').value,
+            mobile: document.getElementById('edit-mobile').value,
+            advisor: document.getElementById('edit-advisor').value,
+            eval_target: document.getElementById('edit-eval-target').value,
+            view_target: document.getElementById('edit-view-target').value
+        };
+
+        const res = await app.api({
+            action: 'update_staff_full',
+            payload: { originalMdid: app.currentEditMdid, newData: newData }
+        }, 'กำลังบันทึก...');
+
+        if (res && res.success) {
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.resetSuperEdit());
+        } else {
+            Swal.fire('ข้อผิดพลาด', res ? res.message : 'ไม่สามารถบันทึกข้อมูลได้', 'error');
+        }
+    },
+
+    // 🟢 6. ล้างหน้าจอแก้ไข
+    resetSuperEdit: () => {
+        document.getElementById('super-edit-search-mdid').value = "";
+        document.getElementById('super-search-box').classList.remove('hidden');
+        document.getElementById('super-edit-form').classList.add('hidden');
+    }
+    
     exportCSV: () => { 
         if(!app.dashboardData) return;
         // 🟢 เปลี่ยนหัวคอลัมน์และข้อมูลที่ดึงจาก item.id เป็น item.desc
@@ -1351,6 +1627,8 @@ checkEvalScore: () => {
     }
 };
 
+
+    
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
 </script>
