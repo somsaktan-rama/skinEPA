@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 1.48</title>
+    <title>EPA Skin App 1.49</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.48</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 1.49</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -951,20 +951,30 @@ api: async (req, loading = null) => {
     },
     
     // --- 360 Eval Flow ---
-    load360Form: async () => { 
+   load360Form: async () => { 
         const data = await app.api({ action: 'get_360_form_data', user: app.user });
         if(data) { 
             const grid = document.getElementById('grid-360-residents');
             if(data.residents.length === 0) { 
-                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินแพทย์ประจำบ้านในเทอมนี้ครบทุกคนแล้วครับ</p></div>`;
+                grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินในเทอมนี้ครบทุกคนแล้วครับ</p></div>`;
             } else { 
-                grid.innerHTML = data.residents.map(r => `
-                    <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
-                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
-                        <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
-                        <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
+                grid.innerHTML = data.residents.map(r => {
+                    // เข้ารหัสตัวแปรเผื่อชื่อมีเว้นวรรค
+                    const safeName = r.name ? r.name.replace(/'/g, "\\'") : '';
+                    const safeLevel = r.level ? r.level.replace(/'/g, "\\'") : '';
+                    const safePic = r.pic ? r.pic.replace(/'/g, "\\'") : '';
+                    
+                    return `
+                    <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${safeName}', '${safeLevel}', '${safePic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1 relative group">
+                        
+                        <div class="absolute inset-0 z-10 w-full h-full"></div>
+                        
+                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm relative z-0">
+                        <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1 relative z-0">${r.name}</p>
+                        <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold relative z-0">${r.level}</p>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
             } 
             app.showView('view-360-grid');
         } 
@@ -1671,6 +1681,61 @@ checkEvalScore: () => {
             
             container.innerHTML = html;
         } 
+    },
+    
+    // 🟢 ฟังก์ชันโหลดรายการกิจกรรมเพื่อจัดการ (สำหรับ Instructor และ Staff)
+    loadManageActivities: async () => {
+        // 1. เรียกดึงข้อมูลจากหลังบ้าน
+        const res = await app.api({ action: 'get_manage_activities', user: app.user }, 'กำลังโหลดรายการกิจกรรม...');
+        
+        if (res && res.success) {
+            // 2. หากล่อง container สำหรับแสดงผล (อิงจากโครงสร้างเดิมน่าจะชื่อ manage-activities-container)
+            const container = document.getElementById('manage-activities-container') || document.getElementById('manage-activity-list');
+            
+            if (!container) {
+                console.error('ไม่พบ Container สำหรับแสดงรายการจัดการกิจกรรมใน HTML');
+                return Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบส่วนแสดงผลในหน้าจอ กรุณาตรวจสอบ ID ของ HTML ครับ', 'error');
+            }
+
+            // 3. วาดการ์ดกิจกรรม
+            if (res.activities.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200 border-dashed mt-4">
+                        <span class="text-4xl mb-3 block">📭</span>
+                        <p class="font-bold">ยังไม่มีกิจกรรมที่เปิดอยู่</p>
+                        <p class="text-xs mt-1">คุณสามารถสร้างกิจกรรมใหม่ได้จากเมนูหลักครับ</p>
+                    </div>`;
+            } else {
+                container.innerHTML = res.activities.map(a => `
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 ${a.status === 'OPEN' ? 'bg-amber-400' : 'bg-gray-400'}"></div>
+                        
+                        <div class="flex justify-between items-start mb-2 pl-2">
+                            <div>
+                                <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">${a.desc}</span>
+                                <h3 class="font-bold text-gray-800 mt-2 text-lg leading-tight">${a.topic}</h3>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded ${a.status === 'OPEN' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}">${a.status}</span>
+                        </div>
+                        
+                        <div class="text-sm text-gray-600 mb-4 space-y-1 pl-2">
+                            <p class="flex items-center"><span class="w-5 text-center mr-1 text-gray-400">🕒</span> เริ่ม: ${formatThaiDateTime(a.act_begin)}</p>
+                            <p class="flex items-center"><span class="w-5 text-center mr-1 text-gray-400">🏁</span> สิ้นสุด: ${formatThaiDateTime(a.act_finish)}</p>
+                            <p class="flex items-center"><span class="w-5 text-center mr-1 text-teal-500">👥</span> ผู้เข้าร่วม: <b class="mx-1">${a.resident_count}</b> / อาจารย์ <b class="ml-1">${a.instructor_count}</b></p>
+                        </div>
+                        
+                        <div class="pl-2">
+                            <button onclick="app.viewAttendees('${a.act_ref_id}', '${a.topic}', '${a.act_begin}', '${a.act_finish}')" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold py-2.5 rounded-lg transition shadow-sm">
+                                ⚙️ จัดการ / ดูรายชื่อเช็คอิน
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // 4. สลับหน้าจอไปที่หน้าจัดการกิจกรรม
+            app.showView('view-manage-activities');
+        }
     },
     
     toggleRes: (id) => { 
