@@ -709,14 +709,14 @@ api: async (req, loading = null) => {
         if (isInstructor) {
             html += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">✅</span> รอประเมิน EPA</span>
-                        <span class="text-purple-400">→</span> [cite: 522, 523]
+                        <span class="text-purple-400">→</span> 
                      </button>`;
             
             // 🟢 ตรวจสอบเพิ่มเติม: หากไม่มีข้อมูลระบุไว้ในช่อง viewTarget ของอาจารย์ท่านนี้ จะไม่แสดงปุ่มเมนูบนหน้าจอหลัก
             if (app.user && app.user.viewTarget && app.user.viewTarget !== "") {
                 html += `<button onclick="app.initInst360()" class="w-full bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                             <span class="font-bold flex items-center"><span class="text-xl mr-3">📊</span> ดูผลประเมิน 360 (ลูกศิษย์)</span>
-                            <span class="text-cyan-400">→</span> [cite: 524]
+                            <span class="text-cyan-400">→</span> 
                          </button>`;
             }
         }
