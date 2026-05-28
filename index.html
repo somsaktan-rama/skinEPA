@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.08</title>
+    <title>EPA Skin App 2.10</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.08</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1350,7 +1350,7 @@ _render360Data: async (targetMdid) => {
         }
     },
 
-    viewAttendees: async (actRefId) => { 
+viewAttendees: async (actRefId) => { 
         // 🟢 ดึงข้อมูลจาก Cache ที่เก็บไว้
         const act = app.cachedManageActs[actRefId];
         if (!act) return;
@@ -1362,12 +1362,50 @@ _render360Data: async (targetMdid) => {
         const data = await app.api({ action: 'get_activity_attendees', act_ref_id: actRefId });
         if(data) { 
             const list = document.getElementById('attendees-container');
-            if(data.attendees.length === 0) list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
-            else list.innerHTML = data.attendees.map(u => `<div class="flex justify-between items-center p-2 border-b bg-gray-50 mb-1"><div><b>${u.name}</b></div><button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-100 px-2 py-1 rounded text-xs font-semibold">นำออก</button></div>`).join('');
+            if(data.attendees.length === 0) {
+                list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
+            } else {
+                // 🟢 ปรับเปลี่ยน UI แสดงผลสถานะสีตามพิกัด (GPS)
+                list.innerHTML = data.attendees.map(u => {
+                    let statusBadge = '';
+                    
+                    if (u.gpsStatus === 'Instructor') {
+                        statusBadge = `<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-bold border border-purple-300 shadow-sm">👨‍🏫 อาจารย์ผู้คุม</span>`;
+                    } else if (u.gpsStatus === 'In Range') {
+                        statusBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-400 shadow-sm">✔️ ในพื้นที่ (${u.distance} Km)</span>`;
+                    } else if (u.gpsStatus === 'Out of Range') {
+                        statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold border border-red-400 shadow-sm">❌ นอกรัศมี (${u.distance} Km)</span>`;
+                    } else if (u.gpsStatus === 'Wait Instructor') {
+                        statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-300 shadow-sm">⏳ รอเทียบพิกัดอาจารย์</span>`;
+                    } else {
+                        statusBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold border border-gray-300 shadow-sm">⚠️ ไม่ระบุพิกัด</span>`;
+                    }
+                    
+                    // จัด Format เวลาให้อ่านง่าย
+                    let timeStr = "";
+                    try {
+                        let d = new Date(u.time);
+                        timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+                    } catch(e) { timeStr = u.time; }
+
+                    return `<div class="flex justify-between items-center p-3 border-b bg-white mb-2 rounded-lg shadow-sm border-l-4 
+                        ${u.gpsStatus === 'In Range' ? 'border-l-green-500' : 
+                         (u.gpsStatus === 'Out of Range' ? 'border-l-red-500' : 
+                         (u.gpsStatus === 'Instructor' ? 'border-l-purple-500' : 'border-l-gray-300'))}">
+                        <div>
+                            <div class="font-bold text-gray-800 text-sm">${u.name}</div>
+                            <div class="mt-2 flex items-center space-x-2">
+                                ${statusBadge}
+                                <span class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">⏱️ ${timeStr}</span>
+                            </div>
+                        </div>
+                        <button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">นำออก</button>
+                    </div>`;
+                }).join('');
+            }
             
-            let now = new Date().getTime();
-            let bTime = new Date(act.act_begin).getTime();
-            let showEditBtn = now < bTime;
+            // 🟢 เปลี่ยนเงื่อนไขแสดงปุ่มแก้ไข: ตราบใดที่สถานะยังคงเป็น OPEN จะอนุญาตให้เจ้าหน้าที่แก้ไขรายละเอียดได้
+            let showEditBtn = act.status === 'OPEN';
             
             let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
             btnContainer.innerHTML = `
