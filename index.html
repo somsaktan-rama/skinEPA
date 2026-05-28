@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.10F</title>
+    <title>EPA Skin App 2.10G</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10F</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10G</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1371,13 +1371,17 @@ joinActivity: async (actRefId) => {
     },
 
     processJoinActivity: async (actRefId, lat, lng) => {
-            const res = await app.api({ 
+        // 🟢 บังคับแปลงพิกัด GPS เป็นข้อความ (String) เสมอ เพื่อไม่ให้ข้อมูลหายตอนส่งเข้า Google Sheets
+        let latStr = (lat !== undefined && lat !== null) ? String(lat) : "";
+        let lngStr = (lng !== undefined && lng !== null) ? String(lng) : "";
+
+        const res = await app.api({ 
             action: 'join_activity', 
             payload: { 
-                mdid: String(app.user.mdid),  // 🟢 บังคับส่งรหัส MDID เป็น String ตรงๆ
+                mdid: String(app.user.mdid), 
                 act_ref_id: String(actRefId), 
-                lat: lat, 
-                lng: lng
+                lat: latStr, 
+                lng: lngStr 
             } 
         }, 'กำลังบันทึกข้อมูล...');
         
@@ -1430,8 +1434,7 @@ viewAttendees: async (actRefId) => {
         
         app.currentManageAct = act; 
         // 🟢 เพิ่มแท็กแสดงชื่ออาจารย์ ต่อท้ายชื่อกิจกรรม
-        document.getElementById('attendee-topic').innerHTML = `กิจกรรม: ${act.topic} <br><span class="text-purple-700 text-sm font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${act.instructor_name}</span>`; 
-        
+        document.getElementById('attendee-topic').innerHTML = `กิจกรรม: ${act.topic} <br><span class="text-purple-700 text-sm font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${act.instructor_name || 'ไม่พบข้อมูลอาจารย์'}</span>`;
         document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(act.act_finish)}`;
         
         // 🟢 2. ส่งข้อมูลไปหลังบ้าน
