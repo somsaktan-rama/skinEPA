@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.10H</title>
+    <title>EPA Skin App 2.10 I</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10H</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10 I</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -49,10 +49,19 @@
             <button onclick="app.openResetModal()" class="text-sm text-blue-500 underline text-center w-full block bg-transparent mt-3">ต้องการรีเซ็ตการผูกบัญชี LINE?</button>
         </div>
 
-<div id="view-superstaff-edit" class="hidden animate-fade-in pb-10">
-    <div class="flex items-center justify-between mb-4">
+    <div id="view-superstaff-edit" class="hidden animate-fade-in pb-10">
+    <div class="flex items-center justify-between mb-2">
         <h2 class="text-xl font-bold text-red-700">🔧 ข้อมูลบุคลากร (Superstaff)</h2>
-        <button onclick="app.showView('view-menu')" class="text-gray-500 font-bold bg-gray-100 px-3 py-1 rounded">ออก</button>
+        <button onclick="app.showView('view-menu')" class="text-gray-500 font-bold bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded transition">ออก</button>
+    </div>
+    
+    <div class="mb-4 text-right">
+        <a href="https://somsaktan-rama.github.io/skinEPA/readme_superstaff.md" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm font-bold text-sm inline-flex items-center gap-1 transition">
+            <span>📖 คู่มือการใช้งาน</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+        </a>
     </div>
 
     <div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
@@ -629,9 +638,9 @@ api: async (req, loading = null) => {
             html: `
                 <div class="text-left text-sm space-y-3 mt-2">
                     <p class="text-gray-600 mb-3 text-center">เลือกระดับสิทธิ์ของท่านเพื่ออ่านคู่มือ (เปิดหน้าต่างใหม่):</p>
-                    <a href="https://somsaktan-rama.github.io/skinEPA/resident_readme.md" target="_blank" class="block w-full bg-blue-50 text-blue-700 border border-blue-200 p-3 rounded-lg font-bold text-center hover:bg-blue-100 transition shadow-sm">👨‍⚕️ สำหรับ Resident / Fellow</a>
-                    <a href="https://somsaktan-rama.github.io/skinEPA/Instructor_readme.md" target="_blank" class="block w-full bg-purple-50 text-purple-700 border border-purple-200 p-3 rounded-lg font-bold text-center hover:bg-purple-100 transition shadow-sm">👨‍🏫 สำหรับ Instructor</a>
-                    <a href="https://somsaktan-rama.github.io/skinEPA/Staff_readme.md" target="_blank" class="block w-full bg-pink-50 text-pink-700 border border-pink-200 p-3 rounded-lg font-bold text-center hover:bg-pink-100 transition shadow-sm">⚙️ สำหรับ Staff / Admin</a>
+                    <a href="https://somsaktan-rama.github.io/skinEPA/readme_resident.md" target="_blank" class="block w-full bg-blue-50 text-blue-700 border border-blue-200 p-3 rounded-lg font-bold text-center hover:bg-blue-100 transition shadow-sm">👨‍⚕️ สำหรับ Resident / Fellow</a>
+                    <a href="https://somsaktan-rama.github.io/skinEPA/readme_instructor.md" target="_blank" class="block w-full bg-purple-50 text-purple-700 border border-purple-200 p-3 rounded-lg font-bold text-center hover:bg-purple-100 transition shadow-sm">👨‍🏫 สำหรับ Instructor</a>
+                    <a href="https://somsaktan-rama.github.io/skinEPA/readme_staff.md" target="_blank" class="block w-full bg-pink-50 text-pink-700 border border-pink-200 p-3 rounded-lg font-bold text-center hover:bg-pink-100 transition shadow-sm">⚙️ สำหรับ Staff / Admin</a>
                 </div>
             `,
             showConfirmButton: true,
@@ -786,8 +795,6 @@ api: async (req, loading = null) => {
         menuArea.innerHTML = html;
     },
 
-
-    // --- Activity Flow ---
     // --- Create Activity (Cache Form Data) ---
     loadStaffCreateActivity: async () => { 
         // 🟢 ใช้ Cache เพื่อให้โหลดเร็วขึ้นในครั้งที่ 2
