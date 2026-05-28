@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.03</title>
+    <title>EPA Skin App 2.04</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.03</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.04</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1425,28 +1425,28 @@ checkEvalScore: () => {
         }
     },
     
-    // --- Dashboard ---
+// --- Dashboard ---
     loadDashboard: async () => { 
-        const res = await app.api({ action: 'get_dashboard_data', user: app.user });
+        // 🟢 เพิ่มข้อความ Loading เพื่อให้ระบบแสดง Popup ทันทีที่กดปุ่ม
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user }, 'กำลังประมวลผลข้อมูลความก้าวหน้า...');
         if(res && res.success) { 
             app.dashboardData = res.data; 
-            app.showView('view-staff-dashboard'); 
+            app.showView('view-staff-dashboard');
             document.getElementById('time-elapsed-info').innerText = `⏳ เวลาผ่านไปแล้ว ${res.time_elapsed_pct.toFixed(0)}% (นับจาก 1 ก.ค.)`; 
             const container = document.getElementById('dashboard-content');
             if(res.data.length === 0) return container.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีข้อมูลความก้าวหน้า</p>'; 
             
             let currentRoleGroup = '';
             let html = '';
-            
             res.data.forEach(r => {
-                // 🟢 สร้างหัวข้อคั่นแต่ละกลุ่ม (Resident / Fellow)
+                // สร้างหัวข้อคั่นแต่ละกลุ่ม (Resident / Fellow)
                 if (r.roleGroup !== currentRoleGroup) {
                     let roleTitle = r.roleGroup === 'RES' ? '👨‍⚕️ กลุ่มแพทย์ประจำบ้าน (Resident)' : '👨‍⚕️ กลุ่มแพทย์ต่อยอด (Fellow DermSurg)';
                     html += `<h3 class="text-base font-bold text-teal-800 mt-6 mb-3 border-b-2 border-teal-200 pb-1">${roleTitle}</h3>`;
                     currentRoleGroup = r.roleGroup;
                 }
                 
-                // 🟢 จัดการป้ายสถานะให้ถูกต้อง
+                // จัดการป้ายสถานะให้ถูกต้อง
                 let statusBadge = '';
                 if (r.total_target === 0) {
                     statusBadge = `<div class="mt-2 text-xs text-gray-600 bg-gray-100 border border-gray-300 px-2 py-1 rounded inline-block self-start shadow-sm">⚠️ ยังไม่มีเป้าหมาย (0 เคส)</div>`;
@@ -1476,7 +1476,7 @@ checkEvalScore: () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${r.items.map(item => `
+                                 ${r.items.map(item => `
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="p-2 text-gray-700 text-sm break-words">${item.desc}</td>
                                     <td class="p-2 text-center font-bold">${item.target}</td>
