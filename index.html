@@ -1146,7 +1146,7 @@ loadCheckin: async () => {
         }
     },
     
-    // --- Weekly Batch (อัปเดตเพิ่มปุ่มถังขยะลบแม่แบบ) ---
+    // --- Weekly Batch (อัปเดต เพิ่มปุ่มถังขยะลบแม่แบบ/sort) ---
     loadWeeklyBatch: async () => {
         const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
         const formDataRes = await app.api({ action: 'get_weekly_batch_data', user: app.user });
@@ -1168,6 +1168,30 @@ loadCheckin: async () => {
                 listEl.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">ยังไม่มีแม่แบบในสถาบันของคุณ</p>';
             } else {
                 const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
+                
+                // 🟢 เพิ่มคำสั่งเรียงลำดับตาม "วันที่ใกล้จะถึงที่สุด" และตามด้วย "เวลาเริ่ม"
+                res.favs.sort((a, b) => {
+                    let today = new Date().getDay(); 
+                    if (today === 0) today = 7; // แปลงวันอาทิตย์ (0) เป็น 7 เพื่อคำนวณง่าย
+
+                    // คำนวณระยะห่างวันของ a
+                    let distA = parseInt(a.day_of_week) - today;
+                    if (distA <= 0) distA += 7;
+
+                    // คำนวณระยะห่างวันของ b
+                    let distB = parseInt(b.day_of_week) - today;
+                    if (distB <= 0) distB += 7;
+
+                    if (distA !== distB) {
+                        return distA - distB; // เรียงตามจำนวนวันที่ใกล้ที่สุด
+                    } else {
+                        // ถ้าเป็นวันเดียวกัน ให้เรียงตามเวลาเริ่ม (time_begin)
+                        let tA = a.time_begin || "00:00";
+                        let tB = b.time_begin || "00:00";
+                        return tA.localeCompare(tB);
+                    }
+                });
+
                 listEl.innerHTML = res.favs.map(f => {
                     let d = new Date(); let today = d.getDay(); if (today === 0) today = 7;
                     let distance = parseInt(f.day_of_week) - today; if (distance <= 0) distance += 7; d.setDate(d.getDate() + distance);
