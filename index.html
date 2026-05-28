@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.07</title>
+    <title>EPA Skin App 2.08</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.07</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.08</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1448,7 +1448,7 @@ checkEvalScore: () => {
                 if(customText) reasons.push(`ความเห็น: ${customText}`); 
             } 
 
-            // 🟢 ดึงรหัส Resident แบบบังคับแปลงเป็นข้อความ (ป้องกันค่าสูญหายตอนส่ง API)
+            // ดึงรหัส Resident
             let targetMdid = "";
             if (app.currentEvalTask && app.currentEvalTask.resident_mdid) {
                 targetMdid = app.currentEvalTask.resident_mdid.toString().trim();
@@ -1461,9 +1461,10 @@ checkEvalScore: () => {
                 action: 'save_evaluation', 
                 payload: { 
                     rowId: app.currentEvalTask.rowId, 
-                    resident_mdid: targetMdid, // 👈 ส่งรหัสที่แปลงเป็นข้อความแล้ว
+                    resident_mdid: targetMdid,
                     score: score, 
-                    reason: reasons.join(' | ') 
+                    reason: reasons.join(' | '),
+                    is_fail: (score < minLvl) // 🟢 เพิ่มการส่งสถานะว่า "ไม่ผ่านเกณฑ์" ไปให้หลังบ้าน 
                 }
             }, 'กำลังบันทึกผลการประเมิน...');
             
