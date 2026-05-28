@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.10C</title>
+    <title>EPA Skin App 2.10D</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10C</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10D</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1406,26 +1406,34 @@ joinActivity: async (actRefId) => {
     },
 
 viewAttendees: async (actRefId) => { 
-        // 🟢 ดึงข้อมูลจาก Cache ที่เก็บไว้
+        // 🟢 1. ดักจับกรณีไม่มีรหัสอ้างอิงส่งมา
+        if (!actRefId) {
+            return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสอ้างอิงกิจกรรม', 'error');
+        }
+
         const act = app.cachedManageActs[actRefId];
-        if (!act) return;
+        if (!act) {
+            return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลกิจกรรมในระบบ', 'error');
+        }
         
         app.currentManageAct = act; 
         document.getElementById('attendee-topic').innerText = `กิจกรรม: ${act.topic}`; 
         document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(act.act_finish)}`; 
         
+        // 🟢 2. ส่งข้อมูลไปหลังบ้าน
         const data = await app.api({ 
             action: 'get_activity_attendees', 
             act_ref_id: actRefId,             // ส่งแบบปกติ
             payload: { act_ref_id: actRefId } // ส่งแบบกล่องซ้อน (Payload)
         });
     
-        if(data) { 
+        // 🟢 3. ตรวจสอบผลลัพธ์
+        if(data && data.success) { 
             const list = document.getElementById('attendees-container');
             if(data.attendees.length === 0) {
                 list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
             } else {
-                // 🟢 ปรับเปลี่ยน UI แสดงผลสถานะสีตามพิกัด (GPS)
+                // ปรับเปลี่ยน UI แสดงผลสถานะสีตามพิกัด (GPS)
                 list.innerHTML = data.attendees.map(u => {
                     let statusBadge = '';
                     
@@ -1464,7 +1472,7 @@ viewAttendees: async (actRefId) => {
                 }).join('');
             }
             
-            // 🟢 เปลี่ยนเงื่อนไขแสดงปุ่มแก้ไข: ตราบใดที่สถานะยังคงเป็น OPEN จะอนุญาตให้เจ้าหน้าที่แก้ไขรายละเอียดได้
+            // เปลี่ยนเงื่อนไขแสดงปุ่มแก้ไข: ตราบใดที่สถานะยังคงเป็น OPEN จะอนุญาตให้เจ้าหน้าที่แก้ไขรายละเอียดได้
             let showEditBtn = act.status === 'OPEN';
             
             let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
@@ -1475,7 +1483,11 @@ viewAttendees: async (actRefId) => {
                 <button onclick="app.showView('view-manage-activities')" class="flex-1 bg-gray-400 text-white py-2 rounded font-bold">กลับ</button>
             `;
             app.showView('view-activity-attendees'); 
-        } 
+            
+        } else if (data && !data.success) {
+            // 🔴 4. หากหลังบ้านส่ง Error กลับมา ให้นำข้อความมาแจ้งเตือน
+            Swal.fire('เกิดข้อผิดพลาด', data.message, 'error');
+        }
     },
     
     removeAttendee: async (recordId) => { if(!confirm('ลบ?')) return;
