@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.10D</title>
+    <title>EPA Skin App 2.10E</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10D</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10E</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1433,7 +1433,7 @@ viewAttendees: async (actRefId) => {
             if(data.attendees.length === 0) {
                 list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
             } else {
-                // ปรับเปลี่ยน UI แสดงผลสถานะสีตามพิกัด (GPS)
+                // ปรับเปลี่ยน UI แสดงผลสถานะสีตามพิกัด (GPS) // 🟢 ปรับคลาส css จาก space-x-2 เป็น gap-2 เพื่อไม่ให้ชนกับที่วางปุ่มด้านล่าง
                 list.innerHTML = data.attendees.map(u => {
                     let statusBadge = '';
                     
@@ -1449,7 +1449,6 @@ viewAttendees: async (actRefId) => {
                         statusBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold border border-gray-300 shadow-sm">⚠️ ไม่ระบุพิกัด</span>`;
                     }
                     
-                    // จัด Format เวลาให้อ่านง่าย
                     let timeStr = "";
                     try {
                         let d = new Date(u.time);
@@ -1462,7 +1461,7 @@ viewAttendees: async (actRefId) => {
                          (u.gpsStatus === 'Instructor' ? 'border-l-purple-500' : 'border-l-gray-300'))}">
                         <div>
                             <div class="font-bold text-gray-800 text-sm">${u.name}</div>
-                            <div class="mt-2 flex items-center space-x-2">
+                            <div class="mt-2 flex items-center gap-2"> 
                                 ${statusBadge}
                                 <span class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">⏱️ ${timeStr}</span>
                             </div>
