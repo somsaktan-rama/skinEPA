@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.02</title>
+    <title>EPA Skin App 2.03</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.02</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.03</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -736,12 +736,17 @@ api: async (req, loading = null) => {
 
 
     // --- Activity Flow ---
-     loadStaffCreateActivity: async () => { 
-        const data = await app.api({ action: 'get_activity_form_data', user: app.user });
+    // --- Create Activity (Cache Form Data) ---
+    loadStaffCreateActivity: async () => { 
+        // 🟢 ใช้ Cache เพื่อให้โหลดเร็วขึ้นในครั้งที่ 2
+        if (!app.cachedActFormData) {
+            app.cachedActFormData = await app.api({ action: 'get_activity_form_data', user: app.user }, 'กำลังเตรียมแบบฟอร์ม...');
+        }
+        const data = app.cachedActFormData;
         if(data) { 
-            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join(''); 
+            document.getElementById('create-act-id').innerHTML = '<option value="">-- เลือก --</option>' + data.acts.map(a => `<option value="${a.id}">${a.desc}</option>`).join('');
             document.getElementById('create-act-instructor').innerHTML = '<option value="">-- ไม่ระบุ --</option>' + data.instructors.map(i => `<option value="${i.mdid}">อ. ${i.name}</option>`).join('');
-            app.showView('view-staff-create-activity'); 
+            app.showView('view-staff-create-activity');
         } 
     },
     
@@ -752,9 +757,10 @@ api: async (req, loading = null) => {
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
     },
     
-    // --- 360 Eval Flow ---
+ // --- 360 Eval Flow ---
     load360Form: async () => { 
-        const data = await app.api({ action: 'get_360_form_data', user: app.user });
+        // 🟢 เพิ่มข้อความ Loading เพื่อให้ปุ่มตอบสนองทันที
+        const data = await app.api({ action: 'get_360_form_data', user: app.user }, 'กำลังโหลดรายชื่อ...'); 
         if(data) { 
             const grid = document.getElementById('grid-360-residents');
             if(data.residents.length === 0) { 
@@ -762,7 +768,7 @@ api: async (req, loading = null) => {
             } else { 
                 grid.innerHTML = data.residents.map(r => `
                     <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
-                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
+                        <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" loading="lazy" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
                         <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
                         <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
                     </div>
@@ -1003,16 +1009,20 @@ _render360Data: async (targetMdid) => {
     },
 
     // --- Resident Flow ---
+    // --- Resident Create EPA Form ---
     loadResidentForm: async () => { 
-        const data = await app.api({ action: 'get_resident_data', user: app.user });
+        // 🟢 เพิ่มข้อความ Loading
+        const data = await app.api({ action: 'get_resident_data', user: app.user }, 'กำลังโหลดแบบฟอร์ม...');
         if (data) { 
             app.residentContext = data;
             const selEpa = document.getElementById('sel-epaid'); 
             selEpa.innerHTML = '<option value="">-- เลือกรายการ EPA --</option>' + data.epas.map(e => `<option value="${e.id}">${e.id}: ${e.desc}</option>`).join(''); 
             selEpa.setAttribute('onchange', 'app.filterInstructors()');
-            document.getElementById('sel-instructor').innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>'; app.showView('view-resident-epa'); 
+            document.getElementById('sel-instructor').innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>'; 
+            app.showView('view-resident-epa'); 
         } 
     },
+    
     filterInstructors: () => { 
         const selEpaId = document.getElementById('sel-epaid').value, selInst = document.getElementById('sel-instructor');
         if (!selEpaId) return selInst.innerHTML = '<option value="">-- กรุณาเลือก EPA ก่อน --</option>'; const epaInfo = app.residentContext.epas.find(e => e.id === selEpaId);
@@ -1034,16 +1044,16 @@ _render360Data: async (targetMdid) => {
         } 
     },
 
-// --- Checkin & Attendees (อัปเดตปุ่มล่วงหน้า) ---
-loadCheckin: async () => {
-        const data = await app.api({ action: 'get_open_checkins', user: app.user });
+// --- Checkin Flow ---
+    loadCheckin: async () => {
+        // 🟢 เพิ่มข้อความ Loading
+        const data = await app.api({ action: 'get_open_checkins', user: app.user }, 'กำลังค้นหากิจกรรม...');
         if(data) {
             const list = document.getElementById('checkin-list');
             if(data.activities.length === 0) {
                 list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมที่เปิดให้ลงชื่อในขณะนี้</p>';
             } else {
                 list.innerHTML = data.activities.map(a => {
-                    // กำหนดปุ่มกดตามสถานะเวลา
                     let btnHtml = '';
                     if (a.already_joined) {
                         btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center">✔️ เข้าร่วมแล้ว</span>`;
@@ -1052,8 +1062,6 @@ loadCheckin: async () => {
                     } else {
                         btnHtml = `<button onclick="app.joinActivity('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full">ลงชื่อ (Join)</button>`;
                     }
-
-                    // 🟢 ลอจิกใหม่: ตรวจสอบและแสดงชื่ออาจารย์ผู้คุมกิจกรรม (ถ้ามี)
                     let instructorHtml = a.instructor_name ? `<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
 
                     return `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 ${a.is_ready ? 'border-l-orange-500' : 'border-l-gray-300'}">
@@ -1263,19 +1271,19 @@ loadCheckin: async () => {
     
     joinActivity: async (actRefId) => { const res = await app.api({ action: 'join_activity', payload: { user: app.user, act_ref_id: actRefId }});
         if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin()); },
-loadManageActivities: async () => {
-        const data = await app.api({ action: 'get_manage_activities', user: app.user });
+
+    // --- Manage Activities ---
+    loadManageActivities: async () => {
+        // 🟢 เพิ่มข้อความ Loading
+        const data = await app.api({ action: 'get_manage_activities', user: app.user }, 'กำลังโหลดกิจกรรม...');
         if(data) {
             const list = document.getElementById('manage-act-list');
             if(data.activities.length === 0) {
                 list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
             } else {
-                // 🟢 สร้างตัวแปร Cache เก็บข้อมูลไว้ ป้องกันบั๊กเครื่องหมายคำพูด
                 app.cachedManageActs = {}; 
                 list.innerHTML = data.activities.map(a => {
                     app.cachedManageActs[a.act_ref_id] = a; 
-                    
-                    // 🟢 แก้ไข onclick ให้ส่งไปแค่รหัส ID สั้นๆ แทน
                     return `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}')">
                         <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
                         <div class="text-sm text-blue-700 mt-1">ประเภท: ${a.desc}</div>
@@ -1327,9 +1335,10 @@ loadManageActivities: async () => {
         const res = await app.api({ action: 'close_activity', act_ref_id: app.currentManageAct.act_ref_id }); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadManageActivities());
     },
 
-    // --- Evaluation Flow ---
+   // --- Evaluation Tasks ---
     loadInstructorTasks: async () => { 
-        const data = await app.api({ action: 'get_eval_tasks', user: app.user });
+        // 🟢 เพิ่มข้อความ Loading
+        const data = await app.api({ action: 'get_eval_tasks', user: app.user }, 'กำลังตรวจสอบรายการ...');
         if (data) { 
             const container = document.getElementById('task-container');
             app.cachedTasks = {}; 
@@ -1349,6 +1358,7 @@ loadManageActivities: async () => {
             app.showView('view-instructor-list'); 
         } 
     },
+    
     openEvalFormByCache: async (recordId) => {
         const task = app.cachedTasks[recordId];
         if(!task) return;
