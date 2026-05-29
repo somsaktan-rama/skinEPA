@@ -127,6 +127,25 @@
             <div id="grid-360-residents" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto p-1 pb-4"></div>
         </div>
 
+        <div id="calendar-sync-card" class="hidden mb-4 bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-4 shadow-sm animate-fade-in">
+    <div class="flex items-center space-x-2 text-teal-800 font-bold mb-2">
+        <span>📅 ซิงค์ตารางกิจกรรมเข้า Google Calendar</span>
+    </div>
+    <p class="text-xs text-gray-600 mb-3 leading-relaxed">
+        คุณสามารถเชื่อมต่อตารางกิจกรรม (Activity) ของสถาบันเข้าสู่ปฏิทินส่วนตัวบนสมาร์ทโฟนได้อัตโนมัติ ระบบจะอัปเดตวัน-เวลาให้เองหากมีการเปลี่ยนแปลงล่วงหน้า
+    </p>
+    
+    <a id="btn-subscribe-calendar" href="#" target="_blank" class="w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition inline-block mb-3">
+        ➕ กดเพื่อติดตั้ง/ติดตามปฏิทิน
+    </a>
+
+    <div class="bg-white/80 border border-teal-100 rounded-lg p-2 text-[11px] text-gray-500 space-y-1">
+        <p class="font-bold text-teal-700">💡 วิธีเปิดแสดงผลบนสมาร์ทโฟน:</p>
+        <p>• <b>Android / แอป Google Calendar:</b> เปิดแอป > ไปที่เมนู 3 ขีด (มุมซ้ายบน) > การตั้งค่า > กดชื่อปฏิทินสถาบัน > เปิดสวิตช์ "ซิงค์ (Sync)"</p>
+        <p>• <b>iPhone (แอปปฏิทินติดเครื่อง):</b> หลังจากกดปุ่มติดตั้งด้านบนแล้ว ให้เข้าเบราว์เซอร์ไปที่ <a href="https://calendar.google.com/calendar/syncselect" target="_blank" class="text-blue-600 underline">calendar.google.com/calendar/syncselect</a> แล้วติ๊กถูกหน้าชื่อปฏิทินสถาบันเพื่อเปิดระบบดาวน์โหลดข้อมูลครับ</p>
+    </div>
+</div>
+        
         <div id="view-360-focus" class="hidden">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h2 class="text-xl font-bold text-teal-800">📝 แบบประเมิน 360 องศา</h2>
@@ -418,26 +437,36 @@ init: async () => {
                 app.lineName = profile.displayName;
 
                 // 2. ยิงไปเช็คหลังบ้าน
-                const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
-                
-                if (loginCheck && loginCheck.success) {
-                    // 🟢 ลอจิก 3: พบ LINE UID ในระบบ -> ทะลุเข้าโปรแกรมเลย
-                    app.user = loginCheck.user;
-                    document.getElementById('display-name').innerText = app.user.name;
-                    document.getElementById('display-inst').innerText = app.user.institute;
-                    document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-                    app.renderMenu(); 
-                    app.showView('view-menu'); 
-                } else {
-                    // 🟢 ลอจิก 1: ไม่พบในระบบ -> โชว์หน้า Login 
-                    app.showView('view-login');
+                    const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
                     
-                    // ปลดล็อกช่องกรอกรหัสให้ผู้ใช้พิมพ์ได้ตามปกติ
-                    if (mdidInput) {
-                        mdidInput.disabled = false;
-                        mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
-                        mdidInput.value = ""; 
-                        mdidInput.focus(); // ให้เคอร์เซอร์กระพริบรอพิมพ์ทันที
+                    if (loginCheck && loginCheck.success) {
+                        // 🟢 ลอจิก 3: พบ LINE UID ในระบบ -> ทะลุเข้าโปรแกรมเลย
+                        app.user = loginCheck.user;
+                        document.getElementById('display-name').innerText = app.user.name;
+                        document.getElementById('display-inst').innerText = app.user.institute;
+                        document.getElementById('display-role').innerText = app.user.role.toUpperCase();
+                        
+                        // 🟢 แทรกตรงนี้: ตรวจสอบและควบคุมการแสดงผลกล่องติดตั้ง Google Calendar ประจำสถาบัน สำหรับระบบ Auto-Login
+                        if (app.user && app.user.calendarUrl) {
+                            document.getElementById('calendar-sync-card').classList.remove('hidden');
+                            document.getElementById('btn-subscribe-calendar').href = app.user.calendarUrl;
+                        } else {
+                            document.getElementById('calendar-sync-card').classList.add('hidden');
+                        }
+                        
+                        app.renderMenu(); 
+                        app.showView('view-menu'); 
+                    } else {
+                        // 🟢 ลอจิก 1: ไม่พบในระบบ -> โชว์หน้า Login 
+                        app.showView('view-login');
+                        
+                        // ปลดล็อกช่องกรอกรหัสให้ผู้ใช้พิมพ์ได้ตามปกติ
+                        if (mdidInput) {
+                            mdidInput.disabled = false;
+                            mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
+                            mdidInput.value = ""; 
+                            mdidInput.focus(); // ให้เคอร์เซอร์กระพริบรอพิมพ์ทันที
+                        }
                     }
                 }
             }
@@ -499,6 +528,14 @@ login: async () => {
                     document.getElementById('display-name').innerText = app.user.name || "-";
                     document.getElementById('display-inst').innerText = app.user.institute || "-";
                     document.getElementById('display-role').innerText = app.user.role ? app.user.role.toUpperCase() : "-";
+                    
+                    // 🟢 แทรกตรงนี้: ตรวจสอบและควบคุมการแสดงผลกล่องติดตั้ง Google Calendar ประจำสถาบัน
+                    if (app.user && app.user.calendarUrl) {
+                        document.getElementById('calendar-sync-card').classList.remove('hidden');
+                        document.getElementById('btn-subscribe-calendar').href = app.user.calendarUrl;
+                    } else {
+                        document.getElementById('calendar-sync-card').classList.add('hidden');
+                    }
                     
                     if (res.isFirstTime) {
                         Swal.fire('สำเร็จ', res.message, 'success').then(() => {
