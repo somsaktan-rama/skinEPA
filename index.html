@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.11</title>
+    <title>EPA Skin App 2.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.11</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.12</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -417,8 +417,43 @@ const app = {
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-init: async () => {
-        const LIFF_ID = '2010106383-UKz3SgNA';
+    
+    openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
+    closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
+    requestResetLine: async () => {
+        const mdid = document.getElementById('reset-mdid').value.trim(); const email = document.getElementById('reset-email').value.trim();
+        if (!mdid || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรอกรหัสและอีเมลให้เรียบร้อย', 'warning');
+        const data = await app.api({ action: 'request_reset_line', payload: { mdid: mdid, email: email } }, 'กำลังตรวจสอบระบบ...');
+        if (data) { app.closeResetModal(); Swal.fire('สำเร็จ', data.message, 'success'); }
+    },
+
+    showView: (id) => {
+        document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    },
+
+api: async (req, loading = null) => {
+        if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
+            const json = await res.json();
+            if(loading) Swal.close();
+            
+            // 🟢 ปรับลอจิก: ถ้าหลังบ้านตอบล้มเหลว แต่เป็นคำสั่งตรวจสิทธิ์อัตโนมัติ (auto_login) 
+            // ให้ข้ามป๊อปอัปสีแดงตัวนี้ไป เพื่อให้ไปแสดงคำแนะนำที่ฟังก์ชัน init แทน ผู้ใช้จะได้ไม่ตกใจ
+            if(!json.success && req.action !== 'auto_login') {
+                Swal.fire('เกิดข้อผิดพลาด', json.message || 'เกิดข้อผิดพลาดในระบบ', 'error');
+            }
+            return json;
+        } catch(e) {
+            if(loading) Swal.close();
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            return null;
+        }
+    },
+
+    init: async () => {
+        const LIFF_ID = '2010106383-UKz3SgNA'; // อย่าลืมเช็ค LIFF_ID ให้ตรงกับของคุณหมอนะครับ
         const mdidInput = document.getElementById('mdid-input');
 
         // 🔴 1. ล็อกช่องกรอกรหัสไว้ก่อน เพื่อกันผู้ใช้พิมพ์แทรกระหว่างโหลดระบบ
@@ -437,39 +472,41 @@ init: async () => {
                 app.lineName = profile.displayName;
 
                 // 2. ยิงไปเช็คหลังบ้าน
-                    const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
+                const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
+                
+                if (loginCheck && loginCheck.success) {
+                    // 🟢 ลอจิก 3: พบ LINE UID ในระบบ -> ทะลุเข้าโปรแกรมเลย
+                    app.user = loginCheck.user;
+                    document.getElementById('display-name').innerText = app.user.name;
+                    document.getElementById('display-inst').innerText = app.user.institute;
+                    document.getElementById('display-role').innerText = app.user.role.toUpperCase();
                     
-                    if (loginCheck && loginCheck.success) {
-                        // 🟢 ลอจิก 3: พบ LINE UID ในระบบ -> ทะลุเข้าโปรแกรมเลย
-                        app.user = loginCheck.user;
-                        document.getElementById('display-name').innerText = app.user.name;
-                        document.getElementById('display-inst').innerText = app.user.institute;
-                        document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-                        
-                        // 🟢 แทรกตรงนี้: ตรวจสอบและควบคุมการแสดงผลกล่องติดตั้ง Google Calendar ประจำสถาบัน สำหรับระบบ Auto-Login
-                        if (app.user && app.user.calendarUrl) {
-                            document.getElementById('calendar-sync-card').classList.remove('hidden');
-                            document.getElementById('btn-subscribe-calendar').href = app.user.calendarUrl;
-                        } else {
-                            document.getElementById('calendar-sync-card').classList.add('hidden');
-                        }
-                        
-                        app.renderMenu(); 
-                        app.showView('view-menu'); 
+                    // 🟢 แทรกตรงนี้: ตรวจสอบและควบคุมการแสดงผลกล่องติดตั้ง Google Calendar ประจำสถาบัน สำหรับระบบ Auto-Login
+                    if (app.user && app.user.calendarUrl) {
+                        let syncCard = document.getElementById('calendar-sync-card');
+                        let btnSync = document.getElementById('btn-subscribe-calendar');
+                        if (syncCard) syncCard.classList.remove('hidden');
+                        if (btnSync) btnSync.href = app.user.calendarUrl;
                     } else {
-                        // 🟢 ลอจิก 1: ไม่พบในระบบ -> โชว์หน้า Login 
-                        app.showView('view-login');
-                        
-                        // ปลดล็อกช่องกรอกรหัสให้ผู้ใช้พิมพ์ได้ตามปกติ
-                        if (mdidInput) {
-                            mdidInput.disabled = false;
-                            mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
-                            mdidInput.value = ""; 
-                            mdidInput.focus(); // ให้เคอร์เซอร์กระพริบรอพิมพ์ทันที
-                        }
+                        let syncCard = document.getElementById('calendar-sync-card');
+                        if (syncCard) syncCard.classList.add('hidden');
+                    }
+                    
+                    app.renderMenu();
+                    app.showView('view-menu'); 
+                } else {
+                    // 🟢 ลอจิก 1: ไม่พบในระบบ -> โชว์หน้า Login 
+                    app.showView('view-login');
+                    
+                    // ปลดล็อกช่องกรอกรหัสให้ผู้ใช้พิมพ์ได้ตามปกติ
+                    if (mdidInput) {
+                        mdidInput.disabled = false;
+                        mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
+                        mdidInput.value = ""; 
+                        mdidInput.focus(); // ให้เคอร์เซอร์กระพริบรอพิมพ์ทันที
                     }
                 }
-            }
+            } // 🟢 ปิด else (liff.isLoggedIn) ตรงนี้อย่างถูกต้อง
         } catch (err) { 
             console.error("LIFF Init Error:", err); 
             // กรณีเกิด Error สัญญาณอินเทอร์เน็ต ก็ต้องปลดล็อกให้ผู้ใช้พิมพ์เข้าปกติ
@@ -481,7 +518,7 @@ init: async () => {
         }
     },
 
-login: async () => {
+    login: async () => {
         try {
             let mdidInput = document.getElementById('mdid-input').value;
             
@@ -531,10 +568,13 @@ login: async () => {
                     
                     // 🟢 แทรกตรงนี้: ตรวจสอบและควบคุมการแสดงผลกล่องติดตั้ง Google Calendar ประจำสถาบัน
                     if (app.user && app.user.calendarUrl) {
-                        document.getElementById('calendar-sync-card').classList.remove('hidden');
-                        document.getElementById('btn-subscribe-calendar').href = app.user.calendarUrl;
+                        let syncCard = document.getElementById('calendar-sync-card');
+                        let btnSync = document.getElementById('btn-subscribe-calendar');
+                        if (syncCard) syncCard.classList.remove('hidden');
+                        if (btnSync) btnSync.href = app.user.calendarUrl;
                     } else {
-                        document.getElementById('calendar-sync-card').classList.add('hidden');
+                        let syncCard = document.getElementById('calendar-sync-card');
+                        if (syncCard) syncCard.classList.add('hidden');
                     }
                     
                     if (res.isFirstTime) {
@@ -553,101 +593,6 @@ login: async () => {
         } catch (err) {
             console.error("Login Error:", err);
             Swal.fire('ข้อผิดพลาดระบบ', 'การเข้าสู่ระบบล้มเหลว: ' + err.message, 'error');
-        }
-    },
-    
-    openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
-    closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
-    requestResetLine: async () => {
-        const mdid = document.getElementById('reset-mdid').value.trim(); const email = document.getElementById('reset-email').value.trim();
-        if (!mdid || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรอกรหัสและอีเมลให้เรียบร้อย', 'warning');
-        const data = await app.api({ action: 'request_reset_line', payload: { mdid: mdid, email: email } }, 'กำลังตรวจสอบระบบ...');
-        if (data) { app.closeResetModal(); Swal.fire('สำเร็จ', data.message, 'success'); }
-    },
-
-    showView: (id) => {
-        document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    },
-
-api: async (req, loading = null) => {
-        if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        try {
-            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
-            const json = await res.json();
-            if(loading) Swal.close();
-            
-            // 🟢 ปรับลอจิก: ถ้าหลังบ้านตอบล้มเหลว แต่เป็นคำสั่งตรวจสิทธิ์อัตโนมัติ (auto_login) 
-            // ให้ข้ามป๊อปอัปสีแดงตัวนี้ไป เพื่อให้ไปแสดงคำแนะนำที่ฟังก์ชัน init แทน ผู้ใช้จะได้ไม่ตกใจ
-            if(!json.success && req.action !== 'auto_login') {
-                Swal.fire('เกิดข้อผิดพลาด', json.message || 'เกิดข้อผิดพลาดในระบบ', 'error');
-            }
-            return json;
-        } catch(e) {
-            if(loading) Swal.close();
-            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
-            return null;
-        }
-    },
-
-    init: async () => {
-        const LIFF_ID = '2010106383-UKz3SgNA';
-        const mdidInput = document.getElementById('mdid-input');
-
-        // ล็อกช่องกรอกรหัสไว้ก่อนระหว่างตรวจสิทธิ์
-        if (mdidInput) {
-            mdidInput.disabled = true;
-            mdidInput.placeholder = "กำลังตรวจสอบสิทธิ์...";
-        }
-
-        try {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) {
-                liff.login();
-            } else {
-                const profile = await liff.getProfile();
-                app.lineUid = profile.userId;
-                app.lineName = profile.displayName;
-
-                // ยิงตรวจสอบ LINE UID หลังบ้าน
-                const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
-                
-                if (loginCheck && loginCheck.success) {
-                    // 🟢 ลอจิก 3: พบ LINE UID ตรงในระบบ -> ทะลุเข้าโปรแกรมเลย
-                    app.user = loginCheck.user;
-                    document.getElementById('display-name').innerText = app.user.name;
-                    document.getElementById('display-inst').innerText = app.user.institute;
-                    document.getElementById('display-role').innerText = app.user.role.toUpperCase();
-                    app.renderMenu(); 
-                    app.showView('view-menu'); 
-                } else {
-                    // 🟢 ลอจิก 1: บัญชีไลน์เข้ามาไม่ตรงกับ line_uid ใดๆ (เครื่องนี้ยังไม่เคยล็อกอินผูกบัญชี)
-                    app.showView('view-login');
-                    
-                    // เปลี่ยนกล่องข้อความเป็นแจ้งเตือนสีน้ำเงินแบบเป็นมิตรแทนคำว่า เกิดข้อผิดพลาด
-                    Swal.fire({
-                        title: 'คำแนะนำการใช้งาน',
-                        text: 'เครื่องนี้ยังไม่เคย login กรุณาป้อนรหัส',
-                        icon: 'info',
-                        confirmButtonText: 'ตกลง'
-                    });
-                    
-                    // ปลดล็อกช่องอินพุตให้พิมพ์รหัสแพทย์ผูกบัญชีได้ทันที
-                    if (mdidInput) {
-                        mdidInput.disabled = false;
-                        mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
-                        mdidInput.value = ""; 
-                        mdidInput.focus();
-                    }
-                }
-            }
-        } catch (err) { 
-            console.error("LIFF Init Error:", err); 
-            app.showView('view-login');
-            if (mdidInput) {
-                mdidInput.disabled = false;
-                mdidInput.placeholder = "กรอกรหัสแพทย์/เจ้าหน้าที่";
-            }
         }
     },
 
