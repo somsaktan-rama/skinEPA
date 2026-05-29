@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.10 K</title>
+    <title>EPA Skin App 2.11</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.10 K</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.11</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1587,15 +1587,32 @@ viewAttendees: async (actRefId) => {
                 }).join('');
             }
             
+            // ==========================================
+            // 🟢 ระบบจัดการปุ่มเมนู (ซ่อน/แสดงตามเงื่อนไขความปลอดภัย)
+            // ==========================================
+            
+            // 1. ปุ่มแก้ไข (แสดงเมื่อสถานะยังเป็น OPEN)
             let showEditBtn = act.status === 'OPEN';
+            
+            // 2. ปุ่มลบ (แสดงเฉพาะเมื่อ "ไม่มีผู้เข้าร่วมเลย" เพื่อป้องกันเผลอลบกิจกรรมที่มีคนลงชื่อแล้ว)
+            let showDeleteBtn = data.attendees.length === 0;
+            
+            // 3. ปุ่มปิดกิจกรรม (แสดงเฉพาะเมื่อเลยเวลาสิ้นสุดกิจกรรมแล้วเท่านั้น)
+            let nowTime = new Date().getTime();
+            let finishTime = new Date(act.act_finish).getTime();
+            if (isNaN(finishTime)) { 
+                finishTime = new Date(act.act_finish.toString().replace(/-/g, '/')).getTime(); 
+            }
+            let showCloseBtn = nowTime >= finishTime;
             
             let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
             btnContainer.innerHTML = `
-                <button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 text-white py-2 rounded font-bold shadow">ปิดกิจกรรม</button>
+                ${showCloseBtn ? `<button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow transition">ปิดกิจกรรม</button>` : ''}
                 ${showEditBtn ? `<button onclick="app.editActivityForm()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded font-bold shadow transition">✏️ แก้ไข</button>` : ''}
-                <button onclick="app.deleteActivity('${actRefId}')" class="bg-gray-200 hover:bg-red-100 text-red-600 px-4 py-2 rounded font-bold shadow transition">🗑️ ลบ</button>
-                <button onclick="app.showView('view-manage-activities')" class="flex-1 bg-gray-400 text-white py-2 rounded font-bold">กลับ</button>
+                ${showDeleteBtn ? `<button onclick="app.deleteActivity('${actRefId}')" class="bg-gray-200 hover:bg-red-100 text-red-600 px-4 py-2 rounded font-bold shadow transition">🗑️ ลบ</button>` : ''}
+                <button onclick="app.showView('view-manage-activities')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold shadow transition">กลับ</button>
             `;
+            
             app.showView('view-activity-attendees'); 
             
         } else if (data && !data.success) {
