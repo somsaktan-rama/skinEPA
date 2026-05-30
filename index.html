@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.13 C</title>
+    <title>EPA Skin App 2.13 D pin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.13 pin</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.13D pin</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -684,7 +684,7 @@ showManual: () => {
     },
     
 // 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
-    renderMenu: () => {
+renderMenu: () => {
         let menuArea = document.getElementById('menu-buttons') || document.getElementById('menu-area');
         if (!menuArea) return;
         
@@ -702,6 +702,10 @@ showManual: () => {
         const isFellowResearch = roleRaw.includes('fellowresearch');
         const isTrainee = isResident || isFellowDermSurg || isFellowResearch;
         const isInstructor = roleRaw.includes('instructor');
+        
+        // 🟢 เพิ่มตัวแปรสำหรับตรวจสอบสิทธิ์ Nurse Head
+        const isNurseHead = roleRaw.includes('nursehead'); 
+        
         const isStaff = roleRaw.includes('staff') || roleRaw.includes('admin') || roleRaw.includes('superstaff');
         const isAdmin = roleRaw.includes('admin') || roleRaw.includes('superstaff');
 
@@ -771,20 +775,26 @@ showManual: () => {
                      </button>`;
         }
 
-    // 🟢 7. เมนูสำหรับ Instructor (ปรับปรุงเงื่อนไขซ่อนเมนูยืดหยุ่น)
+        // 🟢 7. เมนูสำหรับ Instructor 
         if (isInstructor) {
             html += `<button onclick="app.loadInstructorTasks()" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">✅</span> รอประเมิน EPA</span>
                         <span class="text-purple-400">→</span> 
                      </button>`;
-            
-            // 🟢 ตรวจสอบเพิ่มเติม: หากไม่มีข้อมูลระบุไว้ในช่อง viewTarget ของอาจารย์ท่านนี้ จะไม่แสดงปุ่มเมนูบนหน้าจอหลัก
             if (app.user && app.user.viewTarget && app.user.viewTarget !== "") {
                 html += `<button onclick="app.initInst360()" class="w-full bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                             <span class="font-bold flex items-center"><span class="text-xl mr-3">📊</span> ดูผลประเมิน 360 (ลูกศิษย์)</span>
                             <span class="text-cyan-400">→</span> 
                          </button>`;
             }
+        }
+        
+        // 🟢 7.5 เมนูสำหรับ Nurse Head (เพิ่มใหม่)
+        if (isNurseHead) {
+            html += `<button onclick="app.initInst360()" class="w-full bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
+                        <span class="font-bold flex items-center"><span class="text-xl mr-3">🩺</span> ดูผลประเมิน 360 (จากพยาบาล)</span>
+                        <span class="text-pink-400">→</span> 
+                     </button>`;
         }
 
         // 🟢 8. จัดการกิจกรรม - Instructor และ Staff
@@ -828,7 +838,7 @@ showManual: () => {
         // นำปุ่มทั้งหมดไปแสดงผลในหน้าจอ
         menuArea.innerHTML = html;
     },
-
+	
     // --- Create Activity (Cache Form Data) ---
     loadStaffCreateActivity: async () => { 
         // 🟢 ใช้ Cache เพื่อให้โหลดเร็วขึ้นในครั้งที่ 2
