@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.13 D pin</title>
+    <title>EPA Skin App 2.13 E pin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.13D pin</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.13E pin</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -195,7 +195,7 @@
         <div id="view-my-360" class="hidden">
             <h2 class="text-xl font-bold mb-2 text-teal-800">📊 ผลประเมิน 360 องศา</h2>
             <div id="inst-360-selector" class="hidden mb-4 p-3 bg-teal-50 border border-teal-200 rounded">
-                <label class="block text-sm font-bold text-teal-900 mb-1">สิทธิ์ Instructor: เลือกดูผลประเมินลูกศิษย์</label>
+                <label class="block text-sm font-bold text-teal-900 mb-1">📋 เลือกรายชื่อแพทย์เพื่อดูผลประเมิน 360 องศา</label>
                 <select id="sel-inst-360-target" class="w-full border p-2 rounded bg-white text-sm" onchange="app.fetchInstructor360()"></select>
             </div>
             <p class="text-xs text-red-500 mb-4">* ข้อมูลถูกปกปิดผู้ประเมิน และสรุปรวมแยกตามกลุ่ม</p>
