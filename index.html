@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.13 B</title>
+    <title>EPA Skin App 2.13 C</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -1538,7 +1538,7 @@ joinActivity: async (actRefId) => {
     },
 
     // --- Manage Activities ---
-   loadManageActivities: async () => {
+loadManageActivities: async () => {
         // 🟢 เพิ่มข้อความ Loading
         const data = await app.api({ action: 'get_manage_activities', user: app.user }, 'กำลังโหลดกิจกรรม...');
         if(data) {
@@ -1546,20 +1546,24 @@ joinActivity: async (actRefId) => {
             if(data.activities.length === 0) {
                 list.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีกิจกรรมเปิดอยู่</p>';
             } else {
-                app.cachedManageActs = {}; 
-                
+                app.cachedManageActs = {};
                 // 🟢 1. เพิ่มคำสั่งเรียงลำดับกิจกรรมตามเวลาเริ่ม (act_begin) จากใกล้ที่สุดไปไกลที่สุด
                 data.activities.sort((a, b) => {
                     let timeA = new Date(a.act_begin).getTime();
                     let timeB = new Date(b.act_begin).getTime();
                     return timeA - timeB; 
                 });
-
+                
                 // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ
                 list.innerHTML = data.activities.map(a => {
                     app.cachedManageActs[a.act_ref_id] = a; 
+                    
+                    // 🟢 สร้างตัวแปรป้ายกำกับ หากข้อมูลมีลิงก์แนบมาด้วย จะแสดงคำว่า (มี Online)
+                    let onlineBadge = a.act_link ? `<span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-md border border-blue-300 ml-2 shadow-sm animate-pulse">🌐 มี Online</span>` : '';
+                    
                     return `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}')">
-                        <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
+                       
+                        <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic} ${onlineBadge}</div>
                         
                         <div class="text-sm text-purple-700 mt-2 font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${a.instructor_name || 'ไม่ระบุ'}</div>
                         <div class="mt-2 mb-2 p-2 bg-yellow-50 border border-yellow-300 rounded font-bold text-yellow-800 text-center shadow-sm">
