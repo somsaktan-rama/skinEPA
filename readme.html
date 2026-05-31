@@ -1,0 +1,320 @@
+html_content = """<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPA Skin Tracker - คู่มือระบบและข้อจำกัดการใช้งาน (readme.html)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+        .animate-fade-in { animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+    <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-teal-700 text-white shadow-md">
+        <div class="max-w-5xl mx-auto px-6 py-8 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight flex items-center justify-center sm:justify-start gap-2">
+                    <span>📋 readme.html</span>
+                </h1>
+                <p class="text-blue-100 text-sm mt-1 font-medium">คู่มือการใช้งานระบบแยกส่วนและข้อจำกัดเชิงเทคนิค (แยกไฟล์เพื่อความเป็นระเบียบ)</p>
+            </div>
+            <div class="bg-white/10 px-4 py-2 rounded-xl border border-white/20 text-center sm:text-right">
+                <span class="text-xs uppercase tracking-widest block font-bold text-teal-300">ระบบฐานข้อมูล</span>
+                <span class="text-lg font-black tracking-widest text-white">v2.20 (Hybrid)</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 shadow-sm flex flex-col sm:flex-row items-start gap-4">
+            <div class="bg-amber-100 text-amber-800 p-3 rounded-xl text-2xl">💡</div>
+            <div>
+                <h4 class="font-bold text-amber-900 text-base mb-1">สถาปัตยกรรมแยกไฟล์คู่มือ (Modular Documentation)</h4>
+                <p class="text-sm text-amber-800 leading-relaxed">
+                    ไฟล์ <code>readme.html</code> นี้ถูกออกแบบมาแยกขาดจาก <code>index.html</code> (หน้างานหลัก) เพื่อป้องกันปัญหา Code ปะปนกัน คุณหมอสามารถนำโค้ดในไฟล์นี้ไปสร้างเป็นไฟล์ HTML ชื่อ <b>readme</b> ใน Google Apps Script จากนั้นในฝั่งหน้าบ้านหลัก หากต้องการเรียกใช้หน้าคู่มือนี้แบบฝังในระบบ (In-App) สามารถสั่งให้แสดงผลผ่านโครงสร้างกล่องแซนด์บ็อกซ์ หรือเรียกผ่านฟังก์ชันสลับหน้าต่าง <code>app.showView('view-manual-inapp')</code> ได้ทันทีโดยไม่รบกวนลอจิกควบคุมอื่นๆ ครับ
+                </p>
+            </div>
+        </div>
+
+        <section class="mb-6 bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-2 justify-center sm:justify-start">
+            <button onclick="switchRole('resident')" id="btn-resident" class="role-btn px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-sm transition-all duration-200 flex items-center gap-2">
+                <span>👨‍⚕️</span> Resident / Fellow
+            </button>
+            <button onclick="switchRole('instructor')" id="btn-instructor" class="role-btn px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 flex items-center gap-2">
+                <span>👨‍🏫</span> Instructor (อาจารย์)
+            </button>
+            <button onclick="switchRole('staff')" id="btn-staff" class="role-btn px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-pink-50 hover:text-pink-700 transition-all duration-200 flex items-center gap-2">
+                <span>⚙️</span> Staff / Nurse Head
+            </button>
+            <button onclick="switchRole('superstaff')" id="btn-superstaff" class="role-btn px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 flex items-center gap-2">
+                <span>🔧</span> Superstaff (แอดมินระบบ)
+            </button>
+        </section>
+
+        <article id="sec-resident" class="role-section animate-fade-in space-y-6">
+            
+            <div class="bg-blue-600 text-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                <span class="text-4xl">👨‍⚕️</span>
+                <div>
+                    <h2 class="text-xl font-black">คู่มือสำหรับแพทย์ประจำบ้านและแพทย์ต่อยอด (Resident / Fellow)</h2>
+                    <p class="text-blue-100 text-xs mt-1 font-medium">สิทธิ์การใช้งาน: สร้างฟอร์ม EPA, บันทึกเช็คอินตารางกิจกรรม, ทำแบบประเมินและเปิดดูผลสะท้อน 360 องศา</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-950 flex items-center gap-2 border-b pb-2 text-blue-700">
+                    <span>🚀</span> ขั้นตอนการปฏิบัติงานประจำวัน
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm leading-relaxed">
+                    <div class="bg-slate-50 p-4 rounded-xl border">
+                        <p class="font-bold text-slate-900 mb-1">1. การเช็คอินกิจกรรม Hybrid Learning</p>
+                        <p class="text-slate-600 text-xs mb-2">เมื่อเข้าเมนูลงชื่อเข้าร่วมกิจกรรม ระบบจะแยกแยะรูปแบบการจัดกิจกรรมให้โดยอัตโนมัติ:</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs text-slate-700 pl-1">
+                            <li><b class="text-blue-700">กรณีห้องเรียน Online:</b> กดปุ่มสีฟ้า "📹 เข้าร่วมออนไลน์ (Zoom)" ระบบจะเปิดห้องประชุมให้ทันที และตอนกดเช็คชื่อ ต้องกรอกรหัส PIN 4 หลักที่ได้รับฟังจากอาจารย์ในห้อง</li>
+                            <li><b>กรณีห้องเรียน On-site:</b> ระบบจะตรวจจับพิกัด GPS ของท่านเทียบกับอาจารย์ผู้คุมในรัศมีไม่เกิน 1 กิโลเมตรเพื่อยืนยันสถานะ</li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border">
+                        <p class="font-bold text-slate-900 mb-1">2. การนำเข้าตารางกิจกรรมไปยังปฏิทินส่วนตัว</p>
+                        <p class="text-slate-600 text-xs mb-2">ระบบสนับสนุนการติดตามปฏิทินของสถาบันเข้าสู่แอปพลิเคชันปฏิทินส่วนตัวบนโทรศัพท์มือถือ:</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs text-slate-700 pl-1">
+                            <li>ให้เปิดคู่มือการใช้งานเพื่อกดลิงก์นำเข้า ➕ ติดตามปฏิทินสถาบัน</li>
+                            <li><b>Android:</b> เปิดแอป Google Calendar > เมนูสามขีด > การตั้งค่า > กดเลือกชื่อปฏิทินสถาบัน > เปิดสวิตช์ "ซิงค์ (Sync)"</li>
+                            <li><b>iPhone:</b> เข้าเว็บ calendar.google.com/calendar/syncselect ผ่านเบราว์เซอร์ ติ๊กเลือกปฏิทินสถาบันเพื่ออัปเดตข้อมูลอัตโนมัติลงเครื่อง</li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border">
+                        <p class="font-bold text-slate-900 mb-1">3. การส่งบันทึกการประเมินหัตถการ EPA</p>
+                        <p class="text-slate-600 text-xs mb-2">เลือกหัวข้อ EPA ที่สอดคล้องตามเกณฑ์ชั้นปี และค้นหาชื่ออาจารย์ผู้ควบคุมหัตถการในเวลานั้น</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs text-slate-700 pl-1">
+                            <li><b class="text-red-600">ข้อบังคับ:</b> ต้องกรอกช่อง Note บันทึกรายละเอียดของเคส/หัตถการทุกครั้ง เพื่อให้อาจารย์ใช้อ่านประกอบการพิจารณาให้คะแนน</li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-xl border">
+                        <p class="font-bold text-slate-900 mb-1">4. การส่งและเปิดอ่านผลประเมิน 360 องศา</p>
+                        <p class="text-slate-600 text-xs mb-2">ระบบสนับสนุนกระบวนการส่งและรับข้อมูลสะท้อนกลับความประพฤติประจำเทอมการศึกษา:</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs text-slate-700 pl-1">
+                            <li>ให้ทำแบบประเมินให้เฉพาะเพื่อนแพทย์ที่เคยร่วมปฏิบัติงานด้วยในเทอมนั้นๆ</li>
+                            <li>สามารถเข้าเมนู "ดูผลตอบรับ 360" เพื่ออ่านคะแนนเฉลี่ยแยกตามกลุ่มผู้ประเมิน โดยข้อความเสนอแนะทั้งหมดจะถูกปกปิดตัวตน</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm border-l-4 border-l-red-500">
+                <h3 class="text-base font-bold text-red-900 flex items-center gap-2 mb-3">
+                    <span>⚠️</span> ข้อจำกัดและเงื่อนไขการทำงาน (Constraints)
+                </h3>
+                <div class="text-xs sm:text-sm space-y-2.5 text-slate-700">
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-red-600 shrink-0">⏰ ข้อจำกัดด้านเวลา:</b> ปุ่มลงชื่อเข้าร่วมกิจกรรมวิชาการจะปรากฏให้กดได้เฉพาะช่วงเวลา <b>30 นาทีก่อนเริ่มกิจกรรม จนถึงเวลาเสร็จสิ้นกิจกรรมเท่านั้น</b> หากเลยเวลาที่ตั้งไว้ ปุ่มจะถูกล็อกทันทีและไม่สามารถลงชื่อย้อนหลังได้ทุกกรณี</p>
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-red-600 shrink-0">🎙️ ระบบความปลอดภัยแบบประเมิน 360:</b> เพื่อป้องกันการกรอกข้อมูลที่ไม่มีคุณภาพและจำกัดสิทธิ์การลักไก่ ระบบ<b>ไม่อนุญาตให้กดสั่งคัดลอก คัดชน หรือวางข้อความ (ห้าม Copy/Paste)</b> ในช่องกรอกข้อคิดเห็นโดยเด็ดขาด แนะนำให้ผู้เรียนใช้ระบบสั่งพิมพ์ด้วยเสียง (Speech-to-Text) โดยกดรูปไมโครโฟนบนแป้นพิมพ์แทนการพิมพ์</p>
+                    <p class="flex items-start gap-2"><b class="text-red-600 shrink-0">📌 สิทธิ์บัญชี ALUMNI และ R1:</b> แพทย์ที่สำเร็จการศึกษาแล้ว (สถานะ ALUMNI) หรือแพทย์ R1 ประจำปีการศึกษาปัจจุบัน จะถูกซ่อนชื่อออกจากระบบบอร์ดการทำแบบประเมิน 360 องศาอัตโนมัติ เพื่อไม่ให้รายชื่อล้นระบบ แต่บัญชีศิษย์เก่าจะยังคงสามารถเข้าใช้งานเพื่ออ่านประวัติผลงานย้อนหลังได้ตามปกติ</p>
+                </div>
+            </div>
+
+        </article>
+
+        <article id="sec-instructor" class="role-section animate-fade-in hidden space-y-6">
+            
+            <div class="bg-purple-700 text-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                <span class="text-4xl">👨‍🏫</span>
+                <div>
+                    <h2 class="text-xl font-black">คู่มือสำหรับอาจารย์แพทย์ (Instructor)</h2>
+                    <p class="text-purple-100 text-xs mt-1 font-medium">สิทธิ์การใช้งาน: ประเมินอนุมัติคะแนน EPA, บริหารจัดการคลาสเรียนที่เปิดอยู่, ติดตามผลประเมิน 360 ของลูกศิษย์ในความดูแล</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-950 flex items-center gap-2 border-b pb-2 text-purple-700">
+                    <span>🎯</span> หน้าที่และความรับผิดชอบในระบบ
+                </h3>
+                <div class="space-y-4 text-sm leading-relaxed">
+                    <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                        <p class="font-bold text-purple-900 mb-1">1. การแจ้งรหัส Check-in (PIN) แก่ผู้เรียนในคลาส Hybrid</p>
+                        <p class="text-xs text-slate-700">
+                            เพื่ออำนวยความสะดวกแก่ผู้เรียนออนไลน์จากที่บ้าน และรักษาความรัดกุมในการเช็คชื่อ ระบบหลังบ้านจะทำการ<b>สุ่มรหัสผ่านเลข 4 หลักอัตโนมัติ</b> ให้กับทุกกิจกรรมที่มีการแปะลิงก์ออนไลน์ อาจารย์แพทย์สามารถเข้าไปที่เมนู <b>"⚙️ จัดการกิจกรรม"</b> บนหน้าจอ เพื่อเปิดดูรหัสผ่านประจำห้องเรียนสีเหลืองเด่นชัด และนำรหัสดังกล่าวไปบอกในห้องเรียน หรือแปะลงในช่อง Chat ของโปรแกรมประชุมออนไลน์ เพื่อให้ Resident นำไปกรอกเช็คอิน
+                        </p>
+                    </div>
+                    <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                        <p class="font-bold text-purple-900 mb-1">2. กระบวนการประเมินสิทธิ์หัตถการ EPA</p>
+                        <p class="text-xs text-slate-700">
+                            เมื่อผู้เรียนส่งบันทึกหัตถการ ระบบจะส่งการแจ้งเตือนตรงเข้าบัญชี LINE ของอาจารย์แพทย์ เมื่อคลิกเข้ามาจะเห็นข้อความบันทึกรายละเอียดของเคส อาจารย์สามารถพิจารณาเลือกระดับความไว้วางใจในการทำหัตถการ (Level 1 ถึง 5) 
+                        </p>
+                    </div>
+                    <div class="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                        <p class="font-bold text-purple-900 mb-1">3. การติดตามผลสะท้อนแบบรอบทิศ (360° ลูกศิษย์)</p>
+                        <p class="text-xs text-slate-700">
+                            อาจารย์แพทย์สามารถใช้เมนู "ดูผลประเมิน 360 (ลูกศิษย์)" เพื่อดึงรายงานสรุปพัฒนาการรายเทอมของแพทย์ประจำบ้านรายบุคคล เพื่อใช้วิเคราะห์ ประเมินผลความประพฤติ และเตรียมข้อมูลสำหรับจัดกิจกรรมให้อาจารย์ที่ปรึกษา (Advisor Session)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm border-l-4 border-l-purple-500">
+                <h3 class="text-base font-bold text-purple-900 flex items-center gap-2 mb-3">
+                    <span>⚠️</span> ข้อจำกัดและเงื่อนไขการทำงาน (Constraints)
+                </h3>
+                <div class="text-xs sm:text-sm space-y-2.5 text-slate-700">
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-purple-700 shrink-0">🛑 ลอจิกการให้คะแนนไม่ผ่านเกณฑ์:</b> ในกรณีที่อาจารย์แพทย์ประเมินคะแนนให้ผู้เรียน<b>ต่ำกว่าเกณฑ์ขั้นต่ำ (Minimum Level)</b> ที่หลักสูตรระบุในชั้นปีนั้นๆ ระบบหลังบ้านจะบังคับล็อกฟอร์มทันที โดยอาจารย์<b>จำเป็นต้องระบุเลือกข้อผิดพลาดอย่างน้อย 1 ข้อ</b> ในกล่องรายการสาเหตุ (Checkbox) พร้อมทั้งพิมพ์ข้อเสนอแนะในช่องข้อความอิสระ จึงจะสามารถกดส่งฟอร์มประเมินได้สำเร็จ</p>
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-purple-700 shrink-0">🔒 ความปลอดภัยและการปกปิดตัวตนของข้อมูล 360:</b> เพื่อรักษาความเป็นส่วนตัวสูงสุดและป้องกันความขัดแย้งภายในสถาบัน รายงานผลประเมินสะท้อนกลับ 360 องศาของลูกศิษย์ จะเปิดให้อาจารย์แพทย์มองเห็นคะแนนและสรุปข้อคิดเห็นได้<b>ก็ต่อเมื่อกิจกรรมนั้นมียอดผู้ส่งแบบประเมินรวมในเทอมนั้นมากกว่าหรือเท่ากับ 5 ฉบับขึ้นไปเท่านั้น</b> หากยอดประเมินรวมไม่ถึงเกณฑ์ ระบบจะบล็อกการแสดงผลรายงานทันทีเพื่อป้องกันการสืบหาตัวตนผู้กรอกข้อความ</p>
+                    <p class="flex items-start gap-2"><b class="text-purple-700 shrink-0">🚫 การซ่อนปุ่มเมนูดูผล 360 อัตโนมัติ:</b> สิทธิ์การเปิดหน้าจอรายงาน 360 ของลูกศิษย์ จะอ้างอิงตามข้อมูลรายรหัสที่ระบุไว้ในคอลัมน์ P (View Target) ของตารางข้อมูลอาจารย์เท่านั้น หากแอดมินหรือ Superstaff ปล่อยช่องดังกล่าวว่างไว้ ระบบหน้าบ้านหลักจะทำการ<b>ซ่อนปุ่มเมนูดูผล 360 ออกจากหน้าจออาจารย์แพทย์ทันที</b> เพื่อควบคุมสิทธิ์การเข้าถึงข้อมูลลับ</p>
+                </div>
+            </div>
+
+        </article>
+
+        <article id="sec-staff" class="role-section animate-fade-in hidden space-y-6">
+            
+            <div class="bg-pink-700 text-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                <span class="text-4xl">⚙️</span>
+                <div>
+                    <h2 class="text-xl font-black">คู่มือสำหรับเจ้าหน้าที่ธุรการและหัวหน้าพยาบาล (Staff / Nurse Head)</h2>
+                    <p class="text-pink-100 text-xs mt-1 font-medium">สิทธิ์การใช้งาน: สร้างและจัดการตารางกิจกรรม, จัดทำระบบแม่แบบรายสัปดาห์, ติดตามความก้าวหน้าบน Dashboard กลาง และกรองผลประเมินเฉพาะส่วนพยาบาล</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-950 flex items-center gap-2 border-b pb-2 text-pink-700">
+                    <span>🔧</span> เครื่องมือการจัดการและสิทธิ์เฉพาะกลุ่ม
+                </h3>
+                <div class="space-y-4 text-sm leading-relaxed">
+                    <div class="bg-pink-50/40 p-4 rounded-xl border border-pink-100">
+                        <p class="font-bold text-pink-900 mb-1">1. ระบบจัดการตารางกิจกรรมวิชาการประจำสถาบัน</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs text-slate-700 pl-1">
+                            <li><b>เปิดกิจกรรมใหม่ (1 ครั้ง):</b> ใช้สำหรับคลาสเรียนพิเศษที่มีนัดหมายกระทันหัน โดยสามารถแปะลิงก์ห้องประชุมออนไลน์ได้ทันที</li>
+                            <li><b>ระบบแม่แบบรายสัปดาห์ (Weekly Batch):</b> ใช้บันทึกกิจกรรมประจำวิชาที่จัดซ้ำๆ ทุกสัปดาห์ สามารถแปะลิงก์ประชุมห้องประจำล็อกไว้ล่วงหน้าได้ เมื่อเข้าสู่สัปดาห์ใหม่ เพียงติ๊กเลือกวิชาแล้วกด "ยืนยันสร้างกิจกรรม" ระบบจะปล่อยคลาสเข้าสู่วันเวลาจริงในสัปดาห์หน้าให้ทันที ลดเวลาการคีย์ฟอร์มซ้ำซ้อน</li>
+                        </ul>
+                    </div>
+                    <div class="bg-pink-50/40 p-4 rounded-xl border border-pink-100">
+                        <p class="font-bold text-pink-900 mb-1">2. 🩺 สิทธิ์พิเศษสำหรับหัวหน้าพยาบาล (Nurse Head / nurseheadRN4)</p>
+                        <p class="text-xs text-slate-700">
+                            ระบบได้เพิ่มลอจิกการประเมินทีมสหวิชาชีพ (Multidisciplinary Team) โดยเมื่อหัวหน้าพยาบาลล็อกอินเข้ามา จะปรากฏปุ่มเมนูพิเศษ <b>"🩺 ดูผลประเมิน 360 (จากพยาบาล)"</b> ระบบจะดึงรายชื่อแพทย์ประจำบ้านเฉพาะกลุ่ม R2, R3, R4 ตามที่ระบุไว้ในช่องสิทธิ์การมองเห็น (View Target) มาแสดง และ<b>ทำการกรอกข้อมูลคัดกรองคะแนนเฉลี่ยรวมถึงข้อคิดเห็นที่ส่งมาจากกลุ่ม Staff, พยาบาลวิชาชีพ และเจ้าหน้าที่เท่านั้น</b> คะแนนจากกลุ่มอาจารย์หรือเพื่อนแพทย์ด้วยกันจะถูกตัดออกทั้งหมด เพื่อให้หัวหน้าพยาบาลตรวจสอบการทำงานร่วมกันในวอร์ดและคลินิกได้อย่างตรงจุด
+                        </p>
+                    </div>
+                    <div class="bg-pink-50/40 p-4 rounded-xl border border-pink-100">
+                        <p class="font-bold text-pink-900 mb-1">3. การควบคุมห้องเรียนผ่านหน้าจอผู้ดูแลคลาส</p>
+                        <p class="text-xs text-slate-700">
+                            เจ้าหน้าที่สามารถกดปุ่ม "แก้ไข" เพื่ออัปเดตหรือเปลี่ยนลิงก์ประชุม Zoom กลางคันได้ตลอดเวลา และระบบจะทำการคำนวณและแสดงป้ายกระพริบอัจฉริยะ <span class="bg-blue-100 text-blue-800 text-xs px-1 rounded font-bold">🌐 มี Online</span> บนหน้าบอร์ดเพื่อให้ผู้เรียนแยกแยะคลาส On-site และ Hybrid ได้รวดเร็ว
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm border-l-4 border-l-pink-500">
+                <h3 class="text-base font-bold text-pink-900 flex items-center gap-2 mb-3">
+                    <span>⚠️</span> ข้อจำกัดและเงื่อนไขการทำงาน (Constraints)
+                </h3>
+                <div class="text-xs sm:text-sm space-y-2.5 text-slate-700">
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-pink-700 shrink-0">🚨 ลอจิกควบคุมการลบตาราง:</b> เพื่อความปลอดภัยสูงสุดของฐานข้อมูล และป้องกันกรณีเจ้าหน้าที่เผลอกดปุ่มลบกิจกรรมทิ้งในขณะที่แพทย์กำลังเรียนอยู่ **ระบบหลังบ้านจะทำการล็อกและซ่อนปุ่มลบกิจกรรม (🗑️ ลบ) ทันที หากกิจกรรมนั้นตรวจพบว่ามีผู้เรียนกดคลิก Check-in เข้าร่วมคลาสเรียบร้อยแล้วอย่างน้อย 1 คน** แอดมินจะสามารถกดได้เพียงปุ่ม "ปิดกิจกรรม" เพื่อปิดรับคนเพิ่มเท่านั้น</p>
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-pink-700 shrink-0">📈 ระบบเตือนความเสี่ยงบน Dashboard (Risk Alert):</b> บนหน้าจอรายงานความก้าวหน้าภาพรวม ตัวสัญญลักษณ์แจ้งเตือนระดับวิกฤตสีแดงจะสว่างขึ้นอัตโนมัติหลังรายชื่อแพทย์ หากสถิติสะสมจำนวนเคสบันทึกหัตถการ EPA ของแพทย์ท่านนั้น ต่ำกว่าสัดส่วนระยะเวลาของปีการศึกษาปัจจุบันที่ดำเนินผ่านพ้นไป เพื่อส่งสัญญาณให้แอดมินธุรการรีบดำเนินการแจ้งเตือนรายบุคคล</p>
+                    <p class="flex items-start gap-2"><b class="text-pink-700 shrink-0">🔔 ระบบป้องกันการลืมปิดคลาส:</b> หากกิจกรรมการเรียนการสอนดำเนินเลยเวลาสิ้นสุดกิจกรรมที่ระบุในตาราง (act_finish) เกิน 1 ชั่วโมงขึ้นไป และยังไม่มีอาจารย์แพทย์หรือแอดมินเข้ามากดปิดงาน ระบบสคริปต์อัตโนมัติจะทำการส่งคำเตือนไปยังแชทเพื่อเร่งให้เจ้าหน้าที่เข้ามากดเคลียร์ข้อมูล</p>
+                </div>
+            </div>
+
+        </article>
+
+        <article id="sec-superstaff" class="role-section animate-fade-in hidden space-y-6">
+            
+            <div class="bg-red-700 text-white rounded-2xl p-6 shadow-sm flex items-center gap-4">
+                <span class="text-4xl">🔧</span>
+                <div>
+                    <h2 class="text-xl font-black">คู่มือสำหรับผู้ดูแลระบบสูงสุด (Superstaff)</h2>
+                    <p class="text-red-100 text-xs mt-1 font-medium">สิทธิ์การใช้งาน: จัดการโครงสร้างฐานข้อมูลบุคลากรทุกมิติ, รีเซ็ตการผูกบัญชี LINE ย้ายอุปกรณ์, ควบคุมสิทธิ์ขอบเขต Eval / View Targets</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-950 flex items-center gap-2 border-b pb-2 text-red-700">
+                    <span>⚙️</span> การควบคุมระบบสารสนเทศหลังบ้านผ่านหน้าเว็บ PWA
+                </h3>
+                <div class="space-y-4 text-sm leading-relaxed">
+                    <p class="text-xs text-slate-600">
+                        สิทธิ์ Superstaff ถูกออกแบบมาเป็นพิเศษเพื่อให้ผู้เขียนระบบสามารถดูแล แก้ไขข้อผิดพลาดเชิงเทคนิครายวันได้จากบนอุปกรณ์สมาร์ทโฟนทันที โดยไม่ต้องเข้าไปเขียนฟังก์ชันแก้ข้อมูลดิบภายในตาราง Google Sheets โดยตรง ป้องกันการพังทลายของสูตรคำนวณและโครงสร้างแถว
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div class="bg-slate-50 p-3 rounded-xl border">
+                            <p class="font-bold text-slate-900 mb-1">🔗 1. กระบวนการรีเซ็ตเครื่อง/ย้ายอุปกรณ์ (Unbind LINE)</p>
+                            <p class="text-slate-600">เมื่อผู้ใช้แจ้งปัญหาเข้าใช้งานไม่ได้เนื่องจากเปลี่ยนเครื่องโทรศัพท์มือถือใหม่ ให้ทำดังนี้:</p>
+                            <ol class="list-decimal list-inside mt-1 space-y-1 text-slate-700">
+                                <li>ป้อนรหัส MDID ของผู้พบบัญชีค้างในช่องค้นหา กดปุ่มดึงข้อมูล</li>
+                                <li>เลื่อนลงมาที่ช่อง <b>"LINE UID"</b> (รหัสอังกฤษยาวๆ) แล้ว<b>ลบตัวอักษรออกทั้งหมดให้โล่ง</b></li>
+                                <li>กดปุ่มสีเขียว "บันทึกข้อมูล" ระบบหลังบ้านจะล้างค่าเครื่องเดิมทิ้งทันที เพื่อให้ผู้ใช้งานกดล็อกอินและผูกระบบกับอุปกรณ์ใหม่ได้เองในคลิกแรก</li>
+                            </ol>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border">
+                            <p class="font-bold text-slate-900 mb-1">🎯 2. การควบคุมเงื่อนไขเป้าหมายกลุ่มประเมิน</p>
+                            <p class="text-slate-600">สิทธิ์พฤติกรรมการดึงข้อมูลจะวิ่งตามข้อความที่คุณหมอกรอกแบ่งด้วยลูกน้ำ:</p>
+                            <ul class="list-disc list-inside mt-1 space-y-0.5 text-slate-700">
+                                <li><b>Eval Target:</b> ใช้ระบุชั้นปีหรือรหัส MDID ที่อาจารย์ท่านนั้นมีสิทธิ์ประเมินผลหัตถการ</li>
+                                <li><b>View Target:</b> ใช้ระบุสิทธิ์ระดับชั้นปี (เช่น r2,r3,r4) ที่อาจารย์หรือหัวหน้าพยาบาลมีสิทธิ์เปิดอ่านสรุปคะแนนประเมิน 360 ได้</li>
+                                <li><b>Advisor MDID:</b> ใช้ระบุรหัสประจำตัวอาจารย์ที่ปรึกษา</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border p-5 sm:p-6 shadow-sm border-l-4 border-l-red-600">
+                <h3 class="text-base font-bold text-red-900 flex items-center gap-2 mb-3">
+                    <span>⚠️</span> ข้อควรระวังขั้นสูงระบบรักษาความปลอดภัยเด็ดขาด
+                </h3>
+                <div class="text-xs sm:text-sm space-y-2.5 text-slate-700">
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-red-700 shrink-0">🛑 รูปแบบความสะอาดข้อมูลรหัส (Case Sensitivity):</b> ฟังก์ชันค้นหาข้อมูลและระบบตรวจสอบสิทธิ์เบื้องหลัง (Authentication Component) จะทำการล้างช่องว่างที่หัวและท้ายออกให้อัตโนมัติ อย่างไรก็ดี การกรอกตัวแปรระดับชั้นปีภายในกล่องข้อความเป้าหมาย (เช่น ในช่อง View Target) แนะนำให้<b>ใช้เป็นตัวอักษรพิมพ์เล็กคั่นด้วยคอมมาเสมอ (เช่น r2,r3,r4)</b> เพื่อให้ลอจิกฟังก์ชันดักจับ <code>.includes()</code> ฝั่งสคริปต์หลังบ้านสามารถจับคู่คำแปลได้อย่างแม่นยำที่สุด</p>
+                    <p class="flex items-start gap-2 border-b pb-2"><b class="text-red-700 shrink-0">📱 ข้อจำกัดการสืบค้นข้อมูลโปรไฟล์ LINE:</b> ช่องกล่องข้อความ <i>LINE Display Name</i> บนฟอร์มแก้ไข ถูกออกแบบโครงสร้างไว้เป็น <b>Read-only (อ่านได้อย่างเดียว)</b> เนื่องจากเป็นฟิลด์ที่ระบบหลังบ้านจะดึงข้อมูลจริงมาจากเซิร์ฟเวอร์ LINE Official API อัปเดตลงตารางชีตโดยตรงเมื่อมีการเข้าใช้งาน ไม่สามารถแก้ไขด้วยการพิมพ์เปลี่ยนจากหน้าจอเว็บแอปพลิเคชันได้</p>
+                    <p class="flex items-start gap-2"><b class="text-red-700 shrink-0">🔑 การตรวจสอบระบบรีเซ็ตกรณีฉุกเฉิน (Token Lifetime):</b> หากผู้ใช้งานทั่วไปกดส่งคำขอรีเซ็ต LINE Account ผ่านระบบหน้าเว็บด้วยตนเอง ตัวระบบระบบจะทำการบันทึกรหัสตรวจสอบชั่วคราวลงในระบบ Cache ของ Google Apps Script (CacheService) ซึ่งรหัสดังกล่าว<b>จะมีอายุขัยการใช้งานเพียง 900 วินาที (15 นาที) เท่านั้น</b> หากผู้ใช้งานกดเปิดลิงก์จากอีเมลช้ากว่าเวลาที่กำหนด ระบบจะทำลายรหัสทิ้งทันทีเพื่อป้องกันช่องโหว่ความปลอดภัย และผู้ใช้ต้องกดส่งคำขอใหม่อีกครั้ง</p>
+                </div>
+            </div>
+
+        </article>
+
+    </main>
+
+    <footer class="text-center py-10 text-xs text-slate-400 border-t border-slate-200 mt-12 max-w-5xl mx-auto">
+        <p>จัดทำเพื่อใช้งานภายใน หน่วยโรคผิวหนัง ภาควิชาอายุรศาสตร์ โรงพยาบาลรามาธิบดี</p>
+        <p class="mt-1 font-medium text-slate-300">EPA Tracker Documentation Separate Component File Layout Template</p>
+    </footer>
+
+    <script>
+        function switchRole(roleName) {
+            // ค้นหาและซ่อนทุกเซกชันคู่มือ
+            const sections = document.querySelectorAll('.role-section');
+            sections.forEach(sec => sec.classList.add('hidden'));
+
+            // เผยเซกชันที่เลือก
+            const targetSec = document.getElementById(`sec-${roleName}`);
+            if (targetSec) targetSec.classList.remove('hidden');
+
+            // ล้างสไตล์สีเด่นบนปุ่มทั้งหมด กลับไปเป็นสีเทาพื้นฐาน
+            const buttons = document.querySelectorAll('.role-btn');
+            buttons.forEach(btn => {
+                btn.className = "role-btn px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all duration-200 flex items-center gap-2";
+            });
+
+            // ใส่สีเด่นประจำปุ่มที่กำลังถูกคลิกเปิดใช้งาน
+            const activeBtn = document.getElementById(`btn-${roleName}`);
+            const themeClasses = {
+                'resident': 'bg-blue-600 text-white shadow-sm',
+                'instructor': 'bg-purple-700 text-white shadow-sm',
+                'staff': 'bg-pink-700 text-white shadow-sm',
+                'superstaff': 'bg-red-700 text-white shadow-sm'
+            };
+            if (activeBtn) {
+                activeBtn.className = `role-btn px-4 py-2.5 rounded-xl font-bold text-sm ${themeClasses[roleName]} shadow-sm transition-all duration-200 flex items-center gap-2 transform scale-102`;
+            }
+        }
+    </script>
+</body>
+</html>
+"""
+
+# ทำการเขียนและสร้างไฟล์ readme.html จริงลงในระบบสารสนเทศ
+file_path = "readme.html"
+with open(file_path, "w", encoding="utf-8") as file:
+    file.write(html_content)
+
+print(f"SUCCESS: Generated {file_path} successfully.")
