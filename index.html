@@ -371,7 +371,7 @@
         </div>
     </div>
 
-        <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+<div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-sm">
                 <h3 class="text-xl font-bold text-gray-800 mb-2">รีเซ็ตบัญชี LINE</h3>
                 <p class="text-sm text-gray-500 mb-4">ระบบจะส่งลิงก์ยืนยันไปที่อีเมลที่ลงทะเบียนไว้</p>
@@ -381,21 +381,19 @@
                     <button onclick="app.requestResetLine()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">ส่งลิงก์</button>
                     <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
                 </div>
-        </div>
+            </div> </div> <div id="view-manual" class="hidden bg-slate-50 min-h-screen pb-10">
+            <div class="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b z-50 shadow-sm flex justify-between items-center">
+                <h2 class="font-bold text-gray-800 text-lg">📖 คู่มือระบบ</h2>
+                <button onclick="app.showView('view-menu')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
+                    ⬅️ กลับหน้าหลัก
+                </button>
+            </div>
+            
+            <div id="manual-calendar-container"></div>
+            
+            <?!= include('readme'); ?>    
 
-		<div id="view-manual" class="hidden bg-slate-50 min-h-screen pb-10">
-        <div class="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b z-50 shadow-sm flex justify-between items-center">
-            <h2 class="font-bold text-gray-800 text-lg">📖 คู่มือระบบ</h2>
-            <button onclick="app.showView('view-menu')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
-                ⬅️ กลับหน้าหลัก
-            </button>
-        </div>
-			
-	</div>    
-		<div id="manual-calendar-container"></div>
-        <?!= include('readme'); ?>    
-	</div> 
-<script>
+        </div> </div> <script>
 // ==========================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyNAgIIbUnG2NAD05eIsXQY25ChVOCx8lZ9snPT18NvAnvB6Nltj80czLvegG9-gQ0S/exec';
 // ==========================================
