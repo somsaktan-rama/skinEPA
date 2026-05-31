@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin App 2.13 E pin</title>
+    <title>EPA Skin App 2.20</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -39,7 +39,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.13E pin</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.20</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -642,45 +642,49 @@ api: async (req, loading = null) => {
     },
 
 showManual: () => {
-        // 1. สร้างส่วนของ HTML สำหรับกล่อง Google Calendar (ดึงลิงก์ตามสถาบัน)
+        // 1. ตรวจสอบสิทธิ์ (Role) ของผู้ใช้งานปัจจุบัน
+        let targetRole = 'resident'; // ค่าเริ่มต้น
+        if (app.user && app.user.role) {
+            let r = app.user.role.toLowerCase().replace(/[\s_]/g, '');
+            if (r.includes('superstaff')) targetRole = 'superstaff';
+            else if (r.includes('staff') || r.includes('admin') || r.includes('nurse')) targetRole = 'staff';
+            else if (r.includes('instructor')) targetRole = 'instructor';
+        }
+
+        // 2. สร้างกล่อง Google Calendar (ดึงลิงก์จากฐานข้อมูล)
         let calendarHtml = '';
         if (app.user && app.user.calendarUrl) {
             calendarHtml = `
-                <div class="mt-5 mb-1 bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-4 shadow-sm text-left">
-                    <div class="flex items-center space-x-2 text-teal-800 font-bold mb-2 text-base">
-                        <span>📅 ซิงค์ตารางเข้า Google Calendar</span>
-                    </div>
-                    <p class="text-xs text-gray-600 mb-3 leading-relaxed">
-                        เชื่อมต่อตารางกิจกรรม (Activity) เข้าสู่ปฏิทินส่วนตัวบนสมาร์ทโฟน อัปเดตเวลาอัตโนมัติ
-                    </p>
-                    <a href="${app.user.calendarUrl}" target="_blank" class="w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition inline-block mb-3">
-                        ➕ กดเพื่อติดตั้ง / ติดตามปฏิทิน
-                    </a>
-                    <div class="bg-white/80 border border-teal-100 rounded-lg p-2 text-[11px] text-gray-500 space-y-1">
-                        <p class="font-bold text-teal-700">💡 วิธีตั้งค่าให้แสดงผลบนสมาร์ทโฟน:</p>
-                        <p>• <b>Android:</b> เข้าแอป Google Calendar > เมนู 3 ขีด (ซ้ายบน) > ตั้งค่า > กดเลือกปฏิทินสถาบัน > เปิด "ซิงค์ (Sync)"</p>
-                        <p>• <b>iPhone:</b> หลังจากกดติดตั้งแล้ว ให้เข้าเว็บ <a href="https://calendar.google.com/calendar/syncselect" target="_blank" class="text-blue-600 underline">หน้า Sync Settings</a> แล้วติ๊กถูกหน้าชื่อปฏิทินครับ</p>
+                <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+                    <div class="bg-gradient-to-br from-teal-50 to-white border border-teal-200 rounded-xl p-4 shadow-sm text-left">
+                        <div class="flex items-center space-x-2 text-teal-800 font-bold mb-2 text-base">
+                            <span>📅 ซิงค์ตารางเข้า Google Calendar</span>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-3 leading-relaxed">
+                            เชื่อมต่อตารางกิจกรรม (Activity) เข้าสู่ปฏิทินส่วนตัวบนสมาร์ทโฟน อัปเดตเวลาอัตโนมัติ
+                        </p>
+                        <a href="${app.user.calendarUrl}" target="_blank" class="w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition inline-block mb-1">
+                            ➕ กดเพื่อติดตั้ง / ติดตามปฏิทิน
+                        </a>
                     </div>
                 </div>
             `;
         }
+        
+        // นำปุ่ม Calendar ไปแปะเตรียมไว้ด้านบนสุดของหน้าคู่มือ
+        const calContainer = document.getElementById('manual-calendar-container');
+        if (calContainer) calContainer.innerHTML = calendarHtml;
 
-        // 2. เรียกแสดง Popup คู่มือ + กล่อง Calendar
-        Swal.fire({
-            title: '📖 คู่มือการใช้งานระบบ',
-            html: `
-                <div class="text-left text-sm space-y-3 mt-2">
-                    <p class="text-gray-600 mb-3 text-center">เลือกระดับสิทธิ์ของท่านเพื่ออ่านคู่มือ (เปิดหน้าต่างใหม่):</p>
-                    <a href="https://somsaktan-rama.github.io/skinEPA/readme_resident.md" target="_blank" class="block w-full bg-blue-50 text-blue-700 border border-blue-200 p-3 rounded-lg font-bold text-center hover:bg-blue-100 transition shadow-sm">👨‍⚕️ สำหรับ Resident / Fellow</a>
-                    <a href="https://somsaktan-rama.github.io/skinEPA/readme_instructor.md" target="_blank" class="block w-full bg-purple-50 text-purple-700 border border-purple-200 p-3 rounded-lg font-bold text-center hover:bg-purple-100 transition shadow-sm">👨‍🏫 สำหรับ Instructor</a>
-                    <a href="https://somsaktan-rama.github.io/skinEPA/readme_staff.md" target="_blank" class="block w-full bg-pink-50 text-pink-700 border border-pink-200 p-3 rounded-lg font-bold text-center hover:bg-pink-100 transition shadow-sm">⚙️ สำหรับ Staff/พยาบาล/เจ้าหน้าที่</a>
-                </div>
-                ${calendarHtml} 
-            `,
-            showConfirmButton: true,
-            confirmButtonText: 'ปิดหน้าต่าง',
-            confirmButtonColor: '#6b7280'
-        });
+        // 3. สั่งซ่อนหน้าเมนูหลัก และโชว์หน้าต่างคู่มือ
+        app.showView('view-manual');
+
+        // 4. สั่งคลิกเปิดแท็บให้ตรงกับ Role อัตโนมัติ (หน่วงเวลาให้ DOM โหลดเสร็จนิดนึง)
+        setTimeout(() => {
+            if (typeof switchRole === 'function') {
+                switchRole(targetRole);
+            }
+            window.scrollTo(0, 0); // เลื่อนจอขึ้นบนสุดเพื่อให้อ่านง่าย
+        }, 50);
     },
     
 // 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
@@ -1995,5 +1999,6 @@ app.showView('view-admin-tracking');
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
 </script>
+<?!= include('readme'); ?>
 </body>
 </html>
