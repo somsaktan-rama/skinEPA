@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPA Skin Tracker - คู่มือระบบและข้อจำกัดการใช้งาน (readme.html)</title>
+    <title>EPA Skin Tracker-คู่มือการใช้งาน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
@@ -20,7 +20,7 @@
                 <h1 class="text-2xl sm:text-3xl font-black tracking-tight flex items-center justify-center sm:justify-start gap-2">
                     <span>📋 readme.html</span>
                 </h1>
-                <p class="text-blue-100 text-sm mt-1 font-medium">คู่มือการใช้งานระบบแยกส่วนและข้อจำกัดเชิงเทคนิค (แยกไฟล์เพื่อความเป็นระเบียบ)</p>
+                <p class="text-blue-100 text-sm mt-1 font-medium">คู่มือการใช้งานระบบ EPA Skin Tracker</p>
             </div>
             <div class="bg-white/10 px-4 py-2 rounded-xl border border-white/20 text-center sm:text-right">
                 <span class="text-xs uppercase tracking-widest block font-bold text-teal-300">ระบบฐานข้อมูล</span>
@@ -30,17 +30,6 @@
     </header>
 
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        
-        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 shadow-sm flex flex-col sm:flex-row items-start gap-4">
-            <div class="bg-amber-100 text-amber-800 p-3 rounded-xl text-2xl">💡</div>
-            <div>
-                <h4 class="font-bold text-amber-900 text-base mb-1">สถาปัตยกรรมแยกไฟล์คู่มือ (Modular Documentation)</h4>
-                <p class="text-sm text-amber-800 leading-relaxed">
-                    ไฟล์ <code>readme.html</code> นี้ถูกออกแบบมาแยกขาดจาก <code>index.html</code> (หน้างานหลัก) เพื่อป้องกันปัญหา Code ปะปนกัน คุณหมอสามารถนำโค้ดในไฟล์นี้ไปสร้างเป็นไฟล์ HTML ชื่อ <b>readme</b> ใน Google Apps Script จากนั้นในฝั่งหน้าบ้านหลัก หากต้องการเรียกใช้หน้าคู่มือนี้แบบฝังในระบบ (In-App) สามารถสั่งให้แสดงผลผ่านโครงสร้างกล่องแซนด์บ็อกซ์ หรือเรียกผ่านฟังก์ชันสลับหน้าต่าง <code>app.showView('view-manual-inapp')</code> ได้ทันทีโดยไม่รบกวนลอจิกควบคุมอื่นๆ ครับ
-                </p>
-            </div>
-        </div>
-
         <section class="mb-6 bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-2 justify-center sm:justify-start">
             <button onclick="switchRole('resident')" id="btn-resident" class="role-btn px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-sm transition-all duration-200 flex items-center gap-2">
                 <span>👨‍⚕️</span> Resident / Fellow
