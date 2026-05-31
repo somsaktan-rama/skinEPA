@@ -382,8 +382,19 @@
                     <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
                 </div>
         </div>
-    </div>    
-    </div> 
+
+		<div id="view-manual" class="hidden bg-slate-50 min-h-screen pb-10">
+        <div class="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b z-50 shadow-sm flex justify-between items-center">
+            <h2 class="font-bold text-gray-800 text-lg">📖 คู่มือระบบ</h2>
+            <button onclick="app.showView('view-menu')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
+                ⬅️ กลับหน้าหลัก
+            </button>
+        </div>
+			
+	</div>    
+		<div id="manual-calendar-container"></div>
+        <?!= include('readme'); ?>    
+	</div> 
 <script>
 // ==========================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyNAgIIbUnG2NAD05eIsXQY25ChVOCx8lZ9snPT18NvAnvB6Nltj80czLvegG9-gQ0S/exec';
@@ -1999,6 +2010,5 @@ app.showView('view-admin-tracking');
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
 </script>
-<?!= include('readme'); ?>
 </body>
 </html>
