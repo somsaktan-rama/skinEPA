@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.14</title>
+    <title>EPA Skin App 2.15</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.14</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.15</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1248,11 +1248,34 @@ loadCheckin: async () => {
                     }
                     let instructorHtml = a.instructor_name ? `<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
 
+                    // 🟢 3. จัดฟอร์แมตวันและเวลาใหม่ให้อ่านง่าย
+                    let actDate = new Date(a.act_begin);
+                    let actFinish = new Date(a.act_finish);
+
+                    // แสดงวันที่แบบเต็ม เช่น "วันอังคารที่ 2 มิถุนายน 2569"
+                    let dateDisplay = actDate.toLocaleDateString('th-TH', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+
+                    // แสดงเวลาแบบไม่มีวินาที เช่น "12:00"
+                    let timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
+                    let beginTime = actDate.toLocaleTimeString('th-TH', timeOpts);
+                    let finishTime = actFinish.toLocaleTimeString('th-TH', timeOpts);
+
                     return `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 ${a.is_ready ? 'border-l-orange-500' : 'border-l-gray-300'}">
                         <div class="flex-1 pr-2 mb-3 md:mb-0">
                             <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
                             ${instructorHtml}
-                            <div class="text-xs text-gray-600 mt-1 bg-gray-50 p-1 rounded inline-block">เวลา: ${formatThaiDateTime(a.act_begin).split(' ')[1]} - ${formatThaiDateTime(a.act_finish).split(' ')[1]} น.</div>
+                            
+                            <!-- 🟢 4. แสดงผลวันที่และเวลาแบบใหม่ -->
+                            <div class="mt-2 bg-gray-50 p-2 rounded inline-block border border-gray-100">
+                                <p class="text-sm font-bold text-gray-800 mb-0.5">${dateDisplay}</p>
+                                <p class="text-sm text-gray-600">เวลา: ${beginTime} - ${finishTime} น.</p>
+                            </div>
+                            
                             ${linkHtml}
                         </div>
                         <div class="flex items-center md:items-end md:w-32">${btnHtml}</div>
