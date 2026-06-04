@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.15</title>
+    <title>EPA Skin App 2.16</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.15</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.16</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -413,46 +413,54 @@ const app = {
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-    promptJoinActivity: async (actRefId) => {
-        // เด้ง Popup SweetAlert2 ให้ผู้ใช้กรอกรหัส 4 หลัก
-        const { value: pin } = await Swal.fire({
-            title: '🔑 กรอกรหัส Check-in',
-            html: '<p class="text-sm text-gray-600">กรุณาสอบถามรหัส 4 หลักจากอาจารย์ผู้คุมกิจกรรม</p>',
-            input: 'text',
-            inputAttributes: { inputmode: 'numeric', maxlength: 4, pattern: '[0-9]*' },
+  // ฟังก์ชันสำหรับคนกด On-site (ไม่ถาม PIN)
+    doCheckinOnsite: (refId) => {
+        Swal.fire({
+            title: '📍 ยืนยันลงชื่อ On-site',
+            text: 'ระบบจะทำการบันทึกพิกัด GPS ของท่าน',
+            icon: 'info',
             showCancelButton: true,
             confirmButtonText: 'ยืนยันลงชื่อ',
             cancelButtonText: 'ยกเลิก',
-            inputValidator: (value) => {
-                if (!value || value.length !== 4) return 'กรุณากรอกรหัสตัวเลขให้ครบ 4 หลักครับ'
+            confirmButtonColor: '#22c55e'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // ส่งค่า PIN เป็นค่าว่าง ('') เพื่อให้หลังบ้านรู้ว่าเป็นการเช็คอินด้วย GPS
+                app.submitCheckin(refId, ''); 
             }
         });
+    },
 
-        if (pin) {
-            // ถ้ายืนยันรหัส ค่อยทำงานดึง GPS และส่งค่าไปที่หลังบ้าน
-            Swal.fire({ title: 'กำลังดึงพิกัดและตรวจสอบรหัส...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
-            // ดึง GPS เหมือนเดิม
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                
-                // 🟢 แนบรหัส PIN กลับไปให้หลังบ้านเช็ค
-                const res = await app.api({ 
-                    action: 'join_activity', 
-                    payload: { act_ref_id: actRefId, lat: lat, lng: lng, pin: pin, user: app.user } 
-                });
-                
-                Swal.close();
-                if (res && res.success) {
-                    Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin());
-                } else if (res) {
-                    Swal.fire('ไม่สำเร็จ', res.message, 'error');
+    // ฟังก์ชันสำหรับคนกด Online (บังคับถาม PIN และมีคำอธิบาย)
+    promptJoinOnline: (refId) => {
+        Swal.fire({
+            title: '💻 ลงชื่อเข้าเรียน Online',
+            html: `
+                <div class="text-sm text-gray-700 text-left mt-2">
+                    <div class="bg-yellow-50 text-yellow-800 p-3 rounded-lg border border-yellow-200 text-xs mb-3 shadow-sm">
+                        ⚠️ <b>ยังไม่ได้รหัส PIN ใช่ไหม?</b><br>
+                        ให้ท่านไปเข้าห้องเรียนผ่านลิงก์ Zoom ก่อนได้เลย เมื่ออาจารย์ประกาศรหัส PIN แล้วค่อยกลับมากดลงชื่อใหม่ครับ
+                    </div>
+                    <input type="text" id="checkin-pin" class="swal2-input text-center text-2xl tracking-[0.5em] font-bold" placeholder="PIN" maxlength="4" style="width: 80%; margin: 0 auto;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '✔️ ยืนยัน PIN',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#3b82f6',
+            preConfirm: () => {
+                const pinValue = document.getElementById('checkin-pin').value;
+                if (!pinValue) {
+                    Swal.showValidationMessage('กรุณากรอกรหัส PIN 4 หลัก');
                 }
-            }, (err) => {
-                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเข้าถึงตำแหน่งพิกัด GPS ได้ กรุณาเปิดการแชร์ตำแหน่ง (Location) ในมือถือครับ', 'warning');
-            }, { enableHighAccuracy: true, timeout: 10000 });
-        }
+                return { refId: refId, pin: pinValue };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // ส่ง PIN ที่กรอกกลับไปให้หลังบ้านตรวจสอบ
+                app.submitCheckin(result.value.refId, result.value.pin);
+            }
+        });
     },
     
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
@@ -1238,13 +1246,23 @@ loadCheckin: async () => {
                     let btnHtml = '';
                     let linkHtml = a.act_link ? `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1.5 rounded text-sm shadow-sm border border-blue-200">📹 เข้าร่วมออนไลน์ (Zoom)</a>` : '';
                     
-                    if (a.already_joined) {
-                        btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center">✔️ เข้าร่วมแล้ว</span>`;
+				if (a.already_joined) {
+                        btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center block">✔️ เข้าร่วมแล้ว</span>`;
                     } else if (!a.is_ready) {
-                        btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full">รอเปิดลงชื่อ</button>`;
+                        btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full block">รอเปิดลงชื่อ</button>`;
                     } else {
-                        // 🟢 เปลี่ยนฟังก์ชันเรียกคลิกเป็น promptJoinActivity
-                        btnHtml = `<button onclick="app.promptJoinActivity('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full">ลงชื่อ (Join)</button>`;
+                        // 🌟 ลอจิกใหม่: เช็คว่ามีลิงก์หรือไม่ (มี = Hybrid/Online, ไม่มี = On-site ล้วน)
+                        if (a.act_link) {
+                            // แบบที่ 1: Hybrid มี 2 ตัวเลือกให้กดแยกกันชัดเจน
+                            btnHtml = `
+                            <div class="flex flex-col space-y-2 w-full">
+                                <button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-2 rounded shadow text-sm transition">📍 ลงชื่อ On-site</button>
+                                <button onclick="app.promptJoinOnline('${a.act_ref_id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded shadow text-sm transition">💻 ลงชื่อ Online</button>
+                            </div>`;
+                        } else {
+                            // แบบที่ 2: On-site ล้วน มีปุ่มเดียว (ส่งพิกัดเลย ไม่ถาม PIN)
+                            btnHtml = `<button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full transition">📍 ลงชื่อ On-site</button>`;
+                        }
                     }
                     let instructorHtml = a.instructor_name ? `<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
 
