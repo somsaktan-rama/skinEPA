@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.17</title>
+    <title>EPA Skin App 2.17 A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.17</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.17 A</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -413,7 +413,7 @@ const app = {
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-// 🟢 1. ฟังก์ชันสำหรับลงชื่อ On-site (ไม่ถาม PIN แต่จะดึง GPS เลย)
+// 🟢 1. สำหรับคลาส On-site ล้วน (ไม่มีลิงก์) ดึงพิกัดเลย
     doCheckinOnsite: (refId) => {
         Swal.fire({
             title: '📍 ยืนยันลงชื่อ On-site',
@@ -425,28 +425,27 @@ const app = {
             confirmButtonColor: '#22c55e'
         }).then((result) => {
             if (result.isConfirmed) {
-                // ส่งค่า PIN ว่าง ('') ไปให้ฟังก์ชันหลัก
                 app.executeCheckinRequest(refId, ''); 
             }
         });
     },
 
-    // 🟢 2. ฟังก์ชันสำหรับลงชื่อ Online (บังคับถาม PIN ก่อนดึง GPS)
-    promptJoinOnline: async (refId) => {
+    // 🟢 2. สำหรับคลาส Hybrid (บังคับถามรหัส พร้อมข้อความเตือนใจ)
+    promptJoinHybrid: async (refId) => {
         const { value: pin } = await Swal.fire({
-            title: '💻 ลงชื่อเข้าเรียน Online',
+            title: '🔑 กรอกรหัส Check-in',
             html: `
                 <div class="text-sm text-gray-700 text-left mt-2">
-                    <div class="bg-yellow-50 text-yellow-800 p-3 rounded-lg border border-yellow-200 text-xs mb-3 shadow-sm">
+                    <div class="bg-yellow-50 text-yellow-800 p-3 rounded-lg border border-yellow-200 text-xs mb-4 shadow-sm leading-relaxed">
                         ⚠️ <b>ยังไม่ได้รหัส PIN ใช่ไหม?</b><br>
-                        ให้ท่านไปเข้าห้องเรียนผ่านลิงก์ Zoom ก่อนได้เลย เมื่ออาจารย์ประกาศรหัส PIN แล้วค่อยกลับมากดลงชื่อใหม่ครับ
+                        ให้ท่านไปนั่งรอในห้องเรียน หรือเข้าผ่านลิงก์ Zoom ก่อนได้เลยครับ เมื่ออาจารย์ประกาศรหัส 4 หลักแล้ว ค่อยกลับมากดลงชื่อใหม่ครับ (ไม่ต้องรีบ)
                     </div>
                     <input type="text" id="checkin-pin" class="swal2-input text-center text-2xl tracking-[0.5em] font-bold" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 80%; margin: 0 auto;">
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonText: '✔️ ยืนยัน PIN',
-            cancelButtonText: 'ยกเลิก',
+            confirmButtonText: '✔️ ยืนยันรหัส',
+            cancelButtonText: 'ปิดหน้าต่าง',
             confirmButtonColor: '#3b82f6',
             preConfirm: () => {
                 const pinValue = document.getElementById('checkin-pin').value;
@@ -458,20 +457,18 @@ const app = {
         });
 
         if (pin) {
-            // ส่ง PIN ที่ได้ไปให้ฟังก์ชันหลัก
             app.executeCheckinRequest(refId, pin);
         }
     },
 
-    // 🟢 3. ฟังก์ชันหลักสำหรับดึง GPS และส่งข้อมูลไปหลังบ้าน (นำของเดิมมาใช้ซ้ำเพื่อความเสถียร)
+    // 🟢 3. ตัวส่งข้อมูลไปคุยกับหลังบ้าน
     executeCheckinRequest: (actRefId, pinCode) => {
-        Swal.fire({ title: 'กำลังดึงพิกัดและตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังดึงพิกัดและส่งข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             
-            // แนบรหัส PIN กลับไปให้หลังบ้านเช็ค (ถ้าเป็น On-site ค่า pinCode จะเป็นค่าว่าง)
             const res = await app.api({ 
                 action: 'join_activity', 
                 payload: { act_ref_id: actRefId, lat: lat, lng: lng, pin: pinCode, user: app.user } 
@@ -486,8 +483,8 @@ const app = {
         }, (err) => {
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเข้าถึงตำแหน่งพิกัด GPS ได้ กรุณาเปิดการแชร์ตำแหน่ง (Location) ในมือถือครับ', 'warning');
         }, { enableHighAccuracy: true, timeout: 10000 });
-    },
-    
+    },    
+	
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
     closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
     requestResetLine: async () => {
@@ -1271,21 +1268,17 @@ loadCheckin: async () => {
                     let btnHtml = '';
                     let linkHtml = a.act_link ? `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1.5 rounded text-sm shadow-sm border border-blue-200">📹 เข้าร่วมออนไลน์ (Zoom)</a>` : '';
                     
-				if (a.already_joined) {
+					if (a.already_joined) {
                         btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center block">✔️ เข้าร่วมแล้ว</span>`;
                     } else if (!a.is_ready) {
                         btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full block">รอเปิดลงชื่อ</button>`;
                     } else {
-                        // 🌟 ลอจิกใหม่: เช็คว่ามีลิงก์หรือไม่ (มี = Hybrid/Online, ไม่มี = On-site ล้วน)
+                        // 🌟 ลอจิกใหม่ที่สอดคล้องกับระบบหลังบ้าน
                         if (a.act_link) {
-                            // แบบที่ 1: Hybrid มี 2 ตัวเลือกให้กดแยกกันชัดเจน
-                            btnHtml = `
-                            <div class="flex flex-col space-y-2 w-full">
-                                <button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-2 rounded shadow text-sm transition">📍 ลงชื่อ On-site</button>
-                                <button onclick="app.promptJoinOnline('${a.act_ref_id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-3 py-2 rounded shadow text-sm transition">💻 ลงชื่อ Online</button>
-                            </div>`;
+                            // แบบที่ 1: กิจกรรม Hybrid/Online (มี PIN) -> ใช้ปุ่มสีฟ้า ถามรหัสเสมอ
+                            btnHtml = `<button onclick="app.promptJoinHybrid('${a.act_ref_id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-5 py-2 rounded shadow w-full transition">ลงชื่อเข้าร่วม (ใช้ PIN)</button>`;
                         } else {
-                            // แบบที่ 2: On-site ล้วน มีปุ่มเดียว (ส่งพิกัดเลย ไม่ถาม PIN)
+                            // แบบที่ 2: กิจกรรม On-site ล้วน (ไม่มี PIN) -> ใช้ปุ่มสีเขียว ดึงพิกัด GPS เลย
                             btnHtml = `<button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full transition">📍 ลงชื่อ On-site</button>`;
                         }
                     }
