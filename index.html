@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.16</title>
+    <title>EPA Skin App 2.17</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.16</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.17</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -413,11 +413,11 @@ const app = {
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-  // ฟังก์ชันสำหรับคนกด On-site (ไม่ถาม PIN)
+// 🟢 1. ฟังก์ชันสำหรับลงชื่อ On-site (ไม่ถาม PIN แต่จะดึง GPS เลย)
     doCheckinOnsite: (refId) => {
         Swal.fire({
             title: '📍 ยืนยันลงชื่อ On-site',
-            text: 'ระบบจะทำการบันทึกพิกัด GPS ของท่าน',
+            text: 'ระบบจะทำการดึงพิกัด GPS ของท่านเพื่อยืนยันการเข้าร่วม',
             icon: 'info',
             showCancelButton: true,
             confirmButtonText: 'ยืนยันลงชื่อ',
@@ -425,15 +425,15 @@ const app = {
             confirmButtonColor: '#22c55e'
         }).then((result) => {
             if (result.isConfirmed) {
-                // ส่งค่า PIN เป็นค่าว่าง ('') เพื่อให้หลังบ้านรู้ว่าเป็นการเช็คอินด้วย GPS
-                app.submitCheckin(refId, ''); 
+                // ส่งค่า PIN ว่าง ('') ไปให้ฟังก์ชันหลัก
+                app.executeCheckinRequest(refId, ''); 
             }
         });
     },
 
-    // ฟังก์ชันสำหรับคนกด Online (บังคับถาม PIN และมีคำอธิบาย)
-    promptJoinOnline: (refId) => {
-        Swal.fire({
+    // 🟢 2. ฟังก์ชันสำหรับลงชื่อ Online (บังคับถาม PIN ก่อนดึง GPS)
+    promptJoinOnline: async (refId) => {
+        const { value: pin } = await Swal.fire({
             title: '💻 ลงชื่อเข้าเรียน Online',
             html: `
                 <div class="text-sm text-gray-700 text-left mt-2">
@@ -441,7 +441,7 @@ const app = {
                         ⚠️ <b>ยังไม่ได้รหัส PIN ใช่ไหม?</b><br>
                         ให้ท่านไปเข้าห้องเรียนผ่านลิงก์ Zoom ก่อนได้เลย เมื่ออาจารย์ประกาศรหัส PIN แล้วค่อยกลับมากดลงชื่อใหม่ครับ
                     </div>
-                    <input type="text" id="checkin-pin" class="swal2-input text-center text-2xl tracking-[0.5em] font-bold" placeholder="PIN" maxlength="4" style="width: 80%; margin: 0 auto;">
+                    <input type="text" id="checkin-pin" class="swal2-input text-center text-2xl tracking-[0.5em] font-bold" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="width: 80%; margin: 0 auto;">
                 </div>
             `,
             showCancelButton: true,
@@ -450,17 +450,42 @@ const app = {
             confirmButtonColor: '#3b82f6',
             preConfirm: () => {
                 const pinValue = document.getElementById('checkin-pin').value;
-                if (!pinValue) {
-                    Swal.showValidationMessage('กรุณากรอกรหัส PIN 4 หลัก');
+                if (!pinValue || pinValue.length !== 4) {
+                    Swal.showValidationMessage('กรุณากรอกรหัสตัวเลขให้ครบ 4 หลักครับ');
                 }
-                return { refId: refId, pin: pinValue };
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // ส่ง PIN ที่กรอกกลับไปให้หลังบ้านตรวจสอบ
-                app.submitCheckin(result.value.refId, result.value.pin);
+                return pinValue;
             }
         });
+
+        if (pin) {
+            // ส่ง PIN ที่ได้ไปให้ฟังก์ชันหลัก
+            app.executeCheckinRequest(refId, pin);
+        }
+    },
+
+    // 🟢 3. ฟังก์ชันหลักสำหรับดึง GPS และส่งข้อมูลไปหลังบ้าน (นำของเดิมมาใช้ซ้ำเพื่อความเสถียร)
+    executeCheckinRequest: (actRefId, pinCode) => {
+        Swal.fire({ title: 'กำลังดึงพิกัดและตรวจสอบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            
+            // แนบรหัส PIN กลับไปให้หลังบ้านเช็ค (ถ้าเป็น On-site ค่า pinCode จะเป็นค่าว่าง)
+            const res = await app.api({ 
+                action: 'join_activity', 
+                payload: { act_ref_id: actRefId, lat: lat, lng: lng, pin: pinCode, user: app.user } 
+            });
+            
+            Swal.close();
+            if (res && res.success) {
+                Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin());
+            } else if (res) {
+                Swal.fire('ไม่สำเร็จ', res.message, 'error');
+            }
+        }, (err) => {
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเข้าถึงตำแหน่งพิกัด GPS ได้ กรุณาเปิดการแชร์ตำแหน่ง (Location) ในมือถือครับ', 'warning');
+        }, { enableHighAccuracy: true, timeout: 10000 });
     },
     
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
