@@ -769,17 +769,16 @@ showManual: () => {
     },
 
     // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
-    sendBroadcast: async () => {
+sendBroadcast: async () => {
         const msg = document.getElementById('broadcast-msg').value.trim();
         if (!msg) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความที่ต้องการส่งครับ', 'warning');
         
-        // รวบรวมกลุ่มผู้ใช้งานที่ติ๊กเลือกไว้
         const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
         if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
-        // 🌟 จังหวะที่ 1: แอบส่งไปถามหลังบ้านก่อนว่ามีจำนวนกี่คน (ส่งพารามิเตอร์ count_only ไปด้วย)
         Swal.fire({ title: 'กำลังคำนวณผู้รับข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
+        // ส่งไปถามหลังบ้าน
         const checkRes = await app.api({
             action: 'broadcast_line',
             payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
@@ -787,30 +786,37 @@ showManual: () => {
         
         Swal.close();
 
-        // ถ้าค้นหาไม่เจอใครเลย หรือมี Error ให้แจ้งเตือนแล้วหยุดทำงาน
         if (!checkRes || !checkRes.success) {
             return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
         }
 
+        // 🟢 ดึงยอดคนทั้งหมด และ ยอดคนที่ผูกไลน์
         const targetCount = checkRes.count;
+        const totalPeople = checkRes.total;
 
-        // 🌟 จังหวะที่ 2: เด้งหน้าต่างยืนยันพร้อมระบุ "จำนวนคนเป้าหมาย"
+        // เด้งหน้าต่างยืนยัน แจ้งรายละเอียดให้ชัดเจน
         const confirm = await Swal.fire({
             title: 'ยืนยันการส่งข้อความ?',
-            html: `ระบบกำลังจะส่งข้อความนี้ไปยังบุคลากรเป้าหมายจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b><br><br><span class="text-sm text-gray-500">กรุณากด "ยืนยัน" เพื่อส่งข้อความทันที</span>`,
-            icon: 'question',
+            html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalPeople} คน</b><br><br>
+                   มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b><br><br>
+                   <span class="text-sm text-gray-500">ระบบจะทำการส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>`,
+            icon: 'info',
             showCancelButton: true,
             confirmButtonText: '✔️ ยืนยันส่งเลย',
             cancelButtonText: 'ยกเลิก',
             confirmButtonColor: '#2563eb'
         });
 
-        // 🌟 จังหวะที่ 3: ถ้ากดยืนยัน ค่อยสั่งให้หลังบ้านส่ง LINE จริงๆ (ปลด count_only ออก)
         if (confirm.isConfirmed) {
+            if(targetCount === 0) {
+                return Swal.fire('ไม่สามารถส่งได้', 'ไม่มีบุคลากรในกลุ่มนี้ที่ผูก LINE ไว้เลยครับ', 'warning');
+            }
+
             localStorage.setItem('lastBroadcastMsg', msg); 
             
-            Swal.fire({ title: 'กำลังส่งข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังส่งข้อความผ่าน LINE...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
+            // สั่งส่งข้อความจริง
             const res = await app.api({
                 action: 'broadcast_line',
                 payload: { roles: selectedRoles, message: msg, user: app.user, count_only: false }
