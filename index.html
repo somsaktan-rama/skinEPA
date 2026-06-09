@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.17</title>
+    <title>EPA Skin App 2.18</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.17</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.18</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -367,7 +367,7 @@
             <button onclick="app.showView('view-menu')" class="w-full mt-6 bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
-        <div id="view-admin-tracking" class="hidden">
+<div id="view-admin-tracking" class="hidden">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h2 class="text-xl font-bold text-gray-800">🕵️‍♂️ ติดตามสถานะประเมิน 360°</h2>
                 <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับ</button>
@@ -379,21 +379,53 @@
             </div>
             <div id="admin-tracking-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 pb-4"></div>
         </div>
-    </div>
-
-        <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-sm">
-                <h3 class="text-xl font-bold text-gray-800 mb-2">รีเซ็ตบัญชี LINE</h3>
-                <p class="text-sm text-gray-500 mb-4">ระบบจะส่งลิงก์ยืนยันไปที่อีเมลที่ลงทะเบียนไว้</p>
-                <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">MDID</label><input type="text" id="reset-mdid" class="w-full border rounded p-2 focus:ring"></div>
-                <div class="mb-4"><label class="block text-sm font-bold text-gray-700 mb-1">Email</label><input type="email" id="reset-email" class="w-full border rounded p-2 focus:ring"></div>
-                <div class="flex space-x-2">
-                    <button onclick="app.requestResetLine()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">ส่งลิงก์</button>
-                    <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
-                </div>
+    </div> <div id="view-broadcast" class="hidden bg-slate-50 min-h-screen pb-20">
+        <div class="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b z-50 shadow-sm flex justify-between items-center">
+            <h2 class="font-bold text-gray-800 text-lg">📢 ส่งข้อความ (Broadcast)</h2>
+            <button onclick="app.showView('view-menu')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
+                ⬅️ ยกเลิก
+            </button>
         </div>
-    </div>    
-    </div> 
+
+        <div class="p-4 max-w-lg mx-auto space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <label class="block font-bold text-gray-800 mb-2 border-b pb-2">👥 ส่งถึงกลุ่มใดในสถาบันของท่าน?</label>
+                <div class="grid grid-cols-2 gap-3 text-sm mt-3">
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="r2" class="cb-role w-4 h-4 text-blue-600 rounded"><span>Resident 2</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="r3" class="cb-role w-4 h-4 text-blue-600 rounded"><span>Resident 3</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="r4" class="cb-role w-4 h-4 text-blue-600 rounded"><span>Resident 4</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="fellow" class="cb-role w-4 h-4 text-blue-600 rounded"><span>Fellow</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="instructor" class="cb-role w-4 h-4 text-purple-600 rounded"><span>Instructor</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" value="nurse" class="cb-role w-4 h-4 text-pink-600 rounded"><span>Nurse</span></label>
+                    <label class="flex items-center space-x-2 cursor-pointer col-span-2"><input type="checkbox" value="other" class="cb-role w-4 h-4 text-teal-600 rounded"><span>Other (Staff, Admin, Clerk)</span></label>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <label class="block font-bold text-gray-800 mb-2">💬 ข้อความที่จะส่ง</label>
+                <textarea id="broadcast-msg" rows="5" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" placeholder="พิมพ์ประกาศแจ้งเตือนที่นี่..."></textarea>
+                <p class="text-xs text-gray-500 mt-2">* ระบบจะจดจำข้อความที่พิมพ์ล่าสุดไว้ให้อัตโนมัติ</p>
+            </div>
+
+            <button onclick="app.sendBroadcast()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-center items-center gap-2">
+                🚀 ส่งข้อความผ่าน LINE
+            </button>
+        </div>
+    </div>
+    <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-11/12 max-w-sm">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">รีเซ็ตบัญชี LINE</h3>
+            <p class="text-sm text-gray-500 mb-4">ระบบจะส่งลิงก์ยืนยันไปที่อีเมลที่ลงทะเบียนไว้</p>
+            <div class="mb-3"><label class="block text-sm font-bold text-gray-700 mb-1">MDID</label><input type="text" id="reset-mdid" class="w-full border rounded p-2 focus:ring"></div>
+            <div class="mb-4"><label class="block text-sm font-bold text-gray-700 mb-1">Email</label><input type="email" id="reset-email" class="w-full border rounded p-2 focus:ring"></div>
+            <div class="flex space-x-2">
+                <button onclick="app.requestResetLine()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">ส่งลิงก์</button>
+                <button onclick="app.closeResetModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded">ยกเลิก</button>
+            </div>
+        </div>
+    </div>   
+</div> 
+
 <script>
 // ==========================================
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyNAgIIbUnG2NAD05eIsXQY25ChVOCx8lZ9snPT18NvAnvB6Nltj80czLvegG9-gQ0S/exec';
@@ -722,7 +754,62 @@ showManual: () => {
             confirmButtonColor: '#6b7280'
         });
     },
-    
+
+// 📢 เปิดหน้าจอ Broadcast และโหลดข้อความล่าสุดจากหน่วยความจำ
+    openBroadcastView: () => {
+        // ดึงข้อความล่าสุดที่เคยพิมพ์ไว้มาแสดง (ป้องกันข้อความหายเมื่อปิดหน้าจอ)
+        const lastMsg = localStorage.getItem('lastBroadcastMsg') || '';
+        document.getElementById('broadcast-msg').value = lastMsg;
+        
+        // รีเซ็ตล้างเครื่องหมายติ๊กถูกใน Checkbox ออกทั้งหมดก่อนเริ่มใหม่
+        document.querySelectorAll('.cb-role').forEach(cb => cb.checked = false);
+        
+        // สลับหน้าจอไปยัง UI ของการ Broadcast
+        app.showView('view-broadcast');
+    },
+
+    // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
+    sendBroadcast: async () => {
+        const msg = document.getElementById('broadcast-msg').value.trim();
+        if (!msg) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความที่ต้องการส่งครับ', 'warning');
+        
+        // รวบรวมกลุ่มผู้ใช้งานที่ผู้ใช้ติ๊กเลือกไว้
+        const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
+        if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
+
+        const confirm = await Swal.fire({
+            title: 'ยืนยันการส่งข้อความ?',
+            text: `ระบบจะทำการส่งข้อความนี้ไปยัง LINE ของบุคลากรตามกลุ่มที่ท่านเลือกในสถาบัน ${app.user.institute}`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '✔️ ยืนยันส่งเลย',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#2563eb'
+        });
+
+        if (confirm.isConfirmed) {
+            // บันทึกข้อความปัจจุบันลงใน LocalStorage ของอุปกรณ์
+            localStorage.setItem('lastBroadcastMsg', msg); 
+            
+            Swal.fire({ title: 'กำลังคัดกรองเป้าหมายและส่งข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            // ส่ง Payload ไปประมวลผลที่ฐานข้อมูล Google Sheets หลังบ้าน
+            const res = await app.api({
+                action: 'broadcast_line',
+                payload: { roles: selectedRoles, message: msg, user: app.user }
+            });
+
+            Swal.close();
+            if (res && res.success) {
+                Swal.fire('สำเร็จ!', `ส่งข้อความผ่าน LINE สำเร็จทั้งหมด ${res.count} คน`, 'success').then(() => {
+                    app.showView('view-menu'); // ส่งเสร็จแล้วย้อนกลับไปหน้าเมนูหลัก
+                });
+            } else if (res) {
+                Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+            }
+        }
+    },
+	
 // 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
 renderMenu: () => {
         let menuArea = document.getElementById('menu-buttons') || document.getElementById('menu-area');
@@ -837,11 +924,18 @@ renderMenu: () => {
                      </button>`;
         }
 
-        // 🟢 8. จัดการกิจกรรม - Instructor และ Staff
+	// 🟢 8. จัดการกิจกรรมและสื่อสาร - Instructor และ Staff
         if (isStaff || isInstructor) {
-            html += `<button onclick="app.loadManageActivities()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
+            // ปุ่มจัดการกิจกรรม (ของเดิม)
+            html += `<button onclick="app.loadManageActivities()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">⚙️</span> จัดการกิจกรรม</span>
                         <span class="text-amber-400">→</span>
+                     </button>`;
+
+            // 📢 ปุ่ม Broadcast LINE (อันใหม่ที่เพิ่มเข้าไป)
+            html += `<button onclick="app.openBroadcastView()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
+                        <span class="font-bold flex items-center"><span class="text-xl mr-3">📢</span> ส่งข้อความประกาศ (Broadcast)</span>
+                        <span class="text-blue-400">→</span>
                      </button>`;
         }
         
