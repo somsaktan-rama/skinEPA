@@ -773,13 +773,31 @@ showManual: () => {
         const msg = document.getElementById('broadcast-msg').value.trim();
         if (!msg) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความที่ต้องการส่งครับ', 'warning');
         
-        // รวบรวมกลุ่มผู้ใช้งานที่ผู้ใช้ติ๊กเลือกไว้
+        // รวบรวมกลุ่มผู้ใช้งานที่ติ๊กเลือกไว้
         const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
         if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
+        // 🌟 จังหวะที่ 1: แอบส่งไปถามหลังบ้านก่อนว่ามีจำนวนกี่คน (ส่งพารามิเตอร์ count_only ไปด้วย)
+        Swal.fire({ title: 'กำลังคำนวณผู้รับข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        const checkRes = await app.api({
+            action: 'broadcast_line',
+            payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
+        });
+        
+        Swal.close();
+
+        // ถ้าค้นหาไม่เจอใครเลย หรือมี Error ให้แจ้งเตือนแล้วหยุดทำงาน
+        if (!checkRes || !checkRes.success) {
+            return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
+        }
+
+        const targetCount = checkRes.count;
+
+        // 🌟 จังหวะที่ 2: เด้งหน้าต่างยืนยันพร้อมระบุ "จำนวนคนเป้าหมาย"
         const confirm = await Swal.fire({
             title: 'ยืนยันการส่งข้อความ?',
-            text: `ระบบจะทำการส่งข้อความนี้ไปยัง LINE ของบุคลากรตามกลุ่มที่ท่านเลือกในสถาบัน ${app.user.institute}`,
+            html: `ระบบกำลังจะส่งข้อความนี้ไปยังบุคลากรเป้าหมายจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b><br><br><span class="text-sm text-gray-500">กรุณากด "ยืนยัน" เพื่อส่งข้อความทันที</span>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: '✔️ ยืนยันส่งเลย',
@@ -787,22 +805,21 @@ showManual: () => {
             confirmButtonColor: '#2563eb'
         });
 
+        // 🌟 จังหวะที่ 3: ถ้ากดยืนยัน ค่อยสั่งให้หลังบ้านส่ง LINE จริงๆ (ปลด count_only ออก)
         if (confirm.isConfirmed) {
-            // บันทึกข้อความปัจจุบันลงใน LocalStorage ของอุปกรณ์
             localStorage.setItem('lastBroadcastMsg', msg); 
             
-            Swal.fire({ title: 'กำลังคัดกรองเป้าหมายและส่งข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังส่งข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
-            // ส่ง Payload ไปประมวลผลที่ฐานข้อมูล Google Sheets หลังบ้าน
             const res = await app.api({
                 action: 'broadcast_line',
-                payload: { roles: selectedRoles, message: msg, user: app.user }
+                payload: { roles: selectedRoles, message: msg, user: app.user, count_only: false }
             });
 
             Swal.close();
             if (res && res.success) {
                 Swal.fire('สำเร็จ!', `ส่งข้อความผ่าน LINE สำเร็จทั้งหมด ${res.count} คน`, 'success').then(() => {
-                    app.showView('view-menu'); // ส่งเสร็จแล้วย้อนกลับไปหน้าเมนูหลัก
+                    app.showView('view-menu'); 
                 });
             } else if (res) {
                 Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
