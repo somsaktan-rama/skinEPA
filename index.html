@@ -797,8 +797,8 @@ sendBroadcast: async () => {
         // เด้งหน้าต่างยืนยัน แจ้งรายละเอียดให้ชัดเจน
         const confirm = await Swal.fire({
             title: 'ยืนยันการส่งข้อความ?',
-            html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalPeople} คน</b><br><br>
-                   มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b><br><br>
+            html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalCount} กลุ่ม</b><br><br>
+                   มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetPeople} คน</b><br><br>
                    <span class="text-sm text-gray-500">ระบบจะทำการส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>`,
             icon: 'info',
             showCancelButton: true,
