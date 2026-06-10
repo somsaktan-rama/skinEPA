@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.20 A</title>
+    <title>EPA Skin App 2.20 B</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -410,7 +410,7 @@
                 <p class="text-xs text-gray-500 mt-2">* ระบบจะจดจำข้อความที่พิมพ์ล่าสุดไว้ให้อัตโนมัติ</p>
             </div>
 
-            <button onclick="app.sendBroadcast()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-center items-center gap-2">
+            <button onclick="app.()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-center items-center gap-2">
                 🚀 ส่งข้อความผ่าน LINE
             </button>
         </div>
@@ -792,7 +792,6 @@ const app = {
         if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
         Swal.fire({ title: 'กำลังคำนวณผู้รับข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        // ส่งไปถามหลังบ้าน
         const checkRes = await app.api({
             action: 'broadcast_line',
             payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
@@ -803,11 +802,11 @@ const app = {
             return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
         }
 
-        const targetCount = checkRes.count;
+        const targetCount = checkRes.count; // นับจำนวน "คน"
+        const uniqueLines = checkRes.unique_lines; // นับจำนวน "บัญชีไลน์" ที่ไม่ซ้ำ
         const totalPeople = checkRes.total;
-        const sampleNames = checkRes.sample_names || []; // 🟢 รับรายชื่อตัวอย่างจากหลังบ้าน
+        const sampleNames = checkRes.sample_names || []; 
 
-        // 🟢 สร้าง HTML สำหรับแสดงตัวอย่างรายชื่อ
         let sampleHtml = '';
         if (sampleNames.length > 0) {
             sampleHtml = `
@@ -821,13 +820,21 @@ const app = {
             `;
         }
 
-        // เด้งหน้าต่างยืนยัน แจ้งรายละเอียดให้ชัดเจน
+        // 🟢 เพิ่มแจ้งเตือน หากยอดคนที่มีไลน์ กับ ยอดไลน์ไอดี ไม่ตรงกัน (แปลว่ามีข้อมูลซ้ำ)
+        let dupWarning = '';
+        if (uniqueLines > 0 && uniqueLines < targetCount) {
+            dupWarning = `<p class="text-[11px] text-orange-600 font-bold bg-orange-50 border border-orange-200 p-2 rounded text-left mt-3">
+                           ⚠️ ตรวจพบรายชื่อ ${targetCount - uniqueLines} คนที่ใช้ LINE UID เดียวกัน ระบบจะรวบส่งเพียง 1 ข้อความต่อ 1 บัญชี เพื่อป้องกันการส่งซ้ำเข้าเครื่องเดิมครับ
+                          </p>`;
+        }
+
         const confirm = await Swal.fire({
             title: 'ยืนยันการส่งข้อความ?',
             html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalPeople} คน</b><br>
                    มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b>
                    ${sampleHtml}
-                   <span class="text-xs text-red-500 font-bold">* ระบบจะส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>`,
+                   <span class="text-xs text-red-500 font-bold">* ระบบจะส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>
+                   ${dupWarning}`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: '✔️ ยืนยันส่งเลย',
@@ -836,14 +843,13 @@ const app = {
         });
 
         if (confirm.isConfirmed) {
-            if(targetCount === 0) {
+            if(uniqueLines === 0) {
                 return Swal.fire('ไม่สามารถส่งได้', 'ไม่มีบุคลากรในกลุ่มนี้ที่ผูก LINE ไว้เลยครับ', 'warning');
             }
 
             localStorage.setItem('lastBroadcastMsg', msg);
             Swal.fire({ title: 'กำลังส่งข้อความผ่าน LINE...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
-            // สั่งส่งข้อความจริง
             const res = await app.api({
                 action: 'broadcast_line',
                 payload: { roles: selectedRoles, message: msg, user: app.user, count_only: false }
@@ -851,7 +857,7 @@ const app = {
             Swal.close();
             
             if (res && res.success) {
-                Swal.fire('สำเร็จ!', `ส่งข้อความผ่าน LINE สำเร็จทั้งหมด ${res.count} คน`, 'success').then(() => {
+                Swal.fire('สำเร็จ!', `ระบบดำเนินการส่งไปยังมือถือทั้งหมด ${res.count} เครื่อง เรียบร้อยแล้ว`, 'success').then(() => {
                     app.showView('view-menu'); 
                 });
             } else if (res) {
@@ -859,7 +865,7 @@ const app = {
             }
         }
     },
-
+	
     // 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
     loadAdvisorView: async () => {
         app.showView('view-advisor');
