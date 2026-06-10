@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.18</title>
+    <title>EPA Skin App 2.20</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.18</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.20</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -76,7 +76,8 @@
 
     <div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
         <label class="block text-xs font-bold text-gray-500 mb-2">ระบุ MDID เพื่อดึงข้อมูล</label>
-        <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="super-search-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" class="w-full p-3 border rounded-lg mb-3 text-lg tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-red-200" placeholder="ระบุ MDID (4-10 หลัก)">
+        <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="super-search-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+        class="w-full p-3 border rounded-lg mb-3 text-lg tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-red-200" placeholder="ระบุ MDID (4-10 หลัก)">
         <button onclick="app.fetchSuperUser()" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg font-bold">ดึงข้อมูล</button>
     </div>
 
@@ -367,7 +368,7 @@
             <button onclick="app.showView('view-menu')" class="w-full mt-6 bg-gray-400 text-white py-2 rounded font-bold">กลับหน้าหลัก</button>
         </div>
 
-<div id="view-admin-tracking" class="hidden">
+        <div id="view-admin-tracking" class="hidden">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
                 <h2 class="text-xl font-bold text-gray-800">🕵️‍♂️ ติดตามสถานะประเมิน 360°</h2>
                 <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับ</button>
@@ -379,7 +380,9 @@
             </div>
             <div id="admin-tracking-content" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1 pb-4"></div>
         </div>
-    </div> <div id="view-broadcast" class="hidden bg-slate-50 min-h-screen pb-20">
+    </div> 
+
+    <div id="view-broadcast" class="hidden bg-slate-50 min-h-screen pb-20">
         <div class="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b z-50 shadow-sm flex justify-between items-center">
             <h2 class="font-bold text-gray-800 text-lg">📢 ส่งข้อความ (Broadcast)</h2>
             <button onclick="app.showView('view-menu')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
@@ -410,6 +413,23 @@
             <button onclick="app.sendBroadcast()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-center items-center gap-2">
                 🚀 ส่งข้อความผ่าน LINE
             </button>
+        </div>
+    </div>
+
+    <div id="view-advisor" class="hidden bg-slate-50 min-h-screen pb-20">
+        <div class="sticky top-0 bg-white/95 backdrop-blur-md p-4 border-b z-50 shadow-sm flex justify-between items-center">
+            <h2 class="font-bold text-gray-800 text-lg">👨‍🏫 ข้อความรออนุมัติจากอาจารย์ที่ปรึกษา</h2>
+            <button onclick="app.showView('view-menu')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
+                กลับเมนูหลัก
+            </button>
+        </div>
+
+        <div class="p-4 max-w-xl mx-auto space-y-4">
+            <div class="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-xl text-xs font-bold shadow-sm leading-relaxed">
+                💡 <b>คำแนะนำสำหรับอาจารย์:</b> กรุณาอ่านข้อคิดเห็น (Feedback) ของแพทย์ประจำบ้านในความดูแลของท่าน หากเห็นว่าเหมาะสมต่อการเรียนรู้ ให้กด <b>"Allow"</b> เพื่อให้นักเรียนเห็นผลประเมินชิ้นนี้บนหน้าจอของตนเองครับ
+            </div>
+            
+            <div id="advisor-pending-list" class="space-y-4"></div>
         </div>
     </div>
     <div id="modal-reset-line" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -445,7 +465,7 @@ const app = {
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
-// 🟢 1. สำหรับคลาส On-site ล้วน (ไม่มีลิงก์) ดึงพิกัดเลย
+    // 🟢 1. สำหรับคลาส On-site ล้วน (ไม่มีลิงก์) ดึงพิกัดเลย
     doCheckinOnsite: (refId) => {
         Swal.fire({
             title: '📍 ยืนยันลงชื่อ On-site',
@@ -496,7 +516,6 @@ const app = {
     // 🟢 3. ตัวส่งข้อมูลไปคุยกับหลังบ้าน
     executeCheckinRequest: (actRefId, pinCode) => {
         Swal.fire({ title: 'กำลังดึงพิกัดและส่งข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
@@ -520,7 +539,8 @@ const app = {
     openResetModal: () => { document.getElementById('modal-reset-line').classList.remove('hidden'); },
     closeResetModal: () => { document.getElementById('modal-reset-line').classList.add('hidden'); },
     requestResetLine: async () => {
-        const mdid = document.getElementById('reset-mdid').value.trim(); const email = document.getElementById('reset-email').value.trim();
+        const mdid = document.getElementById('reset-mdid').value.trim();
+        const email = document.getElementById('reset-email').value.trim();
         if (!mdid || !email) return Swal.fire('ข้อมูลไม่ครบ', 'กรอกรหัสและอีเมลให้เรียบร้อย', 'warning');
         const data = await app.api({ action: 'request_reset_line', payload: { mdid: mdid, email: email } }, 'กำลังตรวจสอบระบบ...');
         if (data) { app.closeResetModal(); Swal.fire('สำเร็จ', data.message, 'success'); }
@@ -528,10 +548,12 @@ const app = {
 
     showView: (id) => {
         document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
+        if (document.getElementById('view-broadcast')) document.getElementById('view-broadcast').classList.add('hidden');
+        if (document.getElementById('view-advisor')) document.getElementById('view-advisor').classList.add('hidden');
+        if (document.getElementById(id)) document.getElementById(id).classList.remove('hidden');
     },
 
-api: async (req, loading = null) => {
+    api: async (req, loading = null) => {
         if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
             const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
@@ -552,9 +574,9 @@ api: async (req, loading = null) => {
     },
 
     init: async () => {
-        const LIFF_ID = '2010106383-UKz3SgNA'; // อย่าลืมเช็ค LIFF_ID ให้ตรงกับของคุณหมอนะครับ
+        const LIFF_ID = '2010106383-UKz3SgNA';
+        // อย่าลืมเช็ค LIFF_ID ให้ตรงกับของคุณหมอนะครับ
         const mdidInput = document.getElementById('mdid-input');
-
         // 🔴 1. ล็อกช่องกรอกรหัสไว้ก่อน เพื่อกันผู้ใช้พิมพ์แทรกระหว่างโหลดระบบ
         if (mdidInput) {
             mdidInput.disabled = true;
@@ -572,7 +594,6 @@ api: async (req, loading = null) => {
 
                 // 2. ยิงไปเช็คหลังบ้าน
                 const loginCheck = await app.api({ action: 'auto_login', payload: { lineUid: app.lineUid } }, 'กำลังตรวจสอบสิทธิ์เข้าใช้งาน...');
-                
                 if (loginCheck && loginCheck.success) {
                     // 🟢 ลอจิก 3: พบ LINE UID ในระบบ -> ทะลุเข้าโปรแกรมเลย
                     app.user = loginCheck.user;
@@ -596,7 +617,6 @@ api: async (req, loading = null) => {
                 } else {
                     // 🟢 ลอจิก 1: ไม่พบในระบบ -> โชว์หน้า Login 
                     app.showView('view-login');
-                    
                     // ปลดล็อกช่องกรอกรหัสให้ผู้ใช้พิมพ์ได้ตามปกติ
                     if (mdidInput) {
                         mdidInput.disabled = false;
@@ -607,7 +627,7 @@ api: async (req, loading = null) => {
                 }
             } // 🟢 ปิด else (liff.isLoggedIn) ตรงนี้อย่างถูกต้อง
         } catch (err) { 
-            console.error("LIFF Init Error:", err); 
+            console.error("LIFF Init Error:", err);
             // กรณีเกิด Error สัญญาณอินเทอร์เน็ต ก็ต้องปลดล็อกให้ผู้ใช้พิมพ์เข้าปกติ
             app.showView('view-login');
             if (mdidInput) {
@@ -620,7 +640,6 @@ api: async (req, loading = null) => {
     login: async () => {
         try {
             let mdidInput = document.getElementById('mdid-input').value;
-            
             // 1. ดักจับกรณีไม่ได้กรอกรหัส หรือกรอกสั้นเกินไป
             if (!mdidInput || mdidInput.trim() === '' || mdidInput.length < 4) {
                 return Swal.fire('แจ้งเตือน', 'กรุณาระบุรหัส MDID ให้ถูกต้อง (4 หลักขึ้นไป)', 'warning');
@@ -641,7 +660,6 @@ api: async (req, loading = null) => {
                     lineName: app.lineName || "" 
                 } 
             }, 'กำลังเข้าสู่ระบบและผูกบัญชี...');
-            
             // 4. จัดการผลลัพธ์
             if (res) {
                 if (res.requireReset) {
@@ -664,7 +682,6 @@ api: async (req, loading = null) => {
                     document.getElementById('display-name').innerText = app.user.name || "-";
                     document.getElementById('display-inst').innerText = app.user.institute || "-";
                     document.getElementById('display-role').innerText = app.user.role ? app.user.role.toUpperCase() : "-";
-                    
                     // 🟢 แทรกตรงนี้: ตรวจสอบและควบคุมการแสดงผลกล่องติดตั้ง Google Calendar ประจำสถาบัน
                     if (app.user && app.user.calendarUrl) {
                         let syncCard = document.getElementById('calendar-sync-card');
@@ -682,7 +699,7 @@ api: async (req, loading = null) => {
                             app.showView('view-menu');
                         });
                     } else {
-                        app.renderMenu(); 
+                        app.renderMenu();
                         app.showView('view-menu');
                     }
                 } else {
@@ -697,7 +714,6 @@ api: async (req, loading = null) => {
 
     logout: () => { 
         app.user = null;
-        
         // 🟢 ถ้าเปิดใช้งานอยู่บน LINE (LIFF) ให้สั่งปิดหน้าต่างแอปพลิเคชันกลับสู่ห้องแชททันที
         if (liff.isInClient()) {
             liff.closeWindow();
@@ -713,7 +729,7 @@ api: async (req, loading = null) => {
         }
     },
 
-showManual: () => {
+    showManual: () => {
         // 1. สร้างส่วนของ HTML สำหรับกล่อง Google Calendar (ดึงลิงก์ตามสถาบัน)
         let calendarHtml = '';
         if (app.user && app.user.calendarUrl) {
@@ -755,7 +771,7 @@ showManual: () => {
         });
     },
 
-// 📢 เปิดหน้าจอ Broadcast และโหลดข้อความล่าสุดจากหน่วยความจำ
+    // 📢 เปิดหน้าจอ Broadcast และโหลดข้อความล่าสุดจากหน่วยความจำ
     openBroadcastView: () => {
         // ดึงข้อความล่าสุดที่เคยพิมพ์ไว้มาแสดง (ป้องกันข้อความหายเมื่อปิดหน้าจอ)
         const lastMsg = localStorage.getItem('lastBroadcastMsg') || '';
@@ -763,13 +779,12 @@ showManual: () => {
         
         // รีเซ็ตล้างเครื่องหมายติ๊กถูกใน Checkbox ออกทั้งหมดก่อนเริ่มใหม่
         document.querySelectorAll('.cb-role').forEach(cb => cb.checked = false);
-        
         // สลับหน้าจอไปยัง UI ของการ Broadcast
         app.showView('view-broadcast');
     },
 
     // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
-sendBroadcast: async () => {
+    sendBroadcast: async () => {
         const msg = document.getElementById('broadcast-msg').value.trim();
         if (!msg) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความที่ต้องการส่งครับ', 'warning');
         
@@ -777,13 +792,11 @@ sendBroadcast: async () => {
         if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
         Swal.fire({ title: 'กำลังคำนวณผู้รับข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        
         // ส่งไปถามหลังบ้าน
         const checkRes = await app.api({
             action: 'broadcast_line',
             payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
         });
-        
         Swal.close();
 
         if (!checkRes || !checkRes.success) {
@@ -806,22 +819,18 @@ sendBroadcast: async () => {
             cancelButtonText: 'ยกเลิก',
             confirmButtonColor: '#2563eb'
         });
-
         if (confirm.isConfirmed) {
             if(targetCount === 0) {
                 return Swal.fire('ไม่สามารถส่งได้', 'ไม่มีบุคลากรในกลุ่มนี้ที่ผูก LINE ไว้เลยครับ', 'warning');
             }
 
-            localStorage.setItem('lastBroadcastMsg', msg); 
-            
+            localStorage.setItem('lastBroadcastMsg', msg);
             Swal.fire({ title: 'กำลังส่งข้อความผ่าน LINE...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
             // สั่งส่งข้อความจริง
             const res = await app.api({
                 action: 'broadcast_line',
                 payload: { roles: selectedRoles, message: msg, user: app.user, count_only: false }
             });
-
             Swal.close();
             if (res && res.success) {
                 Swal.fire('สำเร็จ!', `ส่งข้อความผ่าน LINE สำเร็จทั้งหมด ${res.count} คน`, 'success').then(() => {
@@ -832,9 +841,97 @@ sendBroadcast: async () => {
             }
         }
     },
+
+    // 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
+    loadAdvisorView: async () => {
+        app.showView('view-advisor');
+        const listDiv = document.getElementById('advisor-pending-list');
+        listDiv.innerHTML = '<p class="text-center text-sm text-gray-500 py-8 animate-pulse">กำลังประมวลผลข้อมูลสิทธิ์นักเรียน...</p>';
+
+        const res = await app.api({
+            action: 'get_advisor_pending',
+            payload: { user: app.user }
+        });
+
+        if (!res || !res.success) {
+            return listDiv.innerHTML = `<p class="text-center text-red-500 text-sm py-8">❌ ${res ? res.message : 'เกิดข้อผิดพลาดของระบบ'}</p>`;
+        }
+
+        if (res.data.length === 0) {
+            return listDiv.innerHTML = `
+                <div class="text-center py-12 bg-white rounded-2xl border shadow-sm">
+                    <span class="text-4xl">🎉</span>
+                    <p class="text-sm font-bold text-gray-700 mt-2">ไม่มีข้อความประเมินค้างตรวจสอบ</p>
+                    <p class="text-xs text-gray-400 mt-1">แพทย์ประจำบ้านในความดูแลของท่าน ได้รับการอนุมัติครบถ้วนแล้ว</p>
+                </div>`;
+        }
+
+        let html = '';
+        res.data.forEach(item => {
+            html += `
+                <div id="card-eval-${item.record_id}" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3 transition hover:shadow-md">
+                    <div class="flex justify-between items-start border-b pb-2">
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm">ผู้รับประเมิน: ${item.resident_name}</p>
+                            <p class="text-xs text-blue-600 mt-0.5 font-bold">🎯 บทบาทผู้ประเมิน: ${item.evaluator_role}</p>
+                        </div>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">${item.time_create.split(' ')[0]}</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-600 bg-slate-50 p-2 rounded-xl font-bold">
+                        <div>🤝 ทีมงาน: <span class="text-teal-600">${item.score_teamwork}/5</span></div>
+                        <div>🗣️ สื่อสาร: <span class="text-teal-600">${item.score_communication}/5</span></div>
+                        <div>⏰ ตรงเวลา: <span class="text-teal-600">${item.score_punctuality}/5</span></div>
+                    </div>
+
+                    <div class="bg-amber-50/70 border border-amber-100 p-3 rounded-xl">
+                        <p class="text-[11px] text-amber-800 font-bold mb-1">📝 ข้อคิดเห็น / คำแนะนำเพิ่มเติม:</p>
+                        <p class="text-sm text-gray-700 italic leading-relaxed">"${item.feedback_comment || 'ไม่มีข้อความระบุ'}"</p>
+                    </div>
+
+                    <div class="flex space-x-2 pt-1">
+                        <button onclick="app.approveEval360('${item.record_id}', 'approved')" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition">
+                            ✅ อนุญาตให้เห็น (Allow)
+                        </button>
+                        <button onclick="app.approveEval360('${item.record_id}', 'rejected')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-red-600 text-xs font-bold py-2.5 rounded-xl transition">
+                            ❌ ซ่อนไว้ (Reject)
+                        </button>
+                    </div>
+                </div>`;
+        });
+        listDiv.innerHTML = html;
+    },
+
+    // 👨‍🏫 ยิงคำสั่งส่งเปลี่ยนสถานะอนุมัติลงบน Google Sheets
+    approveEval360: async (recordId, status) => {
+        Swal.fire({ title: 'กำลังบันทึกสถานะ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        const res = await app.api({
+            action: 'approve_eval_360',
+            payload: { record_id: recordId, status: status }
+        });
+
+        Swal.close();
+        if (res && res.success) {
+            const card = document.getElementById(`card-eval-${recordId}`);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-10px)';
+                card.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => {
+                    card.remove();
+                    if (document.getElementById('advisor-pending-list').children.length === 0) {
+                        app.loadAdvisorView();
+                    }
+                }, 300);
+            }
+        } else {
+            Swal.fire('เกิดข้อผิดพลาด', res ? res.message : 'ไม่สามารถบันทึกสถานะได้', 'error');
+        }
+    },
 	
-// 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
-renderMenu: () => {
+    // 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
+    renderMenu: () => {
         let menuArea = document.getElementById('menu-buttons') || document.getElementById('menu-area');
         if (!menuArea) return;
         
@@ -852,13 +949,10 @@ renderMenu: () => {
         const isFellowResearch = roleRaw.includes('fellowresearch');
         const isTrainee = isResident || isFellowDermSurg || isFellowResearch;
         const isInstructor = roleRaw.includes('instructor');
-        
         // 🟢 เพิ่มตัวแปรสำหรับตรวจสอบสิทธิ์ Nurse Head
-        const isNurseHead = roleRaw.includes('nursehead'); 
-        
+        const isNurseHead = roleRaw.includes('nursehead');
         const isStaff = roleRaw.includes('staff') || roleRaw.includes('admin') || roleRaw.includes('superstaff');
         const isAdmin = roleRaw.includes('admin') || roleRaw.includes('superstaff');
-
         // 🟢 1. เงื่อนไขพิเศษ: สำหรับ Resident ใหม่ (ข้อมูลล่วงหน้า)
         if (isResident && app.user.level === 'NEW_RESIDENT') {
             html += `<button onclick="app.load360Form()" class="w-full bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
@@ -892,12 +986,11 @@ renderMenu: () => {
                     <span class="font-bold flex items-center"><span class="text-xl mr-3">🔄</span> ทำแบบประเมิน 360 องศา</span>
                     <span class="text-teal-400">→</span>
                  </button>`;
-
         // 🟢 4. กิจกรรม (Activity) - เฉพาะ Resident และ Instructor
         if (isResident || isInstructor) {
             html += `<button onclick="app.loadCheckin()" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">📍</span> ลงชื่อเข้าร่วมกิจกรรม</span>
-                        <span class="text-orange-400">→</span>
+                    <span class="text-orange-400">→</span>
                      </button>`;
         }
 
@@ -931,6 +1024,13 @@ renderMenu: () => {
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">✅</span> รอประเมิน EPA</span>
                         <span class="text-purple-400">→</span> 
                      </button>`;
+                     
+            // 👨‍🏫 ปุ่มเข้าหน้าจออนุมัติของอาจารย์ที่ปรึกษา (อันใหม่ที่เพิ่มเข้าไป)
+            html += `<button onclick="app.loadAdvisorView()" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
+                        <span class="font-bold flex items-center"><span class="text-xl mr-3">👨‍🏫</span> กล่องข้อความอาจารย์ที่ปรึกษา (คัดกรอง 360°)</span>
+                        <span class="text-emerald-400">→</span> 
+                     </button>`;
+
             if (app.user && app.user.viewTarget && app.user.viewTarget !== "") {
                 html += `<button onclick="app.initInst360()" class="w-full bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                             <span class="font-bold flex items-center"><span class="text-xl mr-3">📊</span> ดูผลประเมิน 360 (ลูกศิษย์)</span>
@@ -947,14 +1047,13 @@ renderMenu: () => {
                      </button>`;
         }
 
-	// 🟢 8. จัดการกิจกรรมและสื่อสาร - Instructor และ Staff
+	    // 🟢 8. จัดการกิจกรรมและสื่อสาร - Instructor และ Staff
         if (isStaff || isInstructor) {
             // ปุ่มจัดการกิจกรรม (ของเดิม)
             html += `<button onclick="app.loadManageActivities()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">⚙️</span> จัดการกิจกรรม</span>
                         <span class="text-amber-400">→</span>
                      </button>`;
-
             // 📢 ปุ่ม Broadcast LINE (อันใหม่ที่เพิ่มเข้าไป)
             html += `<button onclick="app.openBroadcastView()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">📢</span> ส่งข้อความประกาศ (Broadcast)</span>
@@ -1016,12 +1115,10 @@ renderMenu: () => {
         const beginEl = document.getElementById('create-act-begin');
         const durationEl = document.getElementById('create-act-duration');
         const instEl = document.getElementById('create-act-instructor');
-        
         // 🟢 1. ดึงค่าลิงก์ Zoom (ถ้ามี)
-        const linkEl = document.getElementById('create-act-link'); 
-        
+        const linkEl = document.getElementById('create-act-link');
         if(!actEl.value || !beginEl.value || !topicEl.value.trim()) {
-            return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุหัวข้อและเวลาให้ครบถ้วน', 'warning'); 
+            return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุหัวข้อและเวลาให้ครบถ้วน', 'warning');
         }
 
         // 🟢 2. เพิ่ม act_link เข้าไปใน payload ก่อนส่งไปให้หลังบ้าน
@@ -1039,14 +1136,14 @@ renderMenu: () => {
         }, 'กำลังสร้างกิจกรรม...');
 
         if(res) {
-            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); 
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
         }
     },
     
  // --- 360 Eval Flow ---
     load360Form: async () => { 
         // 🟢 เพิ่มข้อความ Loading เพื่อให้ปุ่มตอบสนองทันที
-        const data = await app.api({ action: 'get_360_form_data', user: app.user }, 'กำลังโหลดรายชื่อ...'); 
+        const data = await app.api({ action: 'get_360_form_data', user: app.user }, 'กำลังโหลดรายชื่อ...');
         if(data) { 
             const grid = document.getElementById('grid-360-residents');
             if(data.residents.length === 0) { 
@@ -1076,7 +1173,8 @@ renderMenu: () => {
 
         document.getElementById('sel-360-resident').value = mdid; document.getElementById('focus-360-name').innerText = name; document.getElementById('focus-360-level').innerText = level;
         const imgEl = document.getElementById('focus-360-pic'); imgEl.src = picUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-        document.getElementById('txt-360-comment').value = ''; document.getElementById('score-teamwork').value = '3'; document.getElementById('score-communication').value = '3'; document.getElementById('score-punctuality').value = '3';
+        document.getElementById('txt-360-comment').value = ''; document.getElementById('score-teamwork').value = '3'; document.getElementById('score-communication').value = '3';
+        document.getElementById('score-punctuality').value = '3';
         app.showView('view-360-focus'); window.scrollTo(0, 0); 
     },
 
@@ -1107,10 +1205,8 @@ save360Eval: async () => {
             if (score === 2 || score === 4) return 30;
             return 5;
         };
-        
         // 🟢 หาเกณฑ์ที่สูงที่สุดจากคะแนนที่ให้
         const minReqChars = Math.max(getRequiredLength(scoreT), getRequiredLength(scoreC), getRequiredLength(scoreP));
-        
         // 🟢 ตรวจสอบ Validation เรื่องความยาวขั้นต่ำ
         if (comment.length < minReqChars) {
             return Swal.fire(
@@ -1139,7 +1235,6 @@ save360Eval: async () => {
                 // ถ้าต้องพิมพ์ 30 ตัวอักษร ควรมีตัวอักษรไม่ซ้ำกันเกิน 8 ตัว
                 let uniqueChars = new Set(text.replace(/\s/g, '').split('')).size;
                 let requiredUnique = minChars >= 100 ? 15 : 8;
-                
                 if (uniqueChars < requiredUnique) {
                     return { valid: false, message: 'ข้อความดูเหมือนเป็นการสุ่มกดแป้นพิมพ์ กรุณาเขียนคำประเมินให้ชัดเจนขึ้นครับ' };
                 }
@@ -1165,13 +1260,12 @@ save360Eval: async () => {
                 feedback_comment: comment 
             } 
         }, 'กำลังบันทึกผลการประเมิน...');
-
         if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
     },
 
     loadMy360Feedback: async () => { 
         document.getElementById('inst-360-selector').classList.add('hidden');
-        app._render360Data(app.user.mdid); 
+        app._render360Data(app.user.mdid);
     },
     
     initInst360: async () => {
@@ -1198,7 +1292,6 @@ _render360Data: async (targetMdid) => {
             app.showView('view-my-360'); 
             const container = document.getElementById('my-360-container');
             if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติการประเมิน 360 องศา</p>';
-            
             if (isSelf) {
                 let tabsHtml = `<div class="flex overflow-x-auto border-b border-teal-200 mb-4 space-x-2">`;
                 let contentHtml = ``;
@@ -1219,7 +1312,7 @@ _render360Data: async (targetMdid) => {
                              <div class="grid grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-3 rounded border"><div><p class="text-gray-500 mb-1">ทำงานเป็นทีม</p><p class="font-bold text-teal-600 text-lg">${f.avg_teamwork}</p></div><div><p class="text-gray-500 mb-1">การสื่อสาร</p><p class="font-bold text-teal-600 text-lg">${f.avg_communication}</p></div><div><p class="text-gray-500 mb-1">ตรงเวลา</p><p class="font-bold text-teal-600 text-lg">${f.avg_punctuality}</p></div></div>
                              <div class="text-sm text-gray-700 mt-3 bg-yellow-50/50 p-3 border border-yellow-100 rounded"><p class="font-bold text-gray-600 mb-2">💬 ข้อคิดเห็น:</p><ul class="list-disc pl-5 space-y-1">${f.comments.map(c => `<li>${c}</li>`).join('')}</ul></div>
                          </div>`;
-                    });
+                });
                     contentHtml += `</div>`;
                 });
                 tabsHtml += `</div>`;
@@ -1263,7 +1356,6 @@ _render360Data: async (targetMdid) => {
                 let reversedFeedback = [...data.feedback].reverse();
                 reversedFeedback.forEach(t => comparisonHtml += `<th class="p-3 text-center border-l whitespace-nowrap text-teal-800">${t.term}</th>`);
                 comparisonHtml += `</tr></thead><tbody>`;
-
                 let getOverall = (termData, key) => {
                     let total = 0, count = 0;
                     termData.roles.forEach(r => { total += parseFloat(r[key]) * r.eval_count; count += r.eval_count; });
@@ -1281,7 +1373,6 @@ _render360Data: async (targetMdid) => {
                     comparisonHtml += `</tr>`;
                 });
                 comparisonHtml += `</tbody></table></div>`;
-
                 // 💬 รวบรวมข้อคิดเห็นแยกตามเทอม (ส่วนเดิม)
                 comparisonHtml += `<h3 class="font-bold text-teal-900 mb-2">💬 รวบรวมข้อคิดเห็น (แยกตามเทอม)</h3><div class="space-y-4">`;
                 data.feedback.forEach(t => {
@@ -1318,7 +1409,8 @@ _render360Data: async (targetMdid) => {
         if(data && data.success) {
             const r = data.my_data;
             const timePct = data.time_elapsed_pct; app.showView('view-my-progress');
-            let riskAlert = r.is_at_risk ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-bold">⚠️ แจ้งเตือน: อัตราสะสมเคสช้ากว่าเวลาที่ผ่านไป (${timePct.toFixed(0)}%) กรุณาเร่งเก็บเคสเพิ่ม</div>` : '';
+            let riskAlert = r.is_at_risk ?
+            `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-bold">⚠️ แจ้งเตือน: อัตราสะสมเคสช้ากว่าเวลาที่ผ่านไป (${timePct.toFixed(0)}%) กรุณาเร่งเก็บเคสเพิ่ม</div>` : '';
             document.getElementById('my-progress-summary').innerHTML = `${riskAlert}<div class="bg-blue-50 border p-4 rounded-lg shadow-sm"><p class="text-sm text-blue-800 font-bold mb-2">ความสำเร็จรวมทั้งหมด (EPA & Activity)</p><div class="w-full bg-gray-200 rounded-full h-4 mb-1"><div class="bg-blue-600 h-4 rounded-full progress-bar-fill" style="width: ${r.completion_pct}%"></div></div><p class="text-xs text-right text-gray-600 font-semibold">${r.completion_pct.toFixed(1)}% (ผ่าน ${r.total_pass} จาก ${r.total_target})</p></div>`;
             document.getElementById('my-progress-details').innerHTML = r.items.map(item => {
                 let pct = item.target > 0 ? Math.min(100, (item.pass / item.target) * 100) : 100;
@@ -1354,7 +1446,8 @@ _render360Data: async (targetMdid) => {
         const epa = document.getElementById('sel-epaid').value, inst = document.getElementById('sel-instructor').value;
         const note = document.getElementById('txt-epanote').value.trim(); if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุ Note ก่อนส่งเสมอ', 'warning');
         const res = await app.api({ action: 'save_epa', payload: { epaid: epa, epa_desc: document.getElementById('sel-epaid').options[document.getElementById('sel-epaid').selectedIndex].text, epa_note: note, instructor_mdid: inst, user: app.user }});
-        if(res) { document.getElementById('txt-epanote').value = ''; Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu')); } 
+        if(res) { document.getElementById('txt-epanote').value = ''; Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
+        } 
     },
     loadResidentHistory: async () => { 
         const data = await app.api({ action: 'get_resident_history', user: app.user });
@@ -1379,12 +1472,11 @@ loadCheckin: async () => {
                     let timeB = new Date(b.act_begin).getTime();
                     return timeA - timeB; 
                 });
-
-                 // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ (ในฟังก์ชัน loadCheckin)
+                // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ (ในฟังก์ชัน loadCheckin)
                 list.innerHTML = data.activities.map(a => {
                     let btnHtml = '';
                     let linkHtml = a.act_link ? `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1.5 rounded text-sm shadow-sm border border-blue-200">📹 เข้าร่วมออนไลน์ (Zoom)</a>` : '';
-                    
+                     
 					if (a.already_joined) {
                         btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center block">✔️ เข้าร่วมแล้ว</span>`;
                     } else if (!a.is_ready) {
@@ -1399,7 +1491,8 @@ loadCheckin: async () => {
                             btnHtml = `<button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full transition">📍 ลงชื่อ On-site</button>`;
                         }
                     }
-                    let instructorHtml = a.instructor_name ? `<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
+                    let instructorHtml = a.instructor_name ?
+`<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
 
                     // 🟢 3. จัดฟอร์แมตวันและเวลาใหม่ให้อ่านง่าย
                     let actDate = new Date(a.act_begin);
@@ -1412,18 +1505,15 @@ loadCheckin: async () => {
                         month: 'long', 
                         day: 'numeric' 
                     });
-
                     // แสดงเวลาแบบไม่มีวินาที เช่น "12:00"
                     let timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
                     let beginTime = actDate.toLocaleTimeString('th-TH', timeOpts);
                     let finishTime = actFinish.toLocaleTimeString('th-TH', timeOpts);
-
                     return `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 ${a.is_ready ? 'border-l-orange-500' : 'border-l-gray-300'}">
                         <div class="flex-1 pr-2 mb-3 md:mb-0">
                             <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
                             ${instructorHtml}
                             
-                            <!-- 🟢 4. แสดงผลวันที่และเวลาแบบใหม่ -->
                             <div class="mt-2 bg-gray-50 p-2 rounded inline-block border border-gray-100">
                                 <p class="text-sm font-bold text-gray-800 mb-0.5">${dateDisplay}</p>
                                 <p class="text-sm text-gray-600">เวลา: ${beginTime} - ${finishTime} น.</p>
@@ -1443,7 +1533,6 @@ loadCheckin: async () => {
     loadWeeklyBatch: async () => {
         const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
         const formDataRes = await app.api({ action: 'get_weekly_batch_data', user: app.user });
-        
         if (formDataRes && formDataRes.success) {
             const instEl = document.getElementById('tpl-instructor');
             if (instEl && formDataRes.instructors) {
@@ -1461,7 +1550,6 @@ loadCheckin: async () => {
                 listEl.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">ยังไม่มีแม่แบบในสถาบันของคุณ</p>';
             } else {
                 const days = ["", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
-                
                 // 🟢 เพิ่มคำสั่งเรียงลำดับตาม "วันที่ใกล้จะถึงที่สุด" และตามด้วย "เวลาเริ่ม"
                 res.favs.sort((a, b) => {
                     let today = new Date().getDay(); 
@@ -1484,7 +1572,6 @@ loadCheckin: async () => {
                         return tA.localeCompare(tB);
                     }
                 });
-
                 listEl.innerHTML = res.favs.map(f => {
                     let d = new Date(); let today = d.getDay(); if (today === 0) today = 7;
                     let distance = parseInt(f.day_of_week) - today; if (distance <= 0) distance += 7; d.setDate(d.getDate() + distance);
@@ -1503,7 +1590,8 @@ loadCheckin: async () => {
                     </div>`;
                 }).join('');
             }
-            document.getElementById('tpl-time-begin').value = '12:00'; document.getElementById('tpl-time-finish').value = '13:00'; document.getElementById('tpl-topic').value = '';
+            document.getElementById('tpl-time-begin').value = '12:00';
+            document.getElementById('tpl-time-finish').value = '13:00'; document.getElementById('tpl-topic').value = '';
             app.showView('view-weekly-batch');
         }
     },
@@ -1520,7 +1608,6 @@ loadCheckin: async () => {
             topic: document.getElementById('tpl-topic').value.trim(),
             act_link: document.getElementById('tpl-link') ? document.getElementById('tpl-link').value.trim() : "" // 🟢 ดึงค่าลิงก์ประชุมแนบไปด้วย
         };
-        
         if(!payload.topic || !payload.time_begin || !payload.time_finish) return Swal.fire('แจ้งเตือน', 'กรุณากรอกหัวข้อและเวลาให้ครบ', 'warning');
         
         // เรียกใช้ action 'save_fav_act' ตามลอจิกใหม่ที่หลังบ้านรองรับ
@@ -1538,7 +1625,6 @@ loadCheckin: async () => {
         const act = app.currentManageAct;
         const formDataRes = await app.api({ action: 'get_weekly_batch_data', user: app.user }, 'กำลังโหลดรายชื่ออาจารย์...');
         if (!formDataRes || !formDataRes.success) return;
-        
         // ตัวแปลงฟอร์แมตวันที่ให้อ่านบนอินพุต datetime-local ได้อย่างถูกต้องแม่นยำตามโซนเวลาประเทศ
         const toLocalISO = (dt) => {
             let d = new Date(dt);
@@ -1559,7 +1645,6 @@ loadCheckin: async () => {
             let isSelected = (mdidStr === currentInstMdid) ? "selected" : "";
             return `<option value="${i.mdid}" ${isSelected}>${i.name}</option>`;
         }).join('');
-        
         Swal.fire({
             title: '✏️ แก้ไขข้อมูลกิจกรรม',
             html: `
@@ -1630,11 +1715,11 @@ loadCheckin: async () => {
         
         if(selectedIds.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาติ๊กเลือกอย่างน้อย 1 กิจกรรม', 'warning');
         const res = await app.api({ action: 'batch_create_weekly', payload: { user: app.user, selected_ids: selectedIds } }, 'กำลังประมวลผลและตรวจสอบข้อมูลซ้ำ...');
-        
         if(res && res.success) {
             Swal.fire('สำเร็จ', res.message, 'success');
             checkedBoxes.forEach(cb => cb.checked = false); // เคลียร์ติ๊กถูกออก
-            app.loadWeeklyBatch(); // รีเฟรชหน้าจอเพื่ออัปเดตการคำนวณวัน
+            app.loadWeeklyBatch();
+            // รีเฟรชหน้าจอเพื่ออัปเดตการคำนวณวัน
         }
     },
 
@@ -1644,7 +1729,7 @@ loadCheckin: async () => {
         const res = await app.api({ action: 'delete_template', fav_id: favId });
         if(res && res.success) { 
             Swal.fire('สำเร็จ', res.message, 'success'); 
-            app.loadWeeklyBatch(); 
+            app.loadWeeklyBatch();
         }
     },
 
@@ -1654,24 +1739,12 @@ loadCheckin: async () => {
         const res = await app.api({ action: 'delete_activity', act_ref_id: actRefId });
         if(res && res.success) { 
             Swal.fire('สำเร็จ', res.message, 'success'); 
-            app.loadManageActivities(); // กลับไปโหลดหน้ารายการกิจกรรมใหม่
+            app.loadManageActivities();
+            // กลับไปโหลดหน้ารายการกิจกรรมใหม่
         }
     },
 
-    // 🟢 ฟังก์ชันลบ
-    deleteTemplate: async (favId) => {
-        if(!confirm('ต้องการลบแม่แบบกิจกรรมนี้ใช่หรือไม่?')) return;
-        const res = await app.api({ action: 'delete_template', fav_id: favId });
-        if(res && res.success) { Swal.fire('สำเร็จ', res.message, 'success'); app.loadWeeklyBatch(); }
-    },
-    deleteActivity: async (actRefId) => {
-        if(!confirm('🚨 คำเตือน: ต้องการลบกิจกรรมนี้ออกจากระบบใช่หรือไม่? (ข้อมูลคนลงชื่อจะหายไปด้วย)')) return;
-        const res = await app.api({ action: 'delete_activity', act_ref_id: actRefId });
-        if(res && res.success) { Swal.fire('สำเร็จ', res.message, 'success'); app.loadManageActivities(); }
-    },
-
-    
-joinActivity: async (actRefId) => {
+    joinActivity: async (actRefId) => {
         if (!navigator.geolocation) {
             Swal.fire('แจ้งเตือน', 'อุปกรณ์ของท่านไม่รองรับการดึงพิกัด GPS', 'warning');
             app.processJoinActivity(actRefId, "", "");
@@ -1684,7 +1757,6 @@ joinActivity: async (actRefId) => {
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
-        
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 Swal.close();
@@ -1704,7 +1776,7 @@ joinActivity: async (actRefId) => {
                     text: errMsg + ' ระบบจะบันทึกสถานะว่า "ไม่ระบุพิกัด" นะครับ',
                     confirmButtonText: 'ดำเนินการต่อ'
                 }).then(() => {
-                    app.processJoinActivity(actRefId, "", ""); 
+                    app.processJoinActivity(actRefId, "", "");
                 });
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 } // ยืดเวลา Timeout เป็น 15 วินาที
@@ -1715,7 +1787,6 @@ joinActivity: async (actRefId) => {
         // 🟢 บังคับแปลงพิกัด GPS เป็นข้อความ (String) เสมอ เพื่อไม่ให้ข้อมูลหายตอนส่งเข้า Google Sheets
         let latStr = (lat !== undefined && lat !== null) ? String(lat) : "";
         let lngStr = (lng !== undefined && lng !== null) ? String(lng) : "";
-
         const res = await app.api({ 
             action: 'join_activity', 
             payload: { 
@@ -1725,7 +1796,6 @@ joinActivity: async (actRefId) => {
                 lng: lngStr 
             } 
         }, 'กำลังบันทึกข้อมูล...');
-        
         if (res && res.success) {
             Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadCheckin());
         } else if (res) {
@@ -1734,7 +1804,7 @@ joinActivity: async (actRefId) => {
     },
 
     // --- Manage Activities ---
-loadManageActivities: async () => {
+    loadManageActivities: async () => {
         // 🟢 เพิ่มข้อความ Loading
         const data = await app.api({ action: 'get_manage_activities', user: app.user }, 'กำลังโหลดกิจกรรม...');
         if(data) {
@@ -1749,7 +1819,6 @@ loadManageActivities: async () => {
                     let timeB = new Date(b.act_begin).getTime();
                     return timeA - timeB; 
                 });
-                
                 // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ
                 list.innerHTML = data.activities.map(a => {
                     app.cachedManageActs[a.act_ref_id] = a; 
@@ -1758,7 +1827,6 @@ loadManageActivities: async () => {
                     let onlineBadge = a.act_link ? `<span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-md border border-blue-300 ml-2 shadow-sm animate-pulse">🌐 มี Online</span>` : '';
                     
                     return `<div class="border p-4 rounded bg-white shadow-sm cursor-pointer hover:bg-red-50 border-l-4 border-l-red-500" onclick="app.viewAttendees('${a.act_ref_id}')">
-                       
                         <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic} ${onlineBadge}</div>
                         
                         <div class="text-sm text-purple-700 mt-2 font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${a.instructor_name || 'ไม่ระบุ'}</div>
@@ -1777,7 +1845,7 @@ loadManageActivities: async () => {
         }
     },
     
-viewAttendees: async (actRefId) => { 
+    viewAttendees: async (actRefId) => { 
         if (!actRefId) {
             return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสอ้างอิงกิจกรรม', 'error');
         }
@@ -1787,25 +1855,21 @@ viewAttendees: async (actRefId) => {
             return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลกิจกรรมในระบบ', 'error');
         }
         
-        app.currentManageAct = act; 
-        
+        app.currentManageAct = act;
         // 🟢 1. เด้ง Popup "กำลังโหลดข้อมูล..." ทันทีที่คลิก เพื่อไม่ให้รู้สึกว่าแอปค้าง
         Swal.fire({
             title: 'กำลังดึงรายชื่อผู้เข้าร่วม...',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
-        
         const data = await app.api({ 
             action: 'get_activity_attendees', 
             act_ref_id: actRefId,
             payload: { act_ref_id: actRefId } 
         });
-    
         if(data && data.success) { 
             // 🟢 2. ปิด Popup Loading เมื่อโหลดเสร็จ
             Swal.close();
-
             const list = document.getElementById('attendees-container');
             
             // 🟢 3. นับยอดผู้เข้าร่วมแบบ Real-time แยกตามกลุ่ม (แพทย์ / อาจารย์)
@@ -1816,7 +1880,6 @@ viewAttendees: async (actRefId) => {
                 if (r.includes('resident') || r.includes('fellow')) countRes++;
                 if (r.includes('instructor')) countInst++;
             });
-
             // 🟢 4. แสดงผลหัวข้อ + ชื่ออาจารย์ + ยอดผู้เข้าร่วม
             document.getElementById('attendee-topic').innerHTML = `
                 <div class="mb-1">กิจกรรม: ${act.topic}</div>
@@ -1825,7 +1888,6 @@ viewAttendees: async (actRefId) => {
                     👥 จำนวนผู้เข้าร่วม: แพทย์ ${countRes} | อาจารย์ ${countInst}
                 </div>
             `;
-            
             document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${formatThaiDateTime(act.act_finish)}`;
 
             if(data.attendees.length === 0) {
@@ -1838,7 +1900,6 @@ viewAttendees: async (actRefId) => {
                     else if (u.gpsStatus === 'Out of Range') statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold border border-red-400 shadow-sm">❌ นอกรัศมี (${u.distance} Km)</span>`;
                     else if (u.gpsStatus === 'Wait Instructor') statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-300 shadow-sm">⏳ รอเทียบพิกัดอาจารย์</span>`;
                     else statusBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold border border-gray-300 shadow-sm">⚠️ ไม่ระบุพิกัด</span>`;
-                    
                     let timeStr = "";
                     try {
                         let d = new Date(u.time);
@@ -1867,18 +1928,15 @@ viewAttendees: async (actRefId) => {
             
             // 1. ปุ่มแก้ไข (แสดงเมื่อสถานะยังเป็น OPEN)
             let showEditBtn = act.status === 'OPEN';
-            
             // 2. ปุ่มลบ (แสดงเฉพาะเมื่อ "ไม่มีผู้เข้าร่วมเลย" เพื่อป้องกันเผลอลบกิจกรรมที่มีคนลงชื่อแล้ว)
             let showDeleteBtn = data.attendees.length === 0;
-            
             // 3. ปุ่มปิดกิจกรรม (แสดงเฉพาะเมื่อเลยเวลาสิ้นสุดกิจกรรมแล้วเท่านั้น)
             let nowTime = new Date().getTime();
             let finishTime = new Date(act.act_finish).getTime();
             if (isNaN(finishTime)) { 
-                finishTime = new Date(act.act_finish.toString().replace(/-/g, '/')).getTime(); 
+                finishTime = new Date(act.act_finish.toString().replace(/-/g, '/')).getTime();
             }
             let showCloseBtn = nowTime >= finishTime;
-            
             let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
             btnContainer.innerHTML = `
                 ${showCloseBtn ? `<button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow transition">ปิดกิจกรรม</button>` : ''}
@@ -1886,7 +1944,6 @@ viewAttendees: async (actRefId) => {
                 ${showDeleteBtn ? `<button onclick="app.deleteActivity('${actRefId}')" class="bg-gray-200 hover:bg-red-100 text-red-600 px-4 py-2 rounded font-bold shadow transition">🗑️ ลบ</button>` : ''}
                 <button onclick="app.showView('view-manage-activities')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold shadow transition">กลับ</button>
             `;
-            
             app.showView('view-activity-attendees'); 
             
         } else if (data && !data.success) {
@@ -1933,10 +1990,8 @@ viewAttendees: async (actRefId) => {
         if(data) { app.currentEvalCriteria = data; document.getElementById('eval-min-level').innerText = data.minLevel; document.getElementById('reason-checkboxes').innerHTML = data.reasons.map(r => `<label class="flex items-start mb-1"><input type="checkbox" value="${r.desc}" class="mt-1 reason-cb mr-2"><span>${r.desc}</span></label>`).join('');
         app.showView('view-eval-form'); }
     },
-    checkEvalScore: () => { const s = parseInt(document.getElementById('eval-score').value), m = parseInt(app.currentEvalCriteria.minLevel);
-        document.getElementById('eval-reason-section').classList.toggle('hidden', s >= m); },
     
-checkEvalScore: () => { 
+    checkEvalScore: () => { 
         try {
             const s = parseInt(document.getElementById('eval-score').value);
             // ป้องกัน Error หากดึงเกณฑ์ไม่ได้
@@ -1945,21 +2000,21 @@ checkEvalScore: () => {
         } catch (e) { console.log(e); }
     },
     
- submitEvaluation: async () => { 
+    submitEvaluation: async () => { 
         try {
             const score = parseInt(document.getElementById('eval-score').value);
             const minLvl = app.currentEvalCriteria ? parseInt(app.currentEvalCriteria.minLevel) : 0;
             if(!score || isNaN(score)) return Swal.fire('เตือน', 'กรุณาระบุผลคะแนนก่อนกดยืนยัน', 'warning'); 
             
-            let reasons = []; 
+            let reasons = [];
             const customText = document.getElementById('eval-freetext') ? document.getElementById('eval-freetext').value.trim() : "";
             
             if (score < minLvl) { 
-                document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value)); 
+                document.querySelectorAll('.reason-cb:checked').forEach(cb => reasons.push(cb.value));
                 if(customText) reasons.push(`ความเห็น: ${customText}`); 
                 if(!reasons.length) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุเหตุผลที่ไม่ผ่าน หรือพิมพ์ความเห็นเพิ่มเติม', 'warning');
             } else { 
-                if(customText) reasons.push(`ความเห็น: ${customText}`); 
+                if(customText) reasons.push(`ความเห็น: ${customText}`);
             } 
 
             // ดึงรหัส Resident
@@ -1981,9 +2036,8 @@ checkEvalScore: () => {
                     is_fail: (score < minLvl) // 🟢 เพิ่มการส่งสถานะว่า "ไม่ผ่านเกณฑ์" ไปให้หลังบ้าน 
                 }
             }, 'กำลังบันทึกผลการประเมิน...');
-            
             if (res && res.success) {
-                Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks()); 
+                Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadInstructorTasks());
             } else if (res && !res.success) {
                 Swal.fire('ข้อผิดพลาด', res.message, 'error');
             }
@@ -1992,7 +2046,7 @@ checkEvalScore: () => {
         }
     },
     
-// --- Dashboard ---
+    // --- Dashboard ---
     loadDashboard: async () => { 
         // 🟢 เพิ่มข้อความ Loading เพื่อให้ระบบแสดง Popup ทันทีที่กดปุ่ม
         const res = await app.api({ action: 'get_dashboard_data', user: app.user }, 'กำลังประมวลผลข้อมูลความก้าวหน้า...');
@@ -2043,7 +2097,7 @@ checkEvalScore: () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                 ${r.items.map(item => `
+                                  ${r.items.map(item => `
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="p-2 text-gray-700 text-sm break-words">${item.desc}</td>
                                     <td class="p-2 text-center font-bold">${item.target}</td>
@@ -2073,27 +2127,27 @@ checkEvalScore: () => {
         // 🟢 เปลี่ยนหัวคอลัมน์และข้อมูลที่ดึงจาก item.id เป็น item.desc
         let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,รายละเอียด,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n" + 
                   app.dashboardData.map(r => r.items.map(i => `"${r.mdid}","${r.name}","${r.level}","${i.desc}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`).join('\n')).join('\n');
-        
         const link = document.createElement("a"); 
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
         link.download = `EPA_Report.csv`; 
         document.body.appendChild(link); 
         link.click(); 
-        document.body.removeChild(link); 
-    }
+        document.body.removeChild(link);
+    },
     
     // --- Admin Tracking ---
-    , loadAdminTracking: async () => {
+    loadAdminTracking: async () => {
         const res = await app.api({ action: 'get_admin_tracking', user: app.user }, 'กำลังสรุปยอด...');
         if(res && res.success) {
             document.getElementById('admin-term-info').innerText = `ข้อมูลยอดประเมิน: ${res.current_term_label}`;
             const container = document.getElementById('admin-tracking-content');
-            if(res.data.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>'; } else {
+            if(res.data.length === 0) { container.innerHTML = '<p class="text-center text-gray-500 py-4">ไม่พบรายชื่อแพทย์เป้าหมาย</p>';
+            } else {
                 container.innerHTML = res.data.map(r => `<div class="border p-4 rounded-lg bg-white shadow-sm border-l-4 ${r.total < 5 ? 'border-l-red-500' : 'border-l-green-500'}"><div class="flex justify-between items-center mb-3"><span class="font-bold text-gray-800 text-base">${r.name} <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">${r.level}</span></span><span class="text-xs font-bold ${r.total < 5 ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'} px-2 py-1 rounded border">รวม ${r.total} ฉบับ</span></div><div class="grid grid-cols-4 gap-2 text-xs"><div class="bg-blue-50 p-2 rounded text-center border border-blue-100"><div class="text-blue-800 mb-1">อาจารย์</div><div class="font-bold text-lg text-blue-900">${r.counts['อาจารย์แพทย์'] || 0}</div></div><div class="bg-purple-50 p-2 rounded text-center border border-purple-100"><div class="text-purple-800 mb-1 whitespace-nowrap overflow-hidden text-ellipsis">เพื่อนแพทย์</div><div class="font-bold text-lg text-purple-900">${r.counts['เพื่อนแพทย์ประจำบ้าน'] || 0}</div></div><div class="bg-pink-50 p-2 rounded text-center border border-pink-100"><div class="text-pink-800 mb-1">พยาบาล</div><div class="font-bold text-lg text-pink-900">${r.counts['พยาบาลวิชาชีพ'] || 0}</div></div><div class="bg-orange-50 p-2 rounded text-center border border-orange-100"><div class="text-orange-800 mb-1">สนับสนุน</div><div class="font-bold text-lg text-orange-900">${r.counts['เจ้าหน้าที่/สายสนับสนุน'] || 0}</div></div></div></div>`).join('');
             }
-app.showView('view-admin-tracking');
+            app.showView('view-admin-tracking');
         }
-    }, // 👈 🟢 สำคัญมาก: ใส่ลูกน้ำตรงนี้เพื่อเชื่อมไปหาฟังก์ชันแอดมินด้านล่าง
+    },
 
     // ==========================================
     // 🔧 JS Logic สำหรับ Superstaff
@@ -2153,12 +2207,10 @@ app.showView('view-admin-tracking');
             eval_target: document.getElementById('edit-evaltarget').value,
             view_target: document.getElementById('edit-viewtarget').value
         };
-
         const res = await app.api({
             action: 'update_staff_full',
             payload: { originalMdid: app.currentSuperEditMdid, newData: newData }
         }, 'กำลังบันทึก...');
-
         if (res && res.success) {
             Swal.fire({
                 title: 'สำเร็จ',
