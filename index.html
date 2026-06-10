@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.20 C</title>
+    <title>EPA Skin App 2.20 D</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -783,7 +783,7 @@ const app = {
         app.showView('view-broadcast');
     },
 
-    // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
+   // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
     sendBroadcast: async () => {
         const msg = document.getElementById('broadcast-msg').value.trim();
         if (!msg) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความที่ต้องการส่งครับ', 'warning');
@@ -802,9 +802,9 @@ const app = {
             return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
         }
 
-        const targetCount = checkRes.count; // นับจำนวน "คน"
-        const uniqueLines = checkRes.unique_lines; // นับจำนวน "บัญชีไลน์" ที่ไม่ซ้ำ
-        const totalPeople = checkRes.total;
+        const targetCount = checkRes.count || 0; 
+        const uniqueLines = checkRes.unique_lines || 0; 
+        const totalPeople = checkRes.total || 0;
         const sampleNames = checkRes.sample_names || []; 
 
         let sampleHtml = '';
@@ -820,11 +820,10 @@ const app = {
             `;
         }
 
-        // 🟢 เพิ่มแจ้งเตือน หากยอดคนที่มีไลน์ กับ ยอดไลน์ไอดี ไม่ตรงกัน (แปลว่ามีข้อมูลซ้ำ)
         let dupWarning = '';
         if (uniqueLines > 0 && uniqueLines < targetCount) {
             dupWarning = `<p class="text-[11px] text-orange-600 font-bold bg-orange-50 border border-orange-200 p-2 rounded text-left mt-3">
-                           ⚠️ ตรวจพบรายชื่อ ${targetCount - uniqueLines} คนที่ใช้ LINE UID เดียวกัน ระบบจะรวบส่งเพียง 1 ข้อความต่อ 1 บัญชี เพื่อป้องกันการส่งซ้ำเข้าเครื่องเดิมครับ
+                           ⚠️ ตรวจพบรายชื่อ ${targetCount - uniqueLines} คนที่ใช้ LINE UID เดียวกัน ระบบจะรวบส่งเพียง 1 ข้อความต่อ 1 บัญชี เพื่อป้องกันส่งซ้ำครับ
                           </p>`;
         }
 
@@ -861,7 +860,7 @@ const app = {
                     app.showView('view-menu'); 
                 });
             } else if (res) {
-                Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+                Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่สามารถเชื่อมต่อ LINE API ได้', 'error');
             }
         }
     },
