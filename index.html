@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.20</title>
+    <title>EPA Skin App 2.20 A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -803,22 +803,38 @@ const app = {
             return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
         }
 
-        // 🟢 ดึงยอดคนทั้งหมด และ ยอดคนที่ผูกไลน์
         const targetCount = checkRes.count;
         const totalPeople = checkRes.total;
+        const sampleNames = checkRes.sample_names || []; // 🟢 รับรายชื่อตัวอย่างจากหลังบ้าน
+
+        // 🟢 สร้าง HTML สำหรับแสดงตัวอย่างรายชื่อ
+        let sampleHtml = '';
+        if (sampleNames.length > 0) {
+            sampleHtml = `
+                <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
+                    <b class="text-gray-700">🔎 ตัวอย่างผู้รับ:</b>
+                    <ul class="list-disc pl-5 text-gray-600 mt-1">
+                        ${sampleNames.map(name => `<li>${name}</li>`).join('')}
+                    </ul>
+                    ${targetCount > 3 ? `<p class="text-xs text-blue-500 mt-2 font-semibold">และบุคลากรอื่นๆ อีก ${targetCount - 3} ท่าน...</p>` : ''}
+                </div>
+            `;
+        }
 
         // เด้งหน้าต่างยืนยัน แจ้งรายละเอียดให้ชัดเจน
         const confirm = await Swal.fire({
             title: 'ยืนยันการส่งข้อความ?',
-            html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalPeople} คน</b><br><br>
-                   มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b><br><br>
-                   <span class="text-sm text-gray-500">ระบบจะทำการส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>`,
-            icon: 'info',
+            html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalPeople} คน</b><br>
+                   มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b>
+                   ${sampleHtml}
+                   <span class="text-xs text-red-500 font-bold">* ระบบจะส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>`,
+            icon: 'question',
             showCancelButton: true,
             confirmButtonText: '✔️ ยืนยันส่งเลย',
             cancelButtonText: 'ยกเลิก',
             confirmButtonColor: '#2563eb'
         });
+
         if (confirm.isConfirmed) {
             if(targetCount === 0) {
                 return Swal.fire('ไม่สามารถส่งได้', 'ไม่มีบุคลากรในกลุ่มนี้ที่ผูก LINE ไว้เลยครับ', 'warning');
@@ -826,12 +842,14 @@ const app = {
 
             localStorage.setItem('lastBroadcastMsg', msg);
             Swal.fire({ title: 'กำลังส่งข้อความผ่าน LINE...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
             // สั่งส่งข้อความจริง
             const res = await app.api({
                 action: 'broadcast_line',
                 payload: { roles: selectedRoles, message: msg, user: app.user, count_only: false }
             });
             Swal.close();
+            
             if (res && res.success) {
                 Swal.fire('สำเร็จ!', `ส่งข้อความผ่าน LINE สำเร็จทั้งหมด ${res.count} คน`, 'success').then(() => {
                     app.showView('view-menu'); 
