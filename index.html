@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.19 A</title>
+    <title>EPA Skin App 2.19 B</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -578,9 +578,18 @@ const app = {
         if (data) { app.closeResetModal(); Swal.fire('สำเร็จ', data.message, 'success'); }
     },
 
-    showView: (id) => {
+showView: (id) => {
+        // 1. ซ่อนทุก View ที่อยู่ภายใต้ app-container ตามปกติเดิม
         document.querySelectorAll('#app-container > div').forEach(el => el.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
+        
+        // 2. 🟢 กันเหนียว: บังคับซ่อนหน้าจอ Broadcast และ Dashboard เพิ่มเติมทุกครั้งที่มีการเปลี่ยนหน้า
+        if (document.getElementById('view-broadcast')) document.getElementById('view-broadcast').classList.add('hidden');
+        if (document.getElementById('view-dashboard')) document.getElementById('view-dashboard').classList.add('hidden');
+        
+        // 3. แสดงหน้าจอเป้าหมายที่เรียกใช้งาน
+        if (document.getElementById(id)) {
+            document.getElementById(id).classList.remove('hidden');
+        }
     },
 
 api: async (req, loading = null) => {
@@ -907,22 +916,24 @@ sendBroadcast: async () => {
         document.getElementById('card-total-epa').innerText = res.summary.totalEpa + ' เคส';
         document.getElementById('card-total-eval').innerText = res.summary.totalEval + ' ฉบับ';
 
+// เคลียร์กราฟเก่าออกก่อนสร้างใหม่
         if (app.chartInstances && app.chartInstances.checkin) app.chartInstances.checkin.destroy();
         if (app.chartInstances && app.chartInstances.eval) app.chartInstances.eval.destroy();
         if (!app.chartInstances) app.chartInstances = {};
 
+        // 🟢 กราฟที่ 1: สถิติการเช็คอิน (แสดงเฉพาะ R2, R3, R4)
         const ctxCheckin = document.getElementById('chart-checkin').getContext('2d');
         app.chartInstances.checkin = new Chart(ctxCheckin, {
             type: 'bar',
             data: {
-                labels: ['R2', 'R3', 'R4', 'Fellow', 'Instructor', 'Nurse', 'Other'],
+                labels: ['R2', 'R3', 'R4'], // กรองเหลือ 3 กลุ่ม
                 datasets: [{
                     label: 'จำนวนครั้งที่เช็คอินเข้าร่วมเรียน',
                     data: [
-                        res.byRole.r2.checkin, res.byRole.r3.checkin, res.byRole.r4.checkin,
-                        res.byRole.fellow.checkin, res.byRole.instructor.checkin,
-                        res.byRole.nurse.checkin, res.byRole.other.checkin
-                    ],
+                        res.byRole.r2.checkin, 
+                        res.byRole.r3.checkin, 
+                        res.byRole.r4.checkin
+                    ], // ดึงเฉพาะข้อมูลของ 3 กลุ่ม
                     backgroundColor: '#22c55e',
                     borderRadius: 6
                 }]
@@ -930,14 +941,35 @@ sendBroadcast: async () => {
             options: { responsive: true, maintainAspectRatio: false }
         });
 
+        // 🟢 กราฟที่ 2: เปรียบเทียบ EPA กับ 360° (แสดงเฉพาะ R2, R3, R4, FellowDermsurg)
         const ctxEval = document.getElementById('chart-evaluation').getContext('2d');
         app.chartInstances.eval = new Chart(ctxEval, {
             type: 'bar',
             data: {
-                labels: ['R2', 'R3', 'R4', 'Fellow'],
+                labels: ['R2', 'R3', 'R4', 'FellowDermsurg'], // กำหนด 4 กลุ่มและเปลี่ยนชื่อ
                 datasets: [
-                    { label: 'การส่งประเมิน EPA (เคส)', data: [res.byRole.r2.epa, res.byRole.r3.epa, res.byRole.r4.epa, res.byRole.fellow.epa], backgroundColor: '#a855f7', borderRadius: 6 },
-                    { label: 'ฟอร์มประเมิน 360° (ฉบับ)', data: [res.byRole.r2.eval360, res.byRole.r3.eval360, res.byRole.r4.eval360, res.byRole.fellow.eval360], backgroundColor: '#ec4899', borderRadius: 6 }
+                    { 
+                        label: 'การส่งประเมิน EPA (เคส)', 
+                        data: [
+                            res.byRole.r2.epa, 
+                            res.byRole.r3.epa, 
+                            res.byRole.r4.epa, 
+                            res.byRole.fellow.epa
+                        ], 
+                        backgroundColor: '#a855f7', 
+                        borderRadius: 6 
+                    },
+                    { 
+                        label: 'ฟอร์มประเมิน 360° (ฉบับ)', 
+                        data: [
+                            res.byRole.r2.eval360, 
+                            res.byRole.r3.eval360, 
+                            res.byRole.r4.eval360, 
+                            res.byRole.fellow.eval360
+                        ], 
+                        backgroundColor: '#ec4899', 
+                        borderRadius: 6 
+                    }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }
