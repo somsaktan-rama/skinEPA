@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.20 D</title>
+    <title>EPA Skin App 2.20 E</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -823,7 +823,7 @@ const app = {
         let dupWarning = '';
         if (uniqueLines > 0 && uniqueLines < targetCount) {
             dupWarning = `<p class="text-[11px] text-orange-600 font-bold bg-orange-50 border border-orange-200 p-2 rounded text-left mt-3">
-                           ⚠️ ตรวจพบรายชื่อ ${targetCount - uniqueLines} คนที่ใช้ LINE UID เดียวกัน ระบบจะรวบส่งเพียง 1 ข้อความต่อ 1 บัญชี เพื่อป้องกันส่งซ้ำครับ
+                           ⚠️ ตรวจพบรายชื่อ ${targetCount - uniqueLines} คนที่ใช้ LINE UID เดียวกัน ระบบจะรวบส่ง 1 ข้อความต่อ 1 เครื่องครับ
                           </p>`;
         }
 
@@ -863,7 +863,7 @@ const app = {
                 Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่สามารถเชื่อมต่อ LINE API ได้', 'error');
             }
         }
-    },
+    }, // 🟢 ห้ามลืมเครื่องหมายจุลภาค (,) ปิดท้ายบรรทัดนี้นะครับ!
 	
     // 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
     loadAdvisorView: async () => {
