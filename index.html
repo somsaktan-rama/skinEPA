@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.19</title>
+    <title>EPA Skin App 2.19 A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -885,7 +885,66 @@ sendBroadcast: async () => {
         }
     },
 	
-// 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
+// 📊 ฟังก์ชันโหลดข้อมูลและวาด Dashboard
+    loadDashboardView: async () => {
+        document.getElementById('db-institute-title').innerText = `สถาบัน: ${app.user.institute}`;
+        app.showView('view-dashboard');
+
+        Swal.fire({ title: 'กำลังประมวลผลข้อมูลแดชบอร์ด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const res = await app.api({
+            action: 'get_dashboard_data',
+            payload: { user: app.user }
+        });
+
+        Swal.close();
+        if (!res || !res.success) {
+            return Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่สามารถโหลดข้อมูลแดชบอร์ดได้', 'error');
+        }
+
+        document.getElementById('card-total-staff').innerText = res.summary.totalStaff + ' คน';
+        document.getElementById('card-total-checkin').innerText = res.summary.totalCheckin + ' ครั้ง';
+        document.getElementById('card-total-epa').innerText = res.summary.totalEpa + ' เคส';
+        document.getElementById('card-total-eval').innerText = res.summary.totalEval + ' ฉบับ';
+
+        if (app.chartInstances && app.chartInstances.checkin) app.chartInstances.checkin.destroy();
+        if (app.chartInstances && app.chartInstances.eval) app.chartInstances.eval.destroy();
+        if (!app.chartInstances) app.chartInstances = {};
+
+        const ctxCheckin = document.getElementById('chart-checkin').getContext('2d');
+        app.chartInstances.checkin = new Chart(ctxCheckin, {
+            type: 'bar',
+            data: {
+                labels: ['R2', 'R3', 'R4', 'Fellow', 'Instructor', 'Nurse', 'Other'],
+                datasets: [{
+                    label: 'จำนวนครั้งที่เช็คอินเข้าร่วมเรียน',
+                    data: [
+                        res.byRole.r2.checkin, res.byRole.r3.checkin, res.byRole.r4.checkin,
+                        res.byRole.fellow.checkin, res.byRole.instructor.checkin,
+                        res.byRole.nurse.checkin, res.byRole.other.checkin
+                    ],
+                    backgroundColor: '#22c55e',
+                    borderRadius: 6
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        const ctxEval = document.getElementById('chart-evaluation').getContext('2d');
+        app.chartInstances.eval = new Chart(ctxEval, {
+            type: 'bar',
+            data: {
+                labels: ['R2', 'R3', 'R4', 'Fellow'],
+                datasets: [
+                    { label: 'การส่งประเมิน EPA (เคส)', data: [res.byRole.r2.epa, res.byRole.r3.epa, res.byRole.r4.epa, res.byRole.fellow.epa], backgroundColor: '#a855f7', borderRadius: 6 },
+                    { label: 'ฟอร์มประเมิน 360° (ฉบับ)', data: [res.byRole.r2.eval360, res.byRole.r3.eval360, res.byRole.r4.eval360, res.byRole.fellow.eval360], backgroundColor: '#ec4899', borderRadius: 6 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    },
+	
+	// 🟢 จัดระเบียบปุ่มเมนูให้ตรงตามกลุ่มผู้ใช้งาน (RBAC)
 renderMenu: () => {
         let menuArea = document.getElementById('menu-buttons') || document.getElementById('menu-area');
         if (!menuArea) return;
