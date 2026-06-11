@@ -808,18 +808,6 @@ const app = {
         const sampleNames = checkRes.sample_names || []; 
 
         let sampleHtml = '';
- //       if (sampleNames.length > 0) {
- //           sampleHtml = `
- //               <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
- //                   <b class="text-gray-700">🔎 ตัวอย่างผู้รับ:</b>
- //                   <ul class="list-disc pl-5 text-gray-600 mt-1">
- //                      ${sampleNames.map(name => `<li>${name}</li>`).join('')}
- //                   </ul>
- //                   ${targetCount > 3 ? `<p class="text-xs text-blue-500 mt-2 font-semibold">และบุคลากรอื่นๆ อีก ${targetCount - 3} ท่าน...</p>` : ''}
- //               </div>
- //           `;
- //       }
-
         if (sampleNames.length > 0) {
             sampleHtml = `
                 <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
