@@ -1041,8 +1041,8 @@ const app = {
                     <span class="font-bold flex items-center"><span class="text-xl mr-3">🔄</span> ทำแบบประเมิน 360 องศา</span>
                     <span class="text-teal-400">→</span>
                  </button>`;
-        // 🟢 4. กิจกรรม (Activity) - เฉพาะ Resident และ Instructor
-        if (isResident || isInstructor) {
+		// 🟢 4. กิจกรรม (Activity) - รวม Resident, Instructor และ FellowDermsurg
+        if (isResident || isInstructor || isFellowDermSurg) {
             html += `<button onclick="app.loadCheckin()" class="w-full bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">📍</span> ลงชื่อเข้าร่วมกิจกรรม</span>
                     <span class="text-orange-400">→</span>
