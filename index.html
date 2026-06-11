@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.20 B</title>
+    <title>EPA Skin App 2.21</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.20</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.21</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -783,7 +783,7 @@ const app = {
         app.showView('view-broadcast');
     },
 
-   // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
+ // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมายและยิงคำสั่งส่งข้อความผ่าน LINE API
     sendBroadcast: async () => {
         const msg = document.getElementById('broadcast-msg').value.trim();
         if (!msg) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความที่ต้องการส่งครับ', 'warning');
@@ -791,7 +791,9 @@ const app = {
         const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
         if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
-        Swal.fire({ title: 'กำลังคำนวณผู้รับข้อความ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังค้นหารายชื่อผู้รับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        // ส่งคำสั่งค้นหารายชื่อ
         const checkRes = await app.api({
             action: 'broadcast_line',
             payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
@@ -802,67 +804,76 @@ const app = {
             return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
         }
 
-        const targetCount = checkRes.count || 0; 
-        const uniqueLines = checkRes.unique_lines || 0; 
+        const targets = checkRes.targets || [];
         const totalPeople = checkRes.total || 0;
-        const sampleNames = checkRes.sample_names || []; 
 
-        let sampleHtml = '';
-        if (sampleNames.length > 0) {
-            sampleHtml = `
-                <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
-                    <b class="text-gray-700">🔎 รายชื่อผู้รับทั้งหมด:</b>
-                    <ul class="list-disc pl-5 text-gray-600 mt-1 max-h-48 overflow-y-auto">
-                        ${sampleNames.map(name => `<li>${name}</li>`).join('')}
-                    </ul>
+        if (targets.length === 0) {
+            return Swal.fire('ไม่สามารถส่งได้', `ค้นพบ ${totalPeople} คนในกลุ่ม แต่ไม่มีใครผูกบัญชี LINE ไว้เลยครับ`, 'warning');
+        }
+
+        // 🟢 นำรายชื่อมาวาดเป็นปุ่ม Checkbox เรียงทีละคน
+        let targetHtml = `
+            <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
+                <div class="flex justify-between items-end mb-2 border-b pb-2">
+                    <b class="text-gray-700">🔎 เลือกผู้รับ (${targets.length} คน):</b>
+                    <span class="text-[10px] text-gray-500 font-bold text-red-500">*ติ๊กออกเพื่อไม่ส่งได้</span>
                 </div>
-            `;
-        }
-		
-        let dupWarning = '';
-        if (uniqueLines > 0 && uniqueLines < targetCount) {
-            dupWarning = `<p class="text-[11px] text-orange-600 font-bold bg-orange-50 border border-orange-200 p-2 rounded text-left mt-3">
-                           ⚠️ ตรวจพบรายชื่อ ${targetCount - uniqueLines} คนที่ใช้ LINE UID เดียวกัน ระบบจะรวบส่ง 1 ข้อความต่อ 1 เครื่องครับ
-                          </p>`;
-        }
+                <div class="mt-2 space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                    ${targets.map(t => `
+                        <label class="flex items-center space-x-3 cursor-pointer bg-white p-2 rounded-lg border border-gray-100 hover:bg-blue-50 transition shadow-sm">
+                            <input type="checkbox" value="${t.uid}" class="cb-target-uid w-5 h-5 text-blue-600 rounded focus:ring-blue-500" checked>
+                            <span class="text-gray-800 font-semibold">${t.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `;
 
         const confirm = await Swal.fire({
-            title: 'ยืนยันการส่งข้อความ?',
-            html: `กลุ่มเป้าหมายที่ท่านเลือกมีจำนวนทั้งหมด <b>${totalPeople} คน</b><br>
-                   มีบุคลากรที่ผูกระบบ LINE แล้วจำนวน <b class="text-blue-600 text-xl">${targetCount} คน</b>
-                   ${sampleHtml}
-                   <span class="text-xs text-red-500 font-bold">* ระบบจะส่งข้อความไปยังผู้ที่ผูก LINE แล้วเท่านั้น</span>
-                   ${dupWarning}`,
+            title: 'ตรวจสอบรายชื่อ',
+            html: `กลุ่มเป้าหมายมี <b>${totalPeople} คน</b> ผูกไลน์แล้ว <b>${targets.length} คน</b>
+                   ${targetHtml}`,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: '✔️ ยืนยันส่งเลย',
+            confirmButtonText: '✔️ ส่งข้อความ',
             cancelButtonText: 'ยกเลิก',
-            confirmButtonColor: '#2563eb'
+            confirmButtonColor: '#2563eb',
+            // 🟢 กลไกดักการกดปุ่มยืนยัน: ถ้าติ๊กออกหมดไม่เหลือสักคน จะฟ้อง Validation Error
+            preConfirm: () => {
+                const selectedUids = Array.from(document.querySelectorAll('.cb-target-uid:checked')).map(cb => cb.value);
+                if (selectedUids.length === 0) {
+                    Swal.showValidationMessage('กรุณาเลือกผู้รับอย่างน้อย 1 คนครับ');
+                    return false;
+                }
+                return selectedUids; // โยนค่าของคนที่ถูกเลือกไปทำงานต่อ
+            }
         });
 
         if (confirm.isConfirmed) {
-            if(uniqueLines === 0) {
-                return Swal.fire('ไม่สามารถส่งได้', 'ไม่มีบุคลากรในกลุ่มนี้ที่ผูก LINE ไว้เลยครับ', 'warning');
-            }
-
-            localStorage.setItem('lastBroadcastMsg', msg);
-            Swal.fire({ title: 'กำลังส่งข้อความผ่าน LINE...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const finalUids = confirm.value; // รับค่า Array UIDs ของคนที่โดนติ๊ก
             
+            localStorage.setItem('lastBroadcastMsg', msg);
+            Swal.fire({ title: 'กำลังส่งข้อความ...', text: `กำลังส่งหา ${finalUids.length} เครื่อง`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            // 🟢 ส่ง UID ชุดสุดท้ายพร้อมเนื้อหาข้อความ กลับไปให้หลังบ้านยิง LINE ทันที
             const res = await app.api({
                 action: 'broadcast_line',
-                payload: { roles: selectedRoles, message: msg, user: app.user, count_only: false }
+                payload: { uids: finalUids, message: msg, user: app.user, count_only: false }
             });
             Swal.close();
             
             if (res && res.success) {
-                Swal.fire('สำเร็จ!', `ระบบดำเนินการส่งไปยังมือถือทั้งหมด ${res.count} เครื่อง เรียบร้อยแล้ว`, 'success').then(() => {
+                Swal.fire('สำเร็จ!', `ระบบดำเนินการส่งเสร็จสิ้น รวม ${res.count} เครื่อง`, 'success').then(() => {
                     app.showView('view-menu'); 
+                    // ถ้าส่งสำเร็จแล้ว ให้เคลียร์ข้อความทิ้งไปเลย จะได้เริ่มใหม่รอบหน้า
+                    document.getElementById('broadcast-msg').value = '';
+                    localStorage.removeItem('lastBroadcastMsg');
                 });
             } else if (res) {
                 Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่สามารถเชื่อมต่อ LINE API ได้', 'error');
             }
         }
-    }, // 🟢 ห้ามลืมเครื่องหมายจุลภาค (,) ปิดท้ายบรรทัดนี้นะครับ!
+    }, // 👈 ห้ามลืมลูกน้ำตรงนี้เด็ดขาด
 	
     // 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
     loadAdvisorView: async () => {
