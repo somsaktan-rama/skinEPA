@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.24</title>
+    <title>EPA Skin App 2.25</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.24</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.25</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -404,13 +404,30 @@
                 </div>
             </div>
 
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4">
                 <label class="block font-bold text-gray-800 mb-2">💬 ข้อความที่จะส่ง</label>
                 <textarea id="broadcast-msg" rows="5" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" placeholder="พิมพ์ประกาศแจ้งเตือนที่นี่..."></textarea>
                 <p class="text-xs text-gray-500 mt-2">* ระบบจะจดจำข้อความที่พิมพ์ล่าสุดไว้ให้อัตโนมัติ</p>
             </div>
 
-				<button onclick="app.sendBroadcast()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-center items-center gap-2">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
+                <label class="block font-bold text-gray-800 mb-2">📸 แนบรูปภาพ (ถ้ามี)</label>
+                
+                <div class="flex items-center space-x-3 mb-2">
+                    <input type="file" id="broadcast-file" accept="image/*" class="hidden" onchange="app.previewBroadcastImage(this)">
+                    <button onclick="document.getElementById('broadcast-file').click()" class="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-300 px-4 py-2.5 rounded-lg font-medium text-sm transition shadow-sm">
+                        เลือกรูปภาพ...
+                    </button>
+                    <span id="file-name" class="text-sm text-gray-500 truncate max-w-[150px]">ยังไม่ได้เลือกรูป</span>
+                </div>
+
+                <div id="img-preview-container" class="hidden relative inline-block mt-3">
+                    <img id="img-preview" class="max-h-40 rounded-lg border border-gray-200 shadow-sm">
+                    <button onclick="app.removeBroadcastImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow hover:bg-red-600">✕</button>
+                </div>
+            </div>
+
+            <button onclick="app.sendBroadcast()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-center items-center gap-2">
                 🚀 ส่งข้อความผ่าน LINE
             </button>
         </div>
