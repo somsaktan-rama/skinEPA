@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.25</title>
+    <title>EPA Skin App 2.25 A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2347,6 +2347,86 @@ loadCheckin: async () => {
         document.getElementById('super-edit-form').classList.add('hidden');
     }
 
+// ถ้ายังไม่มีการประกาศตัวแปร app ให้ใส่บรรทัดนี้ไว้บนสุด
+if (typeof app === 'undefined') {
+    var app = {};
+}
+
+// ==========================================
+// 1. ฟังก์ชันแสดงตัวอย่างรูปภาพเมื่อเลือกไฟล์
+// ==========================================
+app.previewBroadcastImage = function(input) {
+    const file = input.files[0];
+    if (file) {
+        document.getElementById('file-name').innerText = file.name;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('img-preview');
+            preview.src = e.target.result;
+            // เปิดกล่องโชว์รูปภาพที่ถูกซ่อนไว้ขึ้นมา
+            document.getElementById('img-preview-container').classList.remove('hidden');
+        }
+        reader.readAsDataURL(file);
+    }
+};
+
+// ==========================================
+// 2. ฟังก์ชันกากบาท (เคลียร์รูปภาพทิ้ง)
+// ==========================================
+app.removeBroadcastImage = function() {
+    document.getElementById('broadcast-file').value = '';
+    document.getElementById('file-name').innerText = 'ยังไม่ได้เลือกรูป';
+    document.getElementById('img-preview-container').classList.add('hidden');
+    document.getElementById('img-preview').src = '';
+};
+
+// ==========================================
+// 3. ฟังก์ชันแพ็คข้อความและรูปภาพ ส่งไปให้ Code.gs หลังบ้าน
+// ==========================================
+app.sendBroadcast = function() {
+    const text = document.getElementById('broadcast-msg').value;
+    const fileInput = document.getElementById('broadcast-file');
+    const file = fileInput ? fileInput.files[0] : null;
+
+    if (!text && !file) {
+        Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความหรือเลือกรูปภาพก่อนส่งครับ', 'warning');
+        return;
+    }
+
+    // โชว์หน้าต่างโหลด (SweetAlert2)
+    Swal.fire({ 
+        title: 'กำลังส่งประกาศ...', 
+        text: file ? 'กำลังอัปโหลดรูปและส่งข้อความ อาจใช้เวลาสักครู่' : 'กำลังส่งข้อความ...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading() } 
+    });
+
+    if (file) {
+        // กรณีมีรูปภาพ: แปลงรูปเป็น Base64 แล้วส่งให้ handleBroadcastUpload()
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Data = e.target.result.split(',')[1];
+            
+            google.script.run.withSuccessHandler(function(res) {
+                Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
+                if(res.success) {
+                    document.getElementById('broadcast-msg').value = ''; // เคลียร์ข้อความ
+                    app.removeBroadcastImage(); // เคลียร์รูป
+                }
+            }).handleBroadcastUpload(text, base64Data, file.type);
+        }
+        reader.readAsDataURL(file);
+    } else {
+        // กรณีไม่มีรูป (ส่งแค่ข้อความอย่างเดียว): ส่งให้ broadcastLineMessage() โดยตรง
+        google.script.run.withSuccessHandler(function(res) {
+            Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
+            if(res.success) {
+                document.getElementById('broadcast-msg').value = ''; // เคลียร์ข้อความ
+            }
+        }).broadcastLineMessage(text, ""); 
+    }
+};
+	
 }; // 👈 🟢 ปิดท้าย Object app อย่างสมบูรณ์ตรงนี้
 
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
