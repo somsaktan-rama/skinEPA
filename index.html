@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.25 C</title>
+    <title>EPA Skin App 2.25 D</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2374,58 +2374,64 @@ app.removeBroadcastImage = function() {
 };
 
 app.sendBroadcast = function() {
-    const text = document.getElementById('broadcast-msg').value;
-    const fileInput = document.getElementById('broadcast-file');
-    const file = fileInput ? fileInput.files[0] : null;
+    try {
+        const text = document.getElementById('broadcast-msg').value;
+        const fileInput = document.getElementById('broadcast-file');
+        const file = fileInput ? fileInput.files[0] : null;
 
-    if (!text && !file) {
-        Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความหรือเลือกรูปภาพก่อนส่งครับ', 'warning');
-        return;
-    }
+        if (!text && !file) {
+            Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความหรือเลือกรูปภาพก่อนส่งครับ', 'warning');
+            return;
+        }
 
-    Swal.fire({ 
-        title: 'กำลังส่งประกาศ...', 
-        text: file ? 'กำลังอัปโหลดรูปและส่งข้อความ อาจใช้เวลาสักครู่' : 'กำลังส่งข้อความ...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading() } 
-    });
+        Swal.fire({
+            title: 'เตรียมข้อมูล...',
+            text: file ? 'กำลังอ่านไฟล์ภาพ...' : 'กำลังเตรียมข้อความ...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading() }
+        });
 
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const base64Data = e.target.result.split(',')[1];
-            
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const base64Data = e.target.result.split(',')[1];
+                    Swal.fire({title: 'กำลังส่งไปหลังบ้าน...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+
+                    google.script.run
+                    .withSuccessHandler(function(res) {
+                        Swal.fire(res.success ? 'สำเร็จ' : 'แจ้งเตือน', res.message, res.success ? 'success' : 'error');
+                        if(res.success) {
+                            document.getElementById('broadcast-msg').value = '';
+                            app.removeBroadcastImage();
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        // 🔴 ถ้าติดต่อ Code.gs ไม่ได้ จะเด้งบอกตรงนี้
+                        Swal.fire('การเชื่อมต่อล้มเหลว', String(err.message || err), 'error');
+                    })
+                    .handleBroadcastUpload(text, base64Data, file.type);
+                } catch (err2) {
+                    Swal.fire('Error การแปลงไฟล์', String(err2), 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        } else {
             google.script.run
             .withSuccessHandler(function(res) {
-                Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
-                if(res.success) {
-                    document.getElementById('broadcast-msg').value = ''; 
-                    app.removeBroadcastImage(); 
-                }
+                Swal.fire(res.success ? 'สำเร็จ' : 'แจ้งเตือน', res.message, res.success ? 'success' : 'error');
+                if(res.success) document.getElementById('broadcast-msg').value = '';
             })
-            // 🟢 เพิ่มตัวดักจับ Error ฝั่งเซิร์ฟเวอร์ จะได้ไม่หมุนค้าง
-            .withFailureHandler(function(error) {
-                Swal.fire('ข้อผิดพลาดระบบ (หลังบ้าน)', error.message, 'error');
+            .withFailureHandler(function(err) {
+                Swal.fire('การเชื่อมต่อล้มเหลว', String(err.message || err), 'error');
             })
-            .handleBroadcastUpload(text, base64Data, file.type);
+            .broadcastLineMessage(text, "");
         }
-        reader.readAsDataURL(file);
-    } else {
-        google.script.run
-        .withSuccessHandler(function(res) {
-            Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
-            if(res.success) {
-                document.getElementById('broadcast-msg').value = ''; 
-            }
-        })
-        // 🟢 เพิ่มตัวดักจับ Error ฝั่งเซิร์ฟเวอร์
-        .withFailureHandler(function(error) {
-            Swal.fire('ข้อผิดพลาดระบบ (หลังบ้าน)', error.message, 'error');
-        })
-        .broadcastLineMessage(text, ""); 
+    } catch (mainErr) {
+        Swal.fire('Error หน้าบ้าน', String(mainErr), 'error');
     }
 };
-
+	
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
 </script>
