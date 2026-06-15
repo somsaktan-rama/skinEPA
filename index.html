@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.25 A</title>
+    <title>EPA Skin App 2.25 B</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2394,22 +2394,35 @@ app.sendBroadcast = function() {
         const reader = new FileReader();
         reader.onload = function(e) {
             const base64Data = e.target.result.split(',')[1];
-            google.script.run.withSuccessHandler(function(res) {
+            
+            google.script.run
+            .withSuccessHandler(function(res) {
                 Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
                 if(res.success) {
                     document.getElementById('broadcast-msg').value = ''; 
                     app.removeBroadcastImage(); 
                 }
-            }).handleBroadcastUpload(text, base64Data, file.type);
+            })
+            // 🟢 เพิ่มตัวดักจับ Error ฝั่งเซิร์ฟเวอร์ จะได้ไม่หมุนค้าง
+            .withFailureHandler(function(error) {
+                Swal.fire('ข้อผิดพลาดระบบ (หลังบ้าน)', error.message, 'error');
+            })
+            .handleBroadcastUpload(text, base64Data, file.type);
         }
         reader.readAsDataURL(file);
     } else {
-        google.script.run.withSuccessHandler(function(res) {
+        google.script.run
+        .withSuccessHandler(function(res) {
             Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
             if(res.success) {
                 document.getElementById('broadcast-msg').value = ''; 
             }
-        }).broadcastLineMessage(text, ""); 
+        })
+        // 🟢 เพิ่มตัวดักจับ Error ฝั่งเซิร์ฟเวอร์
+        .withFailureHandler(function(error) {
+            Swal.fire('ข้อผิดพลาดระบบ (หลังบ้าน)', error.message, 'error');
+        })
+        .broadcastLineMessage(text, ""); 
     }
 };
 
