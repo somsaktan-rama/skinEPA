@@ -465,7 +465,7 @@
 
 <script>
 // ==========================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby9eCCxexRf5DIdzjuZ0tGRnJoYy-0dDoR58PESKhpToHPwwJ3BZLE4eGlZchK5qf_X/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx3SSGmDwCD_DVEteQM1uNqzC6DDpL-RnFlewgdQccuoxkr73dI47nWPG5blmC5X_R_/exec';
 // ==========================================
 
 const formatThaiDateTime = (isoStr) => {
@@ -2384,21 +2384,14 @@ app.removeBroadcastImage = function() {
         const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
         if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
-        // 🔗 ใส่ลิงก์ Web App (ที่ลงท้ายด้วย /exec) ของคุณหมอตรงนี้ครับ
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby9eCCxexRf5DIdzjuZ0tGRnJoYy-0dDoR58PESKhpToHPwwJ3BZLE4eGlZchK5qf_X/exec";
-
         Swal.fire({ title: 'กำลังค้นหารายชื่อผู้รับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
-        // 🟢 จังหวะที่ 1: ส่งคำสั่งค้นหารายชื่อคนและเช็คสิทธิ์ (รวมกลุ่มเป้าหมาย)
         try {
-            let response = await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'broadcast_line',
-                    payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
-                })
+            // 🟢 จังหวะที่ 1: ค้นหารายชื่อผู้รับ (ใช้ app.api ของเดิม)
+            const checkRes = await app.api({
+                action: 'broadcast_line',
+                payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
             });
-            const checkRes = await response.json();
             Swal.close();
 
             if (!checkRes || !checkRes.success) {
@@ -2412,7 +2405,7 @@ app.removeBroadcastImage = function() {
                 return Swal.fire('ไม่สามารถส่งได้', `ค้นพบ ${totalPeople} คนในกลุ่ม แต่ไม่มีใครผูกบัญชี LINE ไว้เลยครับ`, 'warning');
             }
 
-            // 🟢 นำรายชื่อมาวาดเป็นปุ่ม Checkbox เรียงทีละคน (ลอจิกเดิมของคุณหมอ)
+            // 🟢 นำรายชื่อมาวาดเป็นปุ่ม Checkbox เรียงทีละคน
             let targetHtml = `
                 <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
                     <div class="flex justify-between items-end mb-2 border-b pb-2">
@@ -2456,25 +2449,28 @@ app.removeBroadcastImage = function() {
                 
                 Swal.fire({ 
                     title: 'กำลังส่งประกาศ...', 
-                    text: file ? 'กำลังอัปโหลดรูปภาพเข้าคลังระบบและส่งข้อความ...' : `กำลังส่งหา ${finalUids.length} เครื่อง...`, 
+                    text: file ? 'กำลังอัปโหลดรูปภาพและส่งข้อความ...' : `กำลังส่งหา ${finalUids.length} เครื่อง...`, 
                     allowOutsideClick: false, 
                     didOpen: () => Swal.showLoading() 
                 });
 
                 // เตรียมก้อน Payload ส่งข้อความหลัก
                 let finalPayload = {
-                    action: 'broadcast_line',
-                    payload: { uids: finalUids, message: msg, user: app.user, count_only: false, base64Image: "", mimeType: "" }
+                    uids: finalUids, 
+                    message: msg, 
+                    user: app.user, 
+                    count_only: false, 
+                    base64Image: "", 
+                    mimeType: ""
                 };
 
-                // ฟังก์ชันยิงข้อมูลไปหา Apps Script
+                // ฟังก์ชันยิงข้อมูลไปหา Apps Script ด้วย app.api 
                 const executeSend = async (payloadData) => {
                     try {
-                        let sendResponse = await fetch(GAS_WEB_APP_URL, {
-                            method: 'POST',
-                            body: JSON.stringify(payloadData)
+                        let res = await app.api({
+                            action: 'broadcast_line',
+                            payload: payloadData
                         });
-                        let res = await sendResponse.json();
                         Swal.close();
 
                         if (res && res.success) {
@@ -2492,12 +2488,12 @@ app.removeBroadcastImage = function() {
                     }
                 };
 
-                // ตรวจสอบว่ามีไฟล์รูปแนบมาด้วยหรือไม่ ถ้ามีให้แปลงเป็น Base64 ก่อนยิงส่ง
+                // ถ้ามีรูปภาพ ให้แปลงเป็น Base64 ก่อนยิงส่ง
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        finalPayload.payload.base64Image = e.target.result.split(',')[1];
-                        finalPayload.payload.mimeType = file.type;
+                        finalPayload.base64Image = e.target.result.split(',')[1];
+                        finalPayload.mimeType = file.type;
                         executeSend(finalPayload);
                     };
                     reader.readAsDataURL(file);
@@ -2508,7 +2504,7 @@ app.removeBroadcastImage = function() {
         } catch (netErr) {
             Swal.fire('การเชื่อมต่อล้มเหลว', netErr.toString(), 'error');
         }
-    }, // 👈 คงตัวจบปีกกาและคอมม่าสำหรับ Object app ไว้เหมือนเดิม
+    },
 	
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
