@@ -2341,19 +2341,16 @@ loadCheckin: async () => {
         }
     },
 
-    resetSuperSearch: () => {
-        document.getElementById('super-search-input').value = "";
-        document.getElementById('super-search-box').classList.remove('hidden');
-        document.getElementById('super-edit-form').classList.add('hidden');
-    }
+resetSuperSearch: () => {
+            document.getElementById('super-search-input').value = "";
+            document.getElementById('super-search-box').classList.remove('hidden');
+            document.getElementById('super-edit-form').classList.add('hidden');
+        }
 
-// ถ้ายังไม่มีการประกาศตัวแปร app ให้ใส่บรรทัดนี้ไว้บนสุด
-if (typeof app === 'undefined') {
-    var app = {};
-}
+}; // 👈 🟢 ปิดท้าย Object app อย่างสมบูรณ์ตรงนี้
 
 // ==========================================
-// 1. ฟังก์ชันแสดงตัวอย่างรูปภาพเมื่อเลือกไฟล์
+// 📸 โค้ดระบบอัปโหลดรูปภาพและส่ง Broadcast
 // ==========================================
 app.previewBroadcastImage = function(input) {
     const file = input.files[0];
@@ -2363,16 +2360,12 @@ app.previewBroadcastImage = function(input) {
         reader.onload = function(e) {
             const preview = document.getElementById('img-preview');
             preview.src = e.target.result;
-            // เปิดกล่องโชว์รูปภาพที่ถูกซ่อนไว้ขึ้นมา
             document.getElementById('img-preview-container').classList.remove('hidden');
         }
         reader.readAsDataURL(file);
     }
 };
 
-// ==========================================
-// 2. ฟังก์ชันกากบาท (เคลียร์รูปภาพทิ้ง)
-// ==========================================
 app.removeBroadcastImage = function() {
     document.getElementById('broadcast-file').value = '';
     document.getElementById('file-name').innerText = 'ยังไม่ได้เลือกรูป';
@@ -2380,9 +2373,6 @@ app.removeBroadcastImage = function() {
     document.getElementById('img-preview').src = '';
 };
 
-// ==========================================
-// 3. ฟังก์ชันแพ็คข้อความและรูปภาพ ส่งไปให้ Code.gs หลังบ้าน
-// ==========================================
 app.sendBroadcast = function() {
     const text = document.getElementById('broadcast-msg').value;
     const fileInput = document.getElementById('broadcast-file');
@@ -2393,7 +2383,6 @@ app.sendBroadcast = function() {
         return;
     }
 
-    // โชว์หน้าต่างโหลด (SweetAlert2)
     Swal.fire({ 
         title: 'กำลังส่งประกาศ...', 
         text: file ? 'กำลังอัปโหลดรูปและส่งข้อความ อาจใช้เวลาสักครู่' : 'กำลังส่งข้อความ...',
@@ -2402,32 +2391,27 @@ app.sendBroadcast = function() {
     });
 
     if (file) {
-        // กรณีมีรูปภาพ: แปลงรูปเป็น Base64 แล้วส่งให้ handleBroadcastUpload()
         const reader = new FileReader();
         reader.onload = function(e) {
             const base64Data = e.target.result.split(',')[1];
-            
             google.script.run.withSuccessHandler(function(res) {
                 Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
                 if(res.success) {
-                    document.getElementById('broadcast-msg').value = ''; // เคลียร์ข้อความ
-                    app.removeBroadcastImage(); // เคลียร์รูป
+                    document.getElementById('broadcast-msg').value = ''; 
+                    app.removeBroadcastImage(); 
                 }
             }).handleBroadcastUpload(text, base64Data, file.type);
         }
         reader.readAsDataURL(file);
     } else {
-        // กรณีไม่มีรูป (ส่งแค่ข้อความอย่างเดียว): ส่งให้ broadcastLineMessage() โดยตรง
         google.script.run.withSuccessHandler(function(res) {
             Swal.fire(res.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', res.message, res.success ? 'success' : 'error');
             if(res.success) {
-                document.getElementById('broadcast-msg').value = ''; // เคลียร์ข้อความ
+                document.getElementById('broadcast-msg').value = ''; 
             }
         }).broadcastLineMessage(text, ""); 
     }
 };
-	
-}; // 👈 🟢 ปิดท้าย Object app อย่างสมบูรณ์ตรงนี้
 
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
