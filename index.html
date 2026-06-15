@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.25 H</title>
+    <title>EPA Skin App 2.25 I</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2281,139 +2281,140 @@ app.removeBroadcastImage = function() {
     document.getElementById('img-preview').src = '';
 };
 
+// =========================================================
 // 🚀 ดำเนินการคัดกรองกลุ่มเป้าหมาย บันทึกรูปภาพลง Drive และยิงคำสั่งส่งข้อความผ่าน LINE API
-    sendBroadcast: async () => {
-        const msg = document.getElementById('broadcast-msg').value.trim();
-        const fileInput = document.getElementById('broadcast-file');
-        const file = fileInput ? fileInput.files[0] : null;
+// =========================================================
+app.sendBroadcast = async () => {
+    const msg = document.getElementById('broadcast-msg').value.trim();
+    const fileInput = document.getElementById('broadcast-file');
+    const file = fileInput ? fileInput.files[0] : null;
 
-        if (!msg && !file) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความหรือเลือกรูปภาพก่อนส่งครับ', 'warning');
-        
-        const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
-        if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
+    if (!msg && !file) return Swal.fire('แจ้งเตือน', 'กรุณาพิมพ์ข้อความหรือเลือกรูปภาพก่อนส่งครับ', 'warning');
+    
+    const selectedRoles = Array.from(document.querySelectorAll('.cb-role:checked')).map(cb => cb.value);
+    if (selectedRoles.length === 0) return Swal.fire('แจ้งเตือน', 'กรุณาเลือกกลุ่มเป้าหมายอย่างน้อย 1 กลุ่มครับ', 'warning');
 
-        // 🟢 1. จัดการอ่านไฟล์รูปภาพและแปลงให้เสร็จ "ก่อน" ค้นหาคน
-        let base64String = "";
-        let mimeType = "";
-        let hasImage = false;
-        
-        if (file) {
-            hasImage = true;
-            try {
-                Swal.fire({ title: 'กำลังเตรียมข้อมูลรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                base64String = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-                    reader.onerror = (error) => reject(error);
-                    reader.readAsDataURL(file);
-                });
-                mimeType = file.type;
-            } catch (err) {
-                return Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ภาพได้ครับ โปรดลองเลือกรูปใหม่อีกครั้ง', 'error');
-            }
-        }
-
-        // 🟢 2. ค้นหารายชื่อผู้รับที่ผูก LINE
-        Swal.fire({ title: 'กำลังค้นหารายชื่อผู้รับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        
+    // 🟢 1. จัดการอ่านไฟล์รูปภาพและแปลงให้เสร็จ "ก่อน" ค้นหาคน
+    let base64String = "";
+    let mimeType = "";
+    let hasImage = false;
+    
+    if (file) {
+        hasImage = true;
         try {
-            const checkRes = await app.api({
-                action: 'broadcast_line',
-                payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
+            Swal.fire({ title: 'กำลังเตรียมข้อมูลรูปภาพ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            base64String = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file);
             });
-            Swal.close();
-
-            if (!checkRes || !checkRes.success) return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
-            
-            const targets = checkRes.targets || [];
-            const totalPeople = checkRes.total || 0;
-
-            if (targets.length === 0) return Swal.fire('ไม่สามารถส่งได้', `ค้นพบ ${totalPeople} คนในกลุ่ม แต่ไม่มีใครผูกบัญชี LINE ไว้เลยครับ`, 'warning');
-
-            // 🟢 3. วาด Checklist ให้หน้าเว็บแสดง
-            let targetHtml = `
-                <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
-                    <div class="flex justify-between items-end mb-2 border-b pb-2">
-                        <b class="text-gray-700">🔎 เลือกผู้รับ (${targets.length} คน):</b>
-                        <span class="text-[10px] text-gray-500 font-bold text-red-500">*ติ๊กออกเพื่อไม่ส่งได้</span>
-                    </div>
-                    <div class="mt-2 space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                        ${targets.map(t => `
-                            <label class="flex items-center space-x-3 cursor-pointer bg-white p-2 rounded-lg border border-gray-100 hover:bg-blue-50 transition shadow-sm">
-                                <input type="checkbox" value="${t.uid}" class="cb-target-uid w-5 h-5 text-blue-600 rounded focus:ring-blue-500" checked>
-                                <span class="text-gray-800 font-semibold">${t.name}</span>
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-
-            const confirm = await Swal.fire({
-                title: 'ตรวจสอบรายชื่อ',
-                html: `กลุ่มเป้าหมายมี <b>${totalPeople} คน</b> ผูกไลน์แล้ว <b>${targets.length} คน</b>${targetHtml}`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '✔️ ส่งข้อความ',
-                cancelButtonText: 'ยกเลิก',
-                confirmButtonColor: '#2563eb',
-                preConfirm: () => {
-                    const selectedUids = Array.from(document.querySelectorAll('.cb-target-uid:checked')).map(cb => cb.value);
-                    if (selectedUids.length === 0) {
-                        Swal.showValidationMessage('กรุณาเลือกผู้รับอย่างน้อย 1 คนครับ');
-                        return false;
-                    }
-                    return selectedUids;
-                }
-            });
-
-            // 🟢 4. จังหวะกดปุ่มยืนยันส่งจริง
-            if (confirm.isConfirmed) {
-                const finalUids = confirm.value;
-                localStorage.setItem('lastBroadcastMsg', msg);
-                
-                Swal.fire({ 
-                    title: 'กำลังส่งประกาศ...', 
-                    text: hasImage ? 'กำลังอัปโหลดรูปภาพลง Drive และส่งข้อความ...' : `กำลังส่งหา ${finalUids.length} เครื่อง...`, 
-                    allowOutsideClick: false, 
-                    didOpen: () => Swal.showLoading() 
-                });
-
-                // ส่งค่าทั้งหมดไปให้ Apps Script โดยแพ็ครูปที่แปลงเสร็จแล้วลงไปด้วย
-                let finalPayload = {
-                    uids: finalUids, 
-                    message: msg, 
-                    user: app.user, 
-                    count_only: false, 
-                    hasImage: hasImage, 
-                    base64Image: base64String, 
-                    mimeType: mimeType
-                };
-
-                try {
-                    let res = await app.api({
-                        action: 'broadcast_line',
-                        payload: finalPayload
-                    });
-                    Swal.close();
-
-                    if (res && res.success) {
-                        Swal.fire('สำเร็จ!', `ระบบดำเนินการส่งเสร็จสิ้น รวม ${res.count} เครื่อง`, 'success').then(() => {
-                            app.showView('view-menu'); 
-                            document.getElementById('broadcast-msg').value = '';
-                            if(typeof app.removeBroadcastImage === 'function') app.removeBroadcastImage();
-                            localStorage.removeItem('lastBroadcastMsg');
-                        });
-                    } else {
-                        Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่สามารถเชื่อมต่อ LINE API ได้', 'error');
-                    }
-                } catch (sendErr) {
-                    Swal.fire('การเชื่อมต่อล้มเหลว', sendErr.toString(), 'error');
-                }
-            }
-        } catch (netErr) {
-            Swal.fire('การเชื่อมต่อล้มเหลว', netErr.toString(), 'error');
+            mimeType = file.type;
+        } catch (err) {
+            return Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ภาพได้ครับ โปรดลองเลือกรูปใหม่อีกครั้ง', 'error');
         }
-    },
+    }
+
+    // 🟢 2. ค้นหารายชื่อผู้รับที่ผูก LINE
+    Swal.fire({ title: 'กำลังค้นหารายชื่อผู้รับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    try {
+        const checkRes = await app.api({
+            action: 'broadcast_line',
+            payload: { roles: selectedRoles, message: msg, user: app.user, count_only: true }
+        });
+        Swal.close();
+
+        if (!checkRes || !checkRes.success) return Swal.fire('แจ้งเตือน', checkRes ? checkRes.message : 'เกิดข้อผิดพลาดในการคำนวณผู้รับ', 'warning');
+        
+        const targets = checkRes.targets || [];
+        const totalPeople = checkRes.total || 0;
+
+        if (targets.length === 0) return Swal.fire('ไม่สามารถส่งได้', `ค้นพบ ${totalPeople} คนในกลุ่ม แต่ไม่มีใครผูกบัญชี LINE ไว้เลยครับ`, 'warning');
+
+        // 🟢 3. วาด Checklist ให้หน้าเว็บแสดง
+        let targetHtml = `
+            <div class="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-left mt-4 mb-2 shadow-sm">
+                <div class="flex justify-between items-end mb-2 border-b pb-2">
+                    <b class="text-gray-700">🔎 เลือกผู้รับ (${targets.length} คน):</b>
+                    <span class="text-[10px] text-gray-500 font-bold text-red-500">*ติ๊กออกเพื่อไม่ส่งได้</span>
+                </div>
+                <div class="mt-2 space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                    ${targets.map(t => `
+                        <label class="flex items-center space-x-3 cursor-pointer bg-white p-2 rounded-lg border border-gray-100 hover:bg-blue-50 transition shadow-sm">
+                            <input type="checkbox" value="${t.uid}" class="cb-target-uid w-5 h-5 text-blue-600 rounded focus:ring-blue-500" checked>
+                            <span class="text-gray-800 font-semibold">${t.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        const confirm = await Swal.fire({
+            title: 'ตรวจสอบรายชื่อ',
+            html: `กลุ่มเป้าหมายมี <b>${totalPeople} คน</b> ผูกไลน์แล้ว <b>${targets.length} คน</b>${targetHtml}`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '✔️ ส่งข้อความ',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#2563eb',
+            preConfirm: () => {
+                const selectedUids = Array.from(document.querySelectorAll('.cb-target-uid:checked')).map(cb => cb.value);
+                if (selectedUids.length === 0) {
+                    Swal.showValidationMessage('กรุณาเลือกผู้รับอย่างน้อย 1 คนครับ');
+                    return false;
+                }
+                return selectedUids;
+            }
+        });
+
+        // 🟢 4. จังหวะกดปุ่มยืนยันส่งจริง
+        if (confirm.isConfirmed) {
+            const finalUids = confirm.value;
+            localStorage.setItem('lastBroadcastMsg', msg);
+            
+            Swal.fire({ 
+                title: 'กำลังส่งประกาศ...', 
+                text: hasImage ? 'กำลังอัปโหลดรูปภาพลง Drive และส่งข้อความ...' : `กำลังส่งหา ${finalUids.length} เครื่อง...`, 
+                allowOutsideClick: false, 
+                didOpen: () => Swal.showLoading() 
+            });
+
+            let finalPayload = {
+                uids: finalUids, 
+                message: msg, 
+                user: app.user, 
+                count_only: false, 
+                hasImage: hasImage, 
+                base64Image: base64String, 
+                mimeType: mimeType
+            };
+
+            try {
+                let res = await app.api({
+                    action: 'broadcast_line',
+                    payload: finalPayload
+                });
+                Swal.close();
+
+                if (res && res.success) {
+                    Swal.fire('สำเร็จ!', `ระบบดำเนินการส่งเสร็จสิ้น รวม ${res.count} เครื่อง`, 'success').then(() => {
+                        app.showView('view-menu'); 
+                        document.getElementById('broadcast-msg').value = '';
+                        if(typeof app.removeBroadcastImage === 'function') app.removeBroadcastImage();
+                        localStorage.removeItem('lastBroadcastMsg');
+                    });
+                } else {
+                    Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่สามารถเชื่อมต่อ LINE API ได้', 'error');
+                }
+            } catch (sendErr) {
+                Swal.fire('การเชื่อมต่อล้มเหลว', sendErr.toString(), 'error');
+            }
+        }
+    } catch (netErr) {
+        Swal.fire('การเชื่อมต่อล้มเหลว', netErr.toString(), 'error');
+    }
+}; // 👈 ปิดท้ายด้วยเครื่องหมายอัฒภาค (;) แบบนี้คือถูกต้องครับ
 	
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
