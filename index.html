@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.25 D</title>
+    <title>EPA Skin App 2.25 E</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2373,7 +2373,7 @@ app.removeBroadcastImage = function() {
     document.getElementById('img-preview').src = '';
 };
 
-app.sendBroadcast = function() {
+app.sendBroadcast = async function() {
     try {
         const text = document.getElementById('broadcast-msg').value;
         const fileInput = document.getElementById('broadcast-file');
@@ -2384,54 +2384,60 @@ app.sendBroadcast = function() {
             return;
         }
 
+        // 🔗 ใส่ลิงก์ Web App (ที่ลงท้ายด้วย /exec) ของคุณหมอตรงนี้ครับ
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby9eCCxexRf5DIdzjuZ0tGRnJoYy-0dDoR58PESKhpToHPwwJ3BZLE4eGlZchK5qf_X/exec";
+
         Swal.fire({
             title: 'เตรียมข้อมูล...',
-            text: file ? 'กำลังอ่านไฟล์ภาพ...' : 'กำลังเตรียมข้อความ...',
+            text: file ? 'กำลังอ่านไฟล์ภาพและเตรียมส่ง...' : 'กำลังส่งข้อความ...',
             allowOutsideClick: false,
             didOpen: () => { Swal.showLoading() }
         });
 
+        // สร้าง Payload สำหรับส่งข้อมูล
+        let payload = {
+            action: "send_broadcast", // บอกหลังบ้านว่านี่คือคำสั่งบรอดแคสต์
+            textMsg: text,
+            base64Image: "",
+            mimeType: ""
+        };
+
+        const sendDataToBackend = async (data) => {
+            Swal.fire({title: 'กำลังส่งไปเซิร์ฟเวอร์...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            try {
+                let response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                
+                let result = await response.json();
+                
+                Swal.fire(result.success ? 'สำเร็จ' : 'เกิดข้อผิดพลาด', result.message, result.success ? 'success' : 'error');
+                if(result.success) {
+                    document.getElementById('broadcast-msg').value = '';
+                    app.removeBroadcastImage();
+                }
+            } catch (err) {
+                Swal.fire('การเชื่อมต่อล้มเหลว', err.toString(), 'error');
+            }
+        };
+
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    const base64Data = e.target.result.split(',')[1];
-                    Swal.fire({title: 'กำลังส่งไปหลังบ้าน...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-
-                    google.script.run
-                    .withSuccessHandler(function(res) {
-                        Swal.fire(res.success ? 'สำเร็จ' : 'แจ้งเตือน', res.message, res.success ? 'success' : 'error');
-                        if(res.success) {
-                            document.getElementById('broadcast-msg').value = '';
-                            app.removeBroadcastImage();
-                        }
-                    })
-                    .withFailureHandler(function(err) {
-                        // 🔴 ถ้าติดต่อ Code.gs ไม่ได้ จะเด้งบอกตรงนี้
-                        Swal.fire('การเชื่อมต่อล้มเหลว', String(err.message || err), 'error');
-                    })
-                    .handleBroadcastUpload(text, base64Data, file.type);
-                } catch (err2) {
-                    Swal.fire('Error การแปลงไฟล์', String(err2), 'error');
-                }
+                payload.base64Image = e.target.result.split(',')[1];
+                payload.mimeType = file.type;
+                sendDataToBackend(payload);
             };
             reader.readAsDataURL(file);
         } else {
-            google.script.run
-            .withSuccessHandler(function(res) {
-                Swal.fire(res.success ? 'สำเร็จ' : 'แจ้งเตือน', res.message, res.success ? 'success' : 'error');
-                if(res.success) document.getElementById('broadcast-msg').value = '';
-            })
-            .withFailureHandler(function(err) {
-                Swal.fire('การเชื่อมต่อล้มเหลว', String(err.message || err), 'error');
-            })
-            .broadcastLineMessage(text, "");
+            sendDataToBackend(payload);
         }
+
     } catch (mainErr) {
         Swal.fire('Error หน้าบ้าน', String(mainErr), 'error');
     }
-};
-	
+};	
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
 </script>
