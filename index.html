@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.25 H</title>
+    <title>EPA Skin App 2.26</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2435,6 +2435,104 @@ app.sendBroadcast = async () => {
         Swal.fire('การเชื่อมต่อล้มเหลว', netErr.toString(), 'error');
     }
 }; // 👈 ปิดท้ายด้วยเครื่องหมายอัฒภาค (;) แบบนี้คือถูกต้องครับ
+
+// =========================================================
+// 📝 ฟังก์ชันเรียกหน้าต่างประเมิน Mini-Rubric (1-5 คะแนน)
+// =========================================================
+app.showMiniRubric = async (actRefId, presenterMdid, isClosingAct = false) => {
+    const formHtml = `
+        <div class="text-left text-sm space-y-3">
+            <div class="bg-blue-50 text-blue-800 p-2 rounded border border-blue-200 mb-4 text-xs font-bold">
+                * กรุณาประเมินผู้นำเสนอ (1 = ต้องปรับปรุง, 5 = ดีเยี่ยม)
+            </div>
+            
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">1. Presentation Skills (ทักษะและสื่อนำเสนอ)</label>
+                <select id="eval-skill" class="w-full border border-gray-300 p-2 rounded bg-white focus:ring-blue-500">
+                    <option value="5">⭐⭐⭐⭐⭐ (5 - ดีเยี่ยม)</option>
+                    <option value="4">⭐⭐⭐⭐ (4 - ดีมาก)</option>
+                    <option value="3" selected>⭐⭐⭐ (3 - ปานกลาง/ตามเกณฑ์)</option>
+                    <option value="2">⭐⭐ (2 - พอใช้)</option>
+                    <option value="1">⭐ (1 - ต้องปรับปรุง)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">2. Content & EBM (ความถูกต้องและเนื้อหา)</label>
+                <select id="eval-content" class="w-full border border-gray-300 p-2 rounded bg-white focus:ring-blue-500">
+                    <option value="5">⭐⭐⭐⭐⭐ (5 - ดีเยี่ยม)</option>
+                    <option value="4">⭐⭐⭐⭐ (4 - ดีมาก)</option>
+                    <option value="3" selected>⭐⭐⭐ (3 - ปานกลาง/ตามเกณฑ์)</option>
+                    <option value="2">⭐⭐ (2 - พอใช้)</option>
+                    <option value="1">⭐ (1 - ต้องปรับปรุง)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">3. Time Management (การบริหารเวลา)</label>
+                <select id="eval-time" class="w-full border border-gray-300 p-2 rounded bg-white focus:ring-blue-500">
+                    <option value="5">⭐⭐⭐⭐⭐ (5 - ดีเยี่ยม)</option>
+                    <option value="4">⭐⭐⭐⭐ (4 - ดีมาก)</option>
+                    <option value="3" selected>⭐⭐⭐ (3 - ปานกลาง/ตามเกณฑ์)</option>
+                    <option value="2">⭐⭐ (2 - พอใช้)</option>
+                    <option value="1">⭐ (1 - ต้องปรับปรุง)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">4. ข้อเสนอแนะเพิ่มเติม (Feedback/Comment)</label>
+                <textarea id="eval-comment" rows="2" class="w-full border border-gray-300 p-2 rounded bg-white" placeholder="พิมพ์ข้อเสนอแนะเพื่อการพัฒนา..."></textarea>
+            </div>
+        </div>
+    `;
+
+    const result = await Swal.fire({
+        title: isClosingAct ? '📌 ประเมินก่อนปิดกิจกรรม' : '📝 ประเมินผู้นำเสนอ',
+        html: formHtml,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกคะแนน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#10b981', // สีเขียว
+        allowOutsideClick: false,
+        preConfirm: () => {
+            return {
+                act_ref_id: actRefId,
+                evaluator_mdid: app.user.mdid,
+                presenter_mdid: presenterMdid,
+                presentation_skills: document.getElementById('eval-skill').value,
+                content_ebm: document.getElementById('eval-content').value,
+                time_management: document.getElementById('eval-time').value,
+                comment: document.getElementById('eval-comment').value.trim()
+            };
+        }
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'กำลังบันทึกคะแนน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res = await app.api({
+                action: 'save_act_evaluation',
+                payload: result.value
+            });
+            
+            if (res && res.success) {
+                // ถ้ามาจากการกดปิดกิจกรรม ให้สั่งปิดกิจกรรมต่อเลย
+                if (isClosingAct) {
+                    return true; // ส่งสัญญาณกลับไปว่าประเมินเสร็จแล้ว ให้ไปทำงานปิดกิจกรรมต่อ
+                } else {
+                    Swal.fire('สำเร็จ', 'บันทึกผลการประเมินเรียบร้อยครับ', 'success');
+                }
+            } else {
+                Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+                return false;
+            }
+        } catch (err) {
+            Swal.fire('เกิดข้อผิดพลาด', err.toString(), 'error');
+            return false;
+        }
+    }
+    return false; // กรณีกดยกเลิก
+};
 	
 // 🟢 บังคับสั่งให้ LIFF สแกนสิทธิ์ตรวจสอบบุคคลทันทีที่แอปพลิเคชันถูกเปิดขึ้นมา
 window.onload = () => app.init();
