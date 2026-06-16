@@ -1492,12 +1492,32 @@ loadCheckin: async () => {
                     let timeB = new Date(b.act_begin).getTime();
                     return timeA - timeB; 
                 });
-                // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ (ในฟังก์ชัน loadCheckin)
+
+                // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ
                 list.innerHTML = data.activities.map(a => {
                     let btnHtml = '';
-                    let linkHtml = a.act_link ? `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1.5 rounded text-sm shadow-sm border border-blue-200">📹 เข้าร่วมออนไลน์ (Zoom)</a>` : '';
+                    let linkHtml = '';
+
+                    // 🎨 ลอจิกแยกสีปุ่มลิงก์ประชุม (Zoom / Webex / MS Teams)
+                    if (a.act_link) {
+                        let platformName = "ออนไลน์";
+                        let colorTheme = "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-300"; // ค่าเริ่มต้น (ถ้าเป็นลิงก์อื่นๆ)
+
+                        if (a.act_link.includes('zoom.us')) {
+                            platformName = "Zoom";
+                            colorTheme = "bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200";
+                        } else if (a.act_link.includes('webex.com')) {
+                            platformName = "Webex";
+                            colorTheme = "bg-green-100 hover:bg-green-200 text-green-800 border-green-200";
+                        } else if (a.act_link.includes('teams.microsoft')) {
+                            platformName = "MS Teams";
+                            colorTheme = "bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-200";
+                        }
+
+                        linkHtml = `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center ${colorTheme} font-bold py-1.5 rounded text-sm shadow-sm border">📹 เข้าร่วมผ่าน ${platformName}</a>`;
+                    }
                      
-					if (a.already_joined) {
+                    if (a.already_joined) {
                         btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center block">✔️ เข้าร่วมแล้ว</span>`;
                     } else if (!a.is_ready) {
                         btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full block">รอเปิดลงชื่อ</button>`;
@@ -1512,7 +1532,7 @@ loadCheckin: async () => {
                         }
                     }
                     let instructorHtml = a.instructor_name ?
-`<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
+			`<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
 
                     // 🟢 3. จัดฟอร์แมตวันและเวลาใหม่ให้อ่านง่าย
                     let actDate = new Date(a.act_begin);
