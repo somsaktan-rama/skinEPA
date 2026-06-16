@@ -2001,8 +2001,41 @@ loadCheckin: async () => {
     removeAttendee: async (recordId) => { if(!confirm('ลบ?')) return;
         const res = await app.api({ action: 'remove_attendee', record_id: recordId }); if(res) app.viewAttendees(app.currentManageAct.act_ref_id, app.currentManageAct.topic, app.currentManageAct.act_finish);
     },
-    closeActivitySession: async () => { if(new Date().getTime() < new Date(app.currentManageAct.act_finish).getTime()) return Swal.fire('ผิดพลาด', 'ยังไม่หมดเวลา', 'error'); if(!confirm('ปิด?')) return;
-        const res = await app.api({ action: 'close_activity', act_ref_id: app.currentManageAct.act_ref_id }); if(res) Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadManageActivities());
+	
+closeActivitySession: async () => { 
+        const act = app.currentManageAct;
+        
+        // เช็คเวลาสิ้นสุดตามนโยบาย
+        if(new Date().getTime() < new Date(act.act_finish).getTime()) {
+            return Swal.fire('ผิดพลาด', 'ยังไม่สามารถปิดได้ เนื่องจากยังไม่หมดเวลาตามนโยบายครับ', 'error'); 
+        }
+
+        // 🟢 ด่านตรวจที่ 1: ตรวจสอบว่าเป็นกิจกรรมที่ต้องประเมินผู้นำเสนอหรือไม่
+        const actId = act.act_id ? String(act.act_id).toUpperCase().trim() : "";
+        const evalActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05'];
+        const presenterMdid = act.presenter_mdid; // ข้อมูลผู้พรีเซนต์ที่ดึงมาจากชีต
+
+        if (evalActs.includes(actId) && presenterMdid) {
+            // บังคับอาจารย์ที่กดปิด ให้ทำการประเมินก่อน
+            const isEvaluated = await app.showMiniRubric(act.act_ref_id, presenterMdid, true);
+            if (!isEvaluated) {
+                // ถ้ายกเลิกการประเมิน หรือกดปิดหน้าต่าง ให้หยุดทำงานทันที (ไม่ปิดกิจกรรม)
+                return; 
+            }
+        } else {
+            // ถ้าเป็นกิจกรรมปกติ (ACT อื่นๆ) ให้ถามยืนยันธรรมดา
+            if(!confirm('ยืนยันการปิดกิจกรรมนี้? (ระบบจะคำนวณพิกัดระยะทางและปรับสถานะให้ทุกคนเป็น PASS)')) return; 
+        }
+
+        // 🟢 ด่านตรวจที่ 2: ดำเนินการปิดกิจกรรม (วิ่งไปเรียก Code.gs ของเดิม)
+        Swal.fire({ title: 'กำลังประมวลผล...', text:'กำลังคำนวณระยะทางและปิดกิจกรรม', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await app.api({ action: 'close_activity', act_ref_id: act.act_ref_id }); 
+        
+        if(res && res.success) {
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.loadManageActivities());
+        } else {
+            Swal.fire('ผิดพลาด', res ? res.message : 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+        }
     },
 
    // --- Evaluation Tasks ---
