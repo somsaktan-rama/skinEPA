@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.28</title>
+    <title>EPA Skin App 2.28 A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1115,11 +1115,14 @@ const actEl = document.getElementById('create-act-id');
                 const presenterSelect = document.getElementById('create-act-presenter');
                 
                 if (divPresenter && presenterSelect) {
-                    if (residentActs.includes(selectedAct)) {
-                        divPresenter.classList.remove('hidden');
-                        presenterSelect.innerHTML = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ (R2-R4) --</option>' + 
-                            (data.residents || []).map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
-                    } else if (fellowActs.includes(selectedAct)) {
+				if (residentActs.includes(selectedAct)) {
+                divPresenter.classList.remove('hidden');
+                presenterSelect.innerHTML = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ (R2-R4) --</option>' + 
+                    (data.residents || []).map(r => {
+                        let displayLevel = r.level ? ` (${r.level})` : '';
+                        return `<option value="${r.mdid}">${r.name}${displayLevel}</option>`;
+                    }).join('');
+            } else if (fellowActs.includes(selectedAct)) {
                         divPresenter.classList.remove('hidden');
                         presenterSelect.innerHTML = '<option value="">-- ระบุ Fellow Dermsurg ผู้นำเสนอ --</option>' + 
                             (data.fellows_dermsurg || []).map(f => `<option value="${f.mdid}">${f.name}</option>`).join('');
@@ -1748,12 +1751,13 @@ editActivityForm: async () => {
             return `<option value="${i.mdid}" ${isSelected}>อ. ${i.name}</option>`;
         }).join('');
 
-        // 🧑‍⚕️ ดึงและกรองรายชื่อผู้นำเสนอตามเงื่อนไขกิจกรรมกลุ่มเป้าหมาย
+		// 🧑‍⚕️ ดึงและกรองรายชื่อผู้นำเสนอตามเงื่อนไขกิจกรรมกลุ่มเป้าหมาย
         let presenterOptionsHtml = '<option value="">-- ระบุผู้นำเสนอสำหรับการประเมิน --</option>';
         if (isResidentAct && formDataRes.residents) {
             presenterOptionsHtml += formDataRes.residents.map(r => {
                 let isSelected = (String(r.mdid).trim() === currentPresenterMdid) ? "selected" : "";
-                return `<option value="${r.mdid}" ${isSelected}>${r.name} (Resident)</option>`;
+                let displayLevel = r.level ? ` (${r.level})` : ''; // 🟢 เอาชั้นปีมาต่อท้าย
+                return `<option value="${r.mdid}" ${isSelected}>${r.name}${displayLevel}</option>`;
             }).join('');
         } else if (isFellowAct && formDataRes.fellows_dermsurg) {
             presenterOptionsHtml += formDataRes.fellows_dermsurg.map(f => {
