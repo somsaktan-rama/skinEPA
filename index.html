@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.26 C</title>
+    <title>EPA Skin App 2.27</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.25</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.27</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1033,17 +1033,24 @@ const app = {
                      </button>`;
         }
 
-	    // 🟢 8. จัดการกิจกรรมและสื่อสาร - Instructor และ Staff
+	// 🟢 8. จัดการกิจกรรมและสื่อสาร - Instructor และ Staff
         if (isStaff || isInstructor) {
             // ปุ่มจัดการกิจกรรม (ของเดิม)
             html += `<button onclick="app.loadManageActivities()" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">⚙️</span> จัดการกิจกรรม</span>
                         <span class="text-amber-400">→</span>
                      </button>`;
-            // 📢 ปุ่ม Broadcast LINE (อันใหม่ที่เพิ่มเข้าไป)
+            
+            // 📢 ปุ่ม Broadcast LINE (ของเดิม)
             html += `<button onclick="app.openBroadcastView()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
                         <span class="font-bold flex items-center"><span class="text-xl mr-3">📢</span> ส่งข้อความประกาศ (Broadcast)</span>
                         <span class="text-blue-400">→</span>
+                     </button>`;
+
+            // 📊 ปุ่ม Dashboard ความก้าวหน้า (แทรกใหม่ตรงนี้)
+            html += `<button onclick="app.showProgressDashboard()" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 p-4 rounded-xl shadow-sm text-left flex items-center justify-between mb-3 transition">
+                        <span class="font-bold flex items-center"><span class="text-xl mr-3">📊</span> Dashboard ความก้าวหน้า (Export)</span>
+                        <span class="text-indigo-400">→</span>
                      </button>`;
         }
         
@@ -2123,6 +2130,93 @@ closeActivitySession: async () => {
         }
     },
 
+	// ==========================================
+    // 📊 ฟังก์ชันโหลดข้อมูลเข้าหน้า Dashboard
+    // ==========================================
+    showProgressDashboard: async () => {
+        // 1. โหลดข้อมูลจากหลังบ้าน
+        const res = await app.api({ action: 'get_group_progress' }, 'กำลังโหลดข้อมูลเปรียบเทียบ...');
+        if (!res || !res.success) return;
+
+        const data = res.data;
+        app.currentProgressData = data; // เก็บข้อมูลลงตัวแปรไว้ใช้ตอนกด Export
+
+        // 2. ปรับข้อความหัวตาราง (time-elapsed-info)
+        const timeInfoEl = document.getElementById('time-elapsed-info');
+        if (timeInfoEl) {
+            const now = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            timeInfoEl.innerHTML = `ข้อมูลเปรียบเทียบความก้าวหน้าระหว่างชั้นปี (อัปเดตล่าสุด: ${now} น.)`;
+        }
+
+        // 3. สร้าง HTML ตาราง
+        let tableHtml = `
+            <div class="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="bg-blue-50 text-blue-900 border-b-2 border-blue-200">
+                        <tr>
+                            <th class="px-4 py-3 font-bold whitespace-nowrap">กลุ่ม</th>
+                            <th class="px-4 py-3 font-bold whitespace-nowrap">รหัส MDID</th>
+                            <th class="px-4 py-3 font-bold whitespace-nowrap">ชื่อ-สกุล</th>
+                            <th class="px-4 py-3 font-bold text-center whitespace-nowrap">เข้าร่วม (ครั้ง)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+        `;
+
+        // 4. วนลูปวาดข้อมูลแต่ละคน
+        data.forEach(row => {
+            // แยกสีป้าย (Badge) ตามชั้นปี
+            let groupStyle = 'bg-gray-100 text-gray-800';
+            if(row.group === 'R2') groupStyle = 'bg-blue-100 text-blue-800 font-bold';
+            if(row.group === 'R3') groupStyle = 'bg-green-100 text-green-800 font-bold';
+            if(row.group === 'R4') groupStyle = 'bg-purple-100 text-purple-800 font-bold';
+            if(row.group === 'FellowDermsurg') groupStyle = 'bg-orange-100 text-orange-800 font-bold';
+
+            tableHtml += `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-2 whitespace-nowrap"><span class="px-2 py-1 rounded text-xs ${groupStyle}">${row.group}</span></td>
+                    <td class="px-4 py-2 text-gray-600 whitespace-nowrap">${row.mdid}</td>
+                    <td class="px-4 py-2 font-medium text-gray-800 min-w-[150px]">${row.name}</td>
+                    <td class="px-4 py-2 text-center font-bold text-blue-600 text-base">${row.total_attended}</td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `</tbody></table></div>`;
+
+        // 5. นำ HTML ไปใส่ในกล่อง dashboard-content และสลับหน้าจอ
+        document.getElementById('dashboard-content').innerHTML = tableHtml;
+        app.showView('view-staff-dashboard');
+    },
+
+    // ==========================================
+    // 📥 ฟังก์ชันส่งออกเป็น Excel (ให้ตรงกับปุ่มของคุณหมอ)
+    // ==========================================
+    exportCSV: () => {
+        if (!app.currentProgressData || app.currentProgressData.length === 0) {
+            return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับดาวน์โหลด', 'warning');
+        }
+        
+        // ใส่ BOM (\uFEFF) เพื่อให้ MS Excel แสดงผลภาษาไทยได้ถูกต้อง 100%
+        let csvContent = "\uFEFF"; 
+        csvContent += "กลุ่มเป้าหมาย,รหัสแพทย์,ชื่อ-สกุล,จำนวนกิจกรรมที่เข้าร่วม (PASS)\n";
+
+        app.currentProgressData.forEach(row => {
+            let safeName = row.name.replace(/,/g, ' '); // กันบั๊กชื่อที่มีลูกน้ำ
+            csvContent += `${row.group},${row.mdid},${safeName},${row.total_attended}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Progress_Compare_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+	
    // --- Evaluation Tasks ---
     loadInstructorTasks: async () => { 
         // 🟢 เพิ่มข้อความ Loading
