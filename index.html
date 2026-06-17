@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.26 B</title>
+    <title>EPA Skin App 2.26 C</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1099,22 +1099,32 @@ const actEl = document.getElementById('create-act-id');
             actEl.innerHTML = '<option value="">-- เลือกกิจกรรม --</option>' + actsToDisplay.map(a => `<option value="${a.id}">${a.id}: ${a.desc}</option>`).join('');
             actEl.setAttribute('onchange', 'app.autoAdjustDuration()'); // 🟢 สั่งให้คำนวณเวลาอัตโนมัติเมื่อเลือกวิชา
 
-            // 🟢 แทรกตรงนี้ได้เลยครับ: ตรวจจับเพื่อ ซ่อน/โชว์ กล่องเลือกผู้นำเสนอตามรหัสกิจกรรม
+            // 🟢 ตรวจจับการเปลี่ยนรหัสกิจกรรม เพื่อกรองรายชื่อผู้นำเสนอตามเงื่อนไขใหม่กลุ่มเป้าหมาย
             actEl.addEventListener('change', function() {
-                const selectedAct = this.value;
-                const evalActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05'];
-                const divPresenter = document.getElementById('div-presenter');
+                const selectedAct = this.value ? String(this.value).toUpperCase().trim() : "";
+                const residentActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05'];
+                const fellowActs = ['ACT12', 'ACT13'];
                 
-                if (divPresenter) {
-                    if (evalActs.includes(selectedAct)) {
-                        divPresenter.classList.remove('hidden'); // โชว์กล่องสีฟ้า
+                const divPresenter = document.getElementById('div-presenter');
+                const presenterSelect = document.getElementById('create-act-presenter');
+                
+                if (divPresenter && presenterSelect) {
+                    if (residentActs.includes(selectedAct)) {
+                        divPresenter.classList.remove('hidden');
+                        presenterSelect.innerHTML = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ (R2-R4) --</option>' + 
+                            (data.residents || []).map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
+                    } else if (fellowActs.includes(selectedAct)) {
+                        divPresenter.classList.remove('hidden');
+                        presenterSelect.innerHTML = '<option value="">-- ระบุ Fellow Dermsurg ผู้นำเสนอ --</option>' + 
+                            (data.fellows_dermsurg || []).map(f => `<option value="${f.mdid}">${f.name}</option>`).join('');
                     } else {
-                        divPresenter.classList.add('hidden');    // ซ่อนกล่อง
-                        const presenterSelect = document.getElementById('create-act-presenter');
-                        if (presenterSelect) presenterSelect.value = ""; // เคลียร์ค่าแพทย์ประจำบ้านทิ้งถ้าไม่ใช่กิจกรรมที่ต้องประเมิน
+                        // กิจกรรมอื่นๆ ที่ไม่ต้องประเมิน
+                        divPresenter.classList.add('hidden');
+                        presenterSelect.value = ""; 
                     }
                 }
             });
+			
 			// 👨‍🏫 โค้ดเดิม: โหลดรายชื่ออาจารย์ผู้คุม
             document.getElementById('create-act-instructor').innerHTML = '<option value="">-- ไม่ระบุ --</option>' + data.instructors.map(i => `<option value="${i.mdid}">อ. ${i.name}</option>`).join('');
 
@@ -1715,25 +1725,34 @@ editActivityForm: async () => {
         const beginISO = toLocalISO(act.act_begin);
         const finishISO = toLocalISO(act.act_finish);
         
-        // 🟢 ดึงข้อมูลเดิมขึ้นมาเตรียมไว้
+// 🟢 ตรรกะแยกดึงข้อมูลและกรองรายชื่อตามรหัสวิชาปัจจุบันที่ต้องการแก้ไข
         const currentInstMdid = act.instructor_mdid ? String(act.instructor_mdid).trim() : "";
         const currentLink = act.act_link || ""; 
         const currentPresenterMdid = act.presenter_mdid ? String(act.presenter_mdid).trim() : ""; 
-        const isEvalAct = ['ACT01', 'ACT02', 'ACT04', 'ACT05'].includes(String(act.act_id).trim().toUpperCase());
+        
+        const actIdStr = String(act.act_id).trim().toUpperCase();
+        const isResidentAct = ['ACT01', 'ACT02', 'ACT04', 'ACT05'].includes(actIdStr);
+        const isFellowAct = ['ACT12', 'ACT13'].includes(actIdStr);
+        const isEvalAct = isResidentAct || isFellowAct;
 
-        // 👨‍🏫 วาดรายชื่ออาจารย์
+        // 👨‍🏫 วาดรายชื่ออาจารย์ตามปกติ
         let optionsHtml = formDataRes.instructors.map(i => {
             let mdidStr = String(i.mdid).trim();
             let isSelected = (mdidStr === currentInstMdid) ? "selected" : "";
             return `<option value="${i.mdid}" ${isSelected}>อ. ${i.name}</option>`;
         }).join('');
 
-        // 🧑‍⚕️ วาดรายชื่อแพทย์ประจำบ้าน (โชว์ตัวเลือกเดิมที่เคยเซฟไว้)
-        let presenterOptionsHtml = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ --</option>';
-        if (formDataRes.residents) {
+        // 🧑‍⚕️ ดึงและกรองรายชื่อผู้นำเสนอตามเงื่อนไขกิจกรรมกลุ่มเป้าหมาย
+        let presenterOptionsHtml = '<option value="">-- ระบุผู้นำเสนอสำหรับการประเมิน --</option>';
+        if (isResidentAct && formDataRes.residents) {
             presenterOptionsHtml += formDataRes.residents.map(r => {
                 let isSelected = (String(r.mdid).trim() === currentPresenterMdid) ? "selected" : "";
-                return `<option value="${r.mdid}" ${isSelected}>${r.name}</option>`;
+                return `<option value="${r.mdid}" ${isSelected}>${r.name} (Resident)</option>`;
+            }).join('');
+        } else if (isFellowAct && formDataRes.fellows_dermsurg) {
+            presenterOptionsHtml += formDataRes.fellows_dermsurg.map(f => {
+                let isSelected = (String(f.mdid).trim() === currentPresenterMdid) ? "selected" : "";
+                return `<option value="${f.mdid}" ${isSelected}>${f.name} (Fellow)</option>`;
             }).join('');
         }
 
@@ -2076,10 +2095,10 @@ closeActivitySession: async () => {
             return Swal.fire('ผิดพลาด', 'ยังไม่สามารถปิดได้ เนื่องจากยังไม่หมดเวลาตามนโยบายครับ', 'error'); 
         }
 
-        // 🟢 ด่านตรวจที่ 1: ตรวจสอบว่าเป็นกิจกรรมที่ต้องประเมินผู้นำเสนอหรือไม่
+		// 🟢 เพิ่มรหัส ACT12, ACT13 เข้าด่านตรวจเพื่อบังคับประเมินก่อนปิดกิจกรรม
         const actId = act.act_id ? String(act.act_id).toUpperCase().trim() : "";
-        const evalActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05'];
-        const presenterMdid = act.presenter_mdid; // ข้อมูลผู้พรีเซนต์ที่ดึงมาจากชีต
+        const evalActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05', 'ACT12', 'ACT13'];
+        const presenterMdid = act.presenter_mdid;
 
         if (evalActs.includes(actId) && presenterMdid) {
             // บังคับอาจารย์ที่กดปิด ให้ทำการประเมินก่อน
