@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.26 C</title>
+    <title>EPA Skin App 2.28</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.26 C</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.28</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -364,10 +364,16 @@
             <div class="flex space-x-2"><button onclick="app.submitEvaluation()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold">ยืนยันผล</button><button onclick="app.showView('view-instructor-list')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold">ยกเลิก</button></div>
         </div>
 
-        <div id="view-staff-dashboard" class="hidden">
+		<div id="view-staff-dashboard" class="hidden">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-xl font-bold text-blue-800">📊 Dashboard ความก้าวหน้า</h2>
-                <button onclick="app.exportCSV()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export Excel</button>
+                
+                <div class="flex space-x-2">
+                    <button onclick="app.exportCSV()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export กิจกรรม</button>
+                    
+                    <button onclick="app.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export EPA</button>
+                </div>
+
             </div>
             <p id="time-elapsed-info" class="text-sm text-gray-600 mb-4 bg-gray-100 p-2 rounded text-center font-bold"></p>
             <div id="dashboard-content" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
@@ -2123,7 +2129,83 @@ closeActivitySession: async () => {
         }
     },
 
-   // --- Evaluation Tasks ---
+// ==========================================
+    // 📥 ฟังก์ชัน Export Pivot Excel (แยกตามชั้นปี R2, R3, R4, Fellow)
+    // ==========================================
+    exportEpaPivotExcel: async () => {
+        // 1. ดึงข้อมูล Dashboard ล่าสุดจากหลังบ้าน (หรือถ้าคุณหมอมีตัวแปรเก็บไว้แล้ว สามารถเปลี่ยนไปใช้ตัวแปรนั้นได้เลยครับ)
+        Swal.fire({ title: 'กำลังประมวลผลข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        // *หมายเหตุ: เปลี่ยนชื่อ action ให้ตรงกับที่คุณหมอใช้เรียกหน้า EPA Dashboard นะครับ (เช่น 'get_dashboard_data')
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user }); 
+        if (!res || !res.success) return Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error');
+
+        const allData = res.data; 
+
+        // 2. หากลุ่มชั้นปีทั้งหมดที่มีในข้อมูล
+        const availableGroups = [...new Set(allData.map(r => r.level))];
+        if (availableGroups.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับดาวน์โหลด', 'warning');
+
+        // 3. สร้างหน้าต่างให้สตาฟฟ์เลือกกลุ่มที่ต้องการ Export
+        let groupOptions = {};
+        availableGroups.forEach(g => groupOptions[g] = `กลุ่ม ${g}`);
+
+        const { value: selectedGroup } = await Swal.fire({
+            title: '📥 เลือกกลุ่มที่ต้องการ Export',
+            input: 'radio',
+            inputOptions: groupOptions,
+            inputValidator: (value) => { if (!value) return 'กรุณาเลือกกลุ่มครับ!' },
+            showCancelButton: true,
+            confirmButtonText: 'ดาวน์โหลด Excel',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!selectedGroup) return; // ถ้ายกเลิก
+
+        // 4. กรองข้อมูลเฉพาะกลุ่มที่เลือก
+        const groupData = allData.filter(r => r.level === selectedGroup);
+        if (groupData.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลของกลุ่มนี้', 'warning');
+
+        // ==========================================
+        // 🔄 5. กระบวนการทำ Pivot Table (ตารางไขว้)
+        // ==========================================
+        let csvContent = "\uFEFF"; // ใส่ BOM ให้ MS Excel อ่านภาษาไทยได้ 100%
+        
+        // 5.1 สร้างหัวตาราง (Header Row) -> รายละเอียดประเมิน, เป้า, นาย A R2, นางสาว B R2 ...
+        let headers = ["รายละเอียดประเมิน", "เป้า"];
+        groupData.forEach(r => headers.push(`${r.name} ${r.level}`));
+        csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
+
+        // 5.2 สร้างข้อมูลแต่ละแถว (Rows)
+        // เราจะใช้รายการประเมิน (Items) จากคนแรกของกลุ่มเป็นตัวตั้งต้น (เพราะเป้าหมายของคนในกลุ่มเดียวกันจะเหมือนกัน)
+        const templateItems = groupData[0].items;
+
+        templateItems.forEach(item => {
+            // คอลัมน์ที่ 1-2: ชื่อหัวข้อ และ เป้าหมาย
+            let row = [`"${item.desc}"`, item.target];
+            
+            // คอลัมน์ที่ 3 เป็นต้นไป: คะแนนที่ทำได้ของแต่ละคนในกลุ่ม
+            groupData.forEach(r => {
+                let resItem = r.items.find(i => i.id === item.id);
+                row.push(resItem ? resItem.pass : 0);
+            });
+            
+            csvContent += row.join(",") + "\n";
+        });
+
+        // 6. สร้างไฟล์และสั่งดาวน์โหลด
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `EPA_Dashboard_${selectedGroup.replace(/\s/g, '')}_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+	
+	// --- Evaluation Tasks ---
     loadInstructorTasks: async () => { 
         // 🟢 เพิ่มข้อความ Loading
         const data = await app.api({ action: 'get_eval_tasks', user: app.user }, 'กำลังตรวจสอบรายการ...');
