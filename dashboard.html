@@ -166,29 +166,53 @@
         const dash = {
             user: null,
 
-// -----------------------------------------
-            // ฟังก์ชันโหลดข้อมูลจำลองมาโชว์ UI ให้เห็นภาพ
             // -----------------------------------------
-            renderActivityUI: () => {
+            // 📅 1. ดึงข้อมูลสถิติการเข้ากิจกรรม
+            // -----------------------------------------
+            fetchActivityData: async () => {
                 const tbody = document.getElementById('table-activity');
-                // Mock Data
-                const data = [
-                    { name: 'กษมา เตชะพีระ', level: 'R2', hours: 45, pct: 95, status: 'PASS' },
-                    { name: 'ณวรา ศักดิ์ภูวดล', level: 'R2', hours: 38, pct: 80, status: 'PASS' },
-                    { name: 'พญ. ตัวอย่าง', level: 'R3', hours: 20, pct: 45, status: 'WARNING' }
-                ];
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">กำลังประมวลผลข้อมูล... <div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+                
+                const res = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_dashboard_activity', institute: dash.user.institute })
+                }).then(r => r.json());
+
+                if (res && res.success) {
+                    dash.renderActivityUI(res.data);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                }
+            },
+
+            // 📅 2. วาดตารางสถิติกิจกรรม
+            renderActivityUI: (data) => {
+                const tbody = document.getElementById('table-activity');
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลรายชื่อแพทย์ในสังกัด</td></tr>';
+                    return;
+                }
                 
                 tbody.innerHTML = data.map(r => {
+                    // กำหนดป้ายสถานะ
                     let badge = r.status === 'PASS' 
-                        ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">ปกติ</span>'
-                        : '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">ติดตามพิเศษ</span>';
+                        ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">ปกติ</span>'
+                        : '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200 animate-pulse">ติดตามพิเศษ</span>';
+                    
+                    // ปรับชื่อ Fellow ให้อ่านง่าย
+                    let displayLevel = r.level === 'FellowDermsurg' ? 'Fellow' : r.level;
+                    // แยกสีของ Badge ตามชั้นปี
+                    let levelColor = r.level === 'R2' ? 'blue' : (r.level === 'R3' ? 'green' : (r.level === 'R4' ? 'purple' : 'orange'));
+
                     return `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-3 font-medium">${r.name}</td>
-                            <td class="px-4 py-3 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">${r.level}</span></td>
-                            <td class="px-4 py-3 text-center">${r.hours} ชม.</td>
-                            <td class="px-4 py-3 text-center font-bold text-gray-600">${r.pct}%</td>
-                            <td class="px-4 py-3 text-center">${badge}</td>
+                        <tr class="hover:bg-gray-50 transition border-b border-gray-100 last:border-0">
+                            <td class="px-4 py-4 font-medium text-gray-800">${r.name}</td>
+                            <td class="px-4 py-4 text-center">
+                                <span class="bg-${levelColor}-100 text-${levelColor}-800 px-2 py-1 rounded text-xs font-bold">${displayLevel}</span>
+                            </td>
+                            <td class="px-4 py-4 text-center text-indigo-600 font-bold text-base">${r.hours} <span class="text-xs text-indigo-400">ชม.</span></td>
+                            <td class="px-4 py-4 text-center font-bold text-gray-700">${r.pct}%</td>
+                            <td class="px-4 py-4 text-center">${badge}</td>
                         </tr>
                     `;
                 }).join('');
@@ -315,7 +339,7 @@
 
                 // 🟢 วางคำสั่งเรียกข้อมูลของแต่ละหน้าไว้ตรงนี้เลยครับ
                 if (viewId === 'overview') dash.fetchOverviewData();
-                else if (viewId === 'activity') dash.renderActivityUI();
+                else if (viewId === 'activity') dash.fetchActivityData();
                 else if (viewId === 'eval') dash.renderEvalUI();
                 else if (viewId === 'epa') dash.renderEpaUI();
             },
