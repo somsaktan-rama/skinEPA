@@ -3,154 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard-skinEPA 1.00</title>
+    <title>skinEPA Dashboard 1.01</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex overflow-hidden">
 
-    <aside class="w-64 bg-indigo-900 text-white flex flex-col shadow-xl hidden md:flex">
+    <aside id="sidebar" class="w-64 bg-indigo-900 text-white flex flex-col shadow-xl hidden md:flex opacity-0 transition-opacity duration-500">
         <div class="p-6 border-b border-indigo-800">
-            <h1 class="text-xl font-bold tracking-wider">skinEPA Admin</h1>
-            <p class="text-indigo-300 text-sm mt-1">Staff Dashboard</p>
+            <h1 class="text-xl font-bold tracking-wider">RamaDerm Admin</h1>
+            <p id="display-institute" class="text-indigo-300 text-sm mt-1">...</p>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2">
-            <a href="#" onclick="dash.loadView('overview')" class="block px-4 py-3 rounded-lg bg-indigo-800 text-white font-medium hover:bg-indigo-700 transition">📊 ภาพรวม (Overview)</a>
-            <a href="#" onclick="dash.loadView('activity')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition">📅 สถิติการเข้ากิจกรรม</a>
-            <a href="#" onclick="dash.loadView('epa')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition">📈 ความก้าวหน้า EPA</a>
-            <a href="#" onclick="dash.loadView('feedback')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800 hover:text-white transition">🔁 360° Feedback</a>
+            <a href="#" onclick="dash.loadView('overview')" class="block px-4 py-3 rounded-lg bg-indigo-800 text-white font-medium">📊 ภาพรวมความก้าวหน้า</a>
+            <a href="#" onclick="dash.loadView('activity')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📅 สถิติการเข้ากิจกรรม</a>
+            <a href="#" onclick="dash.loadView('epa')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📈 ความก้าวหน้า EPA</a>
+            <a href="#" onclick="dash.loadView('feedback')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">🔁 360° Feedback</a>
         </nav>
         <div class="p-4 border-t border-indigo-800">
-            <button class="w-full bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-bold transition">🚪 ออกจากระบบ</button>
+            <div id="display-name" class="text-sm font-medium mb-3 px-2"></div>
+            <button onclick="location.reload()" class="w-full bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-bold transition">🚪 ออกจากระบบ</button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-y-auto">
+    <main id="main-content" class="flex-1 flex flex-col h-full overflow-y-auto hidden opacity-0 transition-opacity duration-500">
         <header class="bg-white shadow-sm p-4 flex justify-between items-center">
             <h2 id="page-title" class="text-2xl font-bold text-gray-800">ภาพรวมระบบ (Overview)</h2>
-            <div class="flex items-center gap-3">
-                <span class="text-sm text-gray-500" id="user-info">กำลังโหลด...</span>
-                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-800 font-bold">ST</div>
+            <div id="group-filters" class="hidden flex space-x-2">
+                <button class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full font-bold hover:bg-blue-200">R2</button>
+                <button class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-bold hover:bg-green-200">R3</button>
+                <button class="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full font-bold hover:bg-purple-200">R4</button>
+                <button class="px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded-full font-bold hover:bg-orange-200">Fellow</button>
             </div>
         </header>
 
         <div class="p-6">
-            <div id="loading-spinner" class="hidden text-center py-10">
-                <div class="animate-spin inline-block w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full" role="status"></div>
-                <p class="mt-2 text-gray-500">กำลังประมวลผลข้อมูล...</p>
-            </div>
-
             <div id="view-overview" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
-                        <div class="text-sm text-gray-500 mb-1">กิจกรรมที่จัดแล้วทั้งหมด</div>
-                        <div class="text-3xl font-bold text-gray-800" id="kpi-act">0</div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-                        <div class="text-sm text-gray-500 mb-1">จำนวนแพทย์ที่ดูแล</div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-indigo-500">
+                        <div class="text-sm text-gray-500">จำนวนแพทย์ในสังกัด</div>
                         <div class="text-3xl font-bold text-gray-800" id="kpi-res">0</div>
                     </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+                        <div class="text-sm text-gray-500">กิจกรรมที่จัดแล้ว</div>
+                        <div class="text-3xl font-bold text-gray-800" id="kpi-act">0</div>
+                    </div>
                     <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
-                        <div class="text-sm text-gray-500 mb-1">ความเสี่ยง / ติดตามพิเศษ</div>
+                        <div class="text-sm text-gray-500">แจ้งเตือน / ความเสี่ยงสูง</div>
                         <div class="text-3xl font-bold text-red-600" id="kpi-risk">0</div>
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-xl shadow-sm p-6 w-full md:w-2/3">
-                    <h3 class="text-lg font-bold text-gray-700 mb-4">กราฟแสดงความก้าวหน้าเฉลี่ยรายชั้นปี (%)</h3>
-                    <canvas id="progressChart" height="100"></canvas>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6 border-b pb-2">ความก้าวหน้ารายบุคคล (แยกตามกลุ่ม)</h3>
+                    <div id="progress-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        </div>
                 </div>
             </div>
 
-            <div id="view-activity" class="hidden bg-white rounded-xl shadow-sm p-6">ตารางข้อมูลการเข้ากิจกรรม จะแสดงที่นี่...</div>
-            <div id="view-epa" class="hidden bg-white rounded-xl shadow-sm p-6">ตาราง Pivot EPA จะแสดงที่นี่...</div>
-            <div id="view-feedback" class="hidden bg-white rounded-xl shadow-sm p-6">ข้อมูล 360 Evaluation จะแสดงที่นี่...</div>
+            <div id="view-activity" class="hidden bg-white rounded-xl shadow-sm p-6">เนื้อหาสถิติกิจกรรม...</div>
+            <div id="view-epa" class="hidden bg-white rounded-xl shadow-sm p-6">เนื้อหา EPA...</div>
+            <div id="view-feedback" class="hidden bg-white rounded-xl shadow-sm p-6">เนื้อหา 360 Feedback...</div>
         </div>
     </main>
 
     <script>
         const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
-        let progressChartInstance = null;
-
         const dash = {
-            // ฟังก์ชันสลับหน้าจอ
+            user: null,
+
+            // 1. ระบบ Login ด้วย SweetAlert2 (ด่านแรกก่อนเข้าใช้งาน)
+            requireLogin: async () => {
+                const { value: mdid } = await Swal.fire({
+                    title: '🔑 เข้าสู่ระบบ',
+                    text: 'กรุณากรอก RamaID ของท่านเพื่อเข้าถึงข้อมูล Institute',
+                    input: 'text',
+                    inputPlaceholder: 'RamaID',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'เข้าสู่ระบบ',
+                    showLoaderOnConfirm: true,
+                    preConfirm: async (loginId) => {
+                        try {
+                            const response = await fetch(GAS_WEBAPP_URL, {
+                                method: 'POST',
+                                body: JSON.stringify({ action: 'login_dashboard', mdid: loginId })
+                            });
+                            return await response.json();
+                        } catch (error) {
+                            Swal.showValidationMessage(`การเชื่อมต่อล้มเหลว`);
+                        }
+                    }
+                });
+
+                if (mdid && mdid.success) {
+                    dash.user = mdid.user;
+                    // แสดงข้อมูล User บน Sidebar
+                    document.getElementById('display-institute').innerText = 'Institute: ' + dash.user.institute;
+                    document.getElementById('display-name').innerText = 'อ. ' + dash.user.name;
+                    
+                    // แสดงหน้าต่าง Dashboard
+                    document.getElementById('sidebar').classList.remove('hidden');
+                    document.getElementById('main-content').classList.remove('hidden');
+                    setTimeout(() => {
+                        document.getElementById('sidebar').classList.remove('opacity-0');
+                        document.getElementById('main-content').classList.remove('opacity-0');
+                    }, 100);
+
+                    dash.loadView('overview');
+                } else {
+                    Swal.fire('ข้อผิดพลาด', mdid.message || 'รหัสไม่ถูกต้อง', 'error').then(() => dash.requireLogin());
+                }
+            },
+
+            // 2. การสลับหน้าจอ และแสดงปุ่ม Filter
             loadView: (viewId) => {
                 const views = ['overview', 'activity', 'epa', 'feedback'];
                 views.forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
                 document.getElementById(`view-${viewId}`).classList.remove('hidden');
                 
-                // เปลี่ยนชื่อ Header
                 const titles = { overview: 'ภาพรวมระบบ (Overview)', activity: 'สถิติการเข้ากิจกรรม', epa: 'ความก้าวหน้า EPA', feedback: '360° Evaluation & Feedback' };
-                document.getElementById('page-title').innerText = titles[viewId] || 'Dashboard';
+                document.getElementById('page-title').innerText = titles[viewId];
 
-                // ถ้าโหลดหน้าไหน ให้เรียกข้อมูลหน้านั้น
+                // แสดงปุ่ม Filter เฉพาะหน้าที่ไม่ใช่ Overview
+                const filterEl = document.getElementById('group-filters');
+                if(viewId === 'overview') filterEl.classList.add('hidden');
+                else filterEl.classList.remove('hidden');
+
                 if (viewId === 'overview') dash.fetchOverviewData();
             },
 
-            // ฟังก์ชันยิง API ไปหา Google Apps Script
-            api: async (payload) => {
-                try {
-                    const response = await fetch(GAS_WEBAPP_URL, {
-                        method: 'POST',
-                        body: JSON.stringify(payload)
-                    });
-                    return await response.json();
-                } catch (error) {
-                    Swal.fire('Error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
-                    return null;
-                }
-            },
-
-            // โหลดข้อมูลหน้า Overview
+            // 3. โหลดข้อมูลและวาด Progress Bar
             fetchOverviewData: async () => {
-                document.getElementById('loading-spinner').classList.remove('hidden');
-                document.getElementById('view-overview').classList.add('hidden');
-
-                // ส่งคำสั่งไปหาไฟล์ DashboardAPI.gs ผ่าน Router หลัก
-                const res = await dash.api({ action: 'get_dashboard_overview', user: { institute: 'Rama' } });
-
-                document.getElementById('loading-spinner').classList.add('hidden');
-                document.getElementById('view-overview').classList.remove('hidden');
+                Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม...', didOpen: () => Swal.showLoading() });
+                const res = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_dashboard_overview', institute: dash.user.institute })
+                }).then(r => r.json());
+                Swal.close();
 
                 if (res && res.success) {
-                    // อัปเดตตัวเลข KPI
-                    document.getElementById('kpi-act').innerText = res.data.overview.total_activities;
-                    document.getElementById('kpi-res').innerText = res.data.overview.total_residents;
-                    document.getElementById('kpi-risk').innerText = res.data.overview.at_risk_count;
+                    document.getElementById('kpi-res').innerText = res.kpi.total_res;
+                    document.getElementById('kpi-act').innerText = res.kpi.total_act;
+                    document.getElementById('kpi-risk').innerText = res.kpi.at_risk;
 
-                    // วาดกราฟแท่ง
-                    dash.renderChart(res.data.chart_data);
+                    dash.renderProgressBars(res.data);
                 }
             },
 
-            // วาดกราฟด้วย Chart.js
-            renderChart: (chartData) => {
-                const ctx = document.getElementById('progressChart').getContext('2d');
-                if (progressChartInstance) progressChartInstance.destroy(); // ลบกราฟเก่าทิ้งก่อนวาดใหม่
+            // 4. วาด HTML ของ Progress Bar แยกตามชั้นปี
+            renderProgressBars: (data) => {
+                const container = document.getElementById('progress-container');
+                let html = '';
+                
+                // กำหนดสีให้แต่ละกลุ่ม
+                const groups = [
+                    { key: 'R2', title: 'ชั้นปีที่ 2 (R2)', color: 'blue' },
+                    { key: 'R3', title: 'ชั้นปีที่ 3 (R3)', color: 'green' },
+                    { key: 'R4', title: 'ชั้นปีที่ 4 (R4)', color: 'purple' },
+                    { key: 'FellowDermsurg', title: 'Fellow Dermsurg', color: 'orange' }
+                ];
 
-                progressChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [{
-                            label: 'ความก้าวหน้าเฉลี่ย (%)',
-                            data: chartData.completion_rates,
-                            backgroundColor: ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'],
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: { y: { beginAtZero: true, max: 100 } }
+                groups.forEach(g => {
+                    if (data[g.key] && data[g.key].length > 0) {
+                        html += `
+                        <div class="border rounded-lg p-4 bg-gray-50">
+                            <h4 class="font-bold text-${g.color}-800 mb-4 flex items-center">
+                                <span class="bg-${g.color}-200 px-2 py-1 rounded text-xs mr-2">${g.key}</span> ${g.title}
+                            </h4>
+                            <div class="space-y-4">
+                        `;
+                        
+                        data[g.key].forEach(person => {
+                            // ปรับสี Bar ให้เป็นสีแดงถ้าคะแนนต่ำกว่า 50%
+                            let barColor = person.progress < 50 ? 'bg-red-500' : `bg-${g.color}-500`;
+                            
+                            html += `
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="font-medium text-gray-700">${person.name}</span>
+                                        <span class="font-bold text-gray-600">${person.progress}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div class="${barColor} h-2.5 rounded-full transition-all duration-1000" style="width: ${person.progress}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div></div>`;
                     }
                 });
+                container.innerHTML = html;
             }
         };
 
-        // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บเสร็จ
+        // เริ่มการทำงานโดยบังคับให้ Login ทันที
         window.onload = () => {
-            dash.fetchOverviewData();
+            dash.requireLogin();
         };
     </script>
 </body>
