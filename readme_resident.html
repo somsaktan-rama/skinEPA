@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คู่มือการใช้งาน - Resident & Fellow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4 md:p-10 font-sans">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-md">
+        <h1 class="text-2xl md:text-3xl font-bold text-teal-800 mb-2 border-b-2 border-teal-200 pb-4">
+            📘 คู่มือการใช้งานระบบ skinEPA V 2.20
+            <span class="block text-lg text-gray-500 mt-2">สำหรับ Resident / Fellow</span>
+        </h1>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">1. การเข้าสู่ระบบ (Authentication)</h2>
+            <p class="text-gray-700 mb-3">ระบบใช้กลไกการยืนยันตัวตนแบบ <b>RamaID & LINE UID Binding</b></p>
+            <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                <li><b>Auto-Login:</b> เมื่อเปิดแอปผ่าน LINE ระบบจะดึงรหัสเข้าสู่เมนูหลักตามสิทธิ์ทันที</li>
+                <li><b>การเข้าใช้งานครั้งแรก:</b> ระบบจะบังคับให้เข้าสู่ระบบด้วย <span class="text-teal-600 font-bold">RamaID</span> เพื่อยืนยันตัวตนก่อนจับคู่กับ LINE UID</li>
+            </ul>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">2. ฟีเจอร์หลักสำหรับผู้เรียน</h2>
+            
+            <h3 class="text-lg font-bold text-gray-800 mt-4 mb-2">📍 การลงชื่อเข้าร่วมกิจกรรมวิชาการ</h3>
+            <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                <li><b>On-site:</b> กดปุ่มสีเขียว <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold text-sm">ลงชื่อ On-site</span> ระบบจะส่งพิกัด GPS เพื่อตรวจสอบระยะรัศมีหน้าห้องเรียนอัตโนมัติ</li>
+                <li><b>Hybrid / Online:</b> ต้องกรอก <span class="font-bold text-blue-600">PIN 4 หลัก</span> ที่อาจารย์ประกาศในห้องเรียนเพื่อยืนยัน</li>
+            </ul>
+
+            <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2">📝 การสร้างฟอร์ม EPA</h3>
+            <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                <li>เลือกรายการหัตถการและอาจารย์ผู้ประเมิน (ระบบจะซ่อนชื่ออาจารย์ที่ประเมินครบโควต้าอัตโนมัติ)</li>
+                <li><span class="text-red-500 font-bold">ข้อควรระวัง:</span> ผู้เรียนจำเป็นต้องกรอกรายละเอียดเคส (เช่น ข้อมูลโรค, เทคนิค) ในช่อง Note ห้ามเว้นว่างเด็ดขาด</li>
+            </ul>
+
+            <h3 class="text-lg font-bold text-gray-800 mt-6 mb-2">📊 การเข้าดูผล 360° (6 มิติ)</h3>
+            <p class="text-gray-700 mb-2">แสดงผลกราฟเรดาร์ 6 มิติ (Teamwork, Communication, Punctuality, EQ, Leadership, Respect)</p>
+            
+            <!-- กล่อง Highlight แจ้งเตือนสีแดง -->
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mt-4">
+                <p class="text-red-700 text-sm">
+                    <span class="font-bold">🚨 เงื่อนไขความปลอดภัย (Advisor Gatekeeper):</span><br>
+                    ผู้เรียนจะมองเห็นคะแนนและข้อเสนอแนะได้ <b>ก็ต่อเมื่ออาจารย์ที่ปรึกษา (Advisor) กดยืนยันอนุมัติ (Allow)</b> ข้อความนั้นผ่านระบบหลังบ้านแล้วเท่านั้น!
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">3. วิธีติดตั้งแอปบนหน้าจอมือถือ</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <h4 class="font-bold text-gray-800 mb-2">🍎 สำหรับ iOS (iPhone)</h4>
+                    <ol class="list-decimal pl-5 text-sm text-gray-600 space-y-1">
+                        <li>กดคัดลอกลิงก์จากแอป LINE</li>
+                        <li>นำลิงก์ไปเปิดใน <b>Safari</b></li>
+                        <li>แตะไอคอนแชร์ (Share) ด้านล่าง</li>
+                        <li>เลือก <b>เพิ่มไปยังหน้าจอโฮม</b> (Add to Home Screen)</li>
+                    </ol>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <h4 class="font-bold text-gray-800 mb-2">🤖 สำหรับ Android</h4>
+                    <ol class="list-decimal pl-5 text-sm text-gray-600 space-y-1">
+                        <li>เลือก <b>เปิดในเบราว์เซอร์เริ่มต้น</b> (Chrome)</li>
+                        <li>แตะเมนู 3 จุด มุมขวาบนใน Chrome</li>
+                        <li>เลือก <b>เพิ่มลงในหน้าจอหลัก</b> (Add to Home screen)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
