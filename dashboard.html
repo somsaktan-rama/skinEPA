@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 C</title>
+    <title>skinEPA Dashboard 1.07 D</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -511,15 +511,18 @@
                 }
             },
 
-        // 2. การสลับหน้าจอ และแสดงปุ่ม Filter
+// 2. การสลับหน้าจอ และแสดงปุ่ม Filter
             loadView: (viewId) => {
-                // 🟢 เพิ่ม 'eval' เข้าไปใน Array ด้วย เพื่อให้ระบบรู้จักหน้าประเมินกิจกรรม
+                // 🟢 สำคัญมาก: Array นี้ต้องมีชื่อครบทั้ง 5 หน้า เพื่อให้ระบบรู้ว่าต้องซ่อน/แสดงหน้าไหน
                 const views = ['overview', 'activity', 'eval', 'epa', 'feedback'];
+                
+                // สั่งซ่อนทุกหน้าก่อน
                 views.forEach(v => {
                     const el = document.getElementById(`view-${v}`);
                     if (el) el.classList.add('hidden');
                 });
                 
+                // สั่งแสดงเฉพาะหน้าที่ถูกคลิก
                 const activeEl = document.getElementById(`view-${viewId}`);
                 if (activeEl) activeEl.classList.remove('hidden');
                 
@@ -532,17 +535,17 @@
                 };
                 document.getElementById('page-title').innerText = titles[viewId] || 'Dashboard';
 
-                // แสดงปุ่ม Filter เฉพาะหน้าที่ไม่ใช่ Overview
+                // แสดง/ซ่อน แถบปุ่ม Filter ด้านบนขวา
                 const filterEl = document.getElementById('group-filters');
                 if (filterEl) {
                     if(viewId === 'overview') filterEl.classList.add('hidden');
                     else filterEl.classList.remove('hidden');
                 }
 
-                // 🟢 วางคำสั่งเรียกข้อมูลของแต่ละหน้าไว้ตรงนี้เลยครับ
+                // 🟢 สั่งดึงข้อมูลจริงจากหลังบ้าน (แก้ eval ให้เป็น fetch แล้ว)
                 if (viewId === 'overview') dash.fetchOverviewData();
                 else if (viewId === 'activity') dash.fetchActivityData();
-                else if (viewId === 'eval') dash.renderEvalUI();
+                else if (viewId === 'eval') dash.fetchEvalData(); // ต้องเป็น fetchEvalData ครับ
                 else if (viewId === 'epa') dash.fetchEpaData();
                 else if (viewId === 'feedback') dash.fetch360Data();
             },
