@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.30 E</title>
+    <title>EPA Skin App 2.30 F</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1362,6 +1362,32 @@ open360Focus: (mdid, name, level, picUrl) => {
         if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
     },
 
+	// ==========================================
+    // 🟢 กลุ่มฟังก์ชันที่หายไป (ดึงกลับมาเพื่อให้หน้าอาจารย์ดูผลทำงานได้)
+    // ==========================================
+    loadMy360Feedback: async () => { 
+        document.getElementById('inst-360-selector').classList.add('hidden');
+        app._render360Data(app.user.mdid);
+    },
+    
+    initInst360: async () => {
+        const data = await app.api({ action: 'get_inst_360_residents', user: app.user }, 'ดึงรายชื่อ...');
+        if (data && data.success) {
+            const selector = document.getElementById('inst-360-selector');
+            selector.classList.remove('hidden');
+            const drop = document.getElementById('sel-inst-360-target');
+            drop.innerHTML = '<option value="">-- เลือกศิษย์ในความดูแล --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name} (${r.level})</option>`).join('');
+            document.getElementById('my-360-container').innerHTML = '<p class="text-center text-gray-500 py-6">กรุณาเลือกรายชื่อเพื่อดูผลลัพธ์</p>';
+            app.showView('view-my-360');
+        }
+    },
+    
+    fetchInstructor360: () => { 
+        const target = document.getElementById('sel-inst-360-target').value;
+        if(target) app._render360Data(target); 
+    },
+    // ==========================================
+	
     _render360Data: async (targetMdid) => {
         const isSelf = !targetMdid || targetMdid === app.user.mdid.toString();
         const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...');
