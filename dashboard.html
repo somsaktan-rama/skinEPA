@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 E</title>
+    <title>skinEPA Dashboard 1.07 F</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -334,24 +334,36 @@
                 }
             },
 
-            // 🔁 2. วาดกราฟ Radar และข้อความ (จากข้อมูลในหน่วยความจำ)
+// 🔁 2. วาดกราฟ Radar และข้อความ (อัปเดตให้รองรับ 3 แกน)
             render360UI: (mdid) => {
                 const chartCanvas = document.getElementById('radarChart');
                 const placeholder = document.getElementById('placeholder-360-chart');
                 const commentsDiv = document.getElementById('feedback-comments');
 
-                if (!mdid || !dash.current360Data.evaluations[mdid]) {
+                // 1. ถ้ายังไม่ได้เลือกชื่อ
+                if (!mdid) {
                     chartCanvas.classList.add('hidden');
                     placeholder.classList.remove('hidden');
-                    placeholder.innerText = mdid ? "แพทย์ท่านนี้ยังไม่มีข้อมูลการประเมิน 360 องศา" : "กรุณาเลือกรายชื่อเพื่อดูกราฟ";
+                    placeholder.innerText = "กรุณาเลือกรายชื่อเพื่อดูกราฟ";
+                    return;
+                }
+
+                // 2. ถ้าเลือกชื่อแล้วแต่ "ไม่มีข้อมูลคะแนน" ในระบบ
+                if (!dash.current360Data.evaluations || !dash.current360Data.evaluations[mdid]) {
+                    chartCanvas.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                    // ใส่แจ้งเตือนสีแดงให้เห็นชัดเจน
+                    placeholder.innerHTML = `<span class="text-red-500 font-bold text-lg">ไม่มีประวัติการประเมิน 360 องศาของแพทย์ท่านนี้</span><br><br><span class="text-sm text-gray-500">หากในชีตมีข้อมูล โปรดเช็คเลขคอลัมน์ใน Code.gs อีกครั้งครับ</span>`;
                     commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ไม่พบข้อเสนอแนะ -</p>';
                     if(dash.radarChartInstance) dash.radarChartInstance.destroy();
                     return;
                 }
 
                 const data = dash.current360Data.evaluations[mdid];
-                const labels = dash.current360Data.labels || ['ด้านที่ 1', 'ด้านที่ 2', 'ด้านที่ 3', 'ด้านที่ 4', 'ด้านที่ 5'];
+                // 🟢 3. อัปเดตรายชื่อแกนสำรองให้ตรงกับ 3 ด้านใหม่
+                const labels = dash.current360Data.labels || ['Teamwork', 'Communication', 'Punctuality'];
 
+                // มีข้อมูล -> โชว์กราฟ
                 placeholder.classList.add('hidden');
                 chartCanvas.classList.remove('hidden');
 
@@ -363,7 +375,7 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: `คะแนนเฉลี่ย (ประเมินแล้ว ${data.evalCount} คน)`,
+                            label: `คะแนนเฉลี่ย (ผู้ประเมิน ${data.evalCount} ท่าน)`,
                             data: data.scores,
                             backgroundColor: 'rgba(99, 102, 241, 0.2)',
                             borderColor: 'rgba(99, 102, 241, 1)',
@@ -385,9 +397,9 @@
                         </div>
                     `).join('');
                 } else {
-                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ยังไม่มีข้อเสนอแนะเชิงคุณภาพ -</p>';
+                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ไม่มีผู้ประเมินเขียนข้อเสนอแนะเพิ่มเติม -</p>';
                 }
-            },            
+            },    
 
             // -----------------------------------------
             // 📈 1. ดึงข้อมูล EPA (ใช้ API สำหรับ Dashboard โดยเฉพาะ)
