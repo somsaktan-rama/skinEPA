@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.30 D</title>
+    <title>EPA Skin App 2.30 E</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -874,7 +874,7 @@ const app = {
         app.showView('view-broadcast');
     },
 
-    // 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
+// 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
     loadAdvisorView: async () => {
         app.showView('view-advisor');
         const listDiv = document.getElementById('advisor-pending-list');
@@ -910,10 +910,14 @@ const app = {
                         <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">${item.time_create.split(' ')[0]}</span>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-2 text-center text-xs text-gray-600 bg-slate-50 p-2 rounded-xl font-bold">
-                        <div>🤝 ทีมงาน: <span class="text-teal-600">${item.score_teamwork}/5</span></div>
-                        <div>🗣️ สื่อสาร: <span class="text-teal-600">${item.score_communication}/5</span></div>
-                        <div>⏰ ตรงเวลา: <span class="text-teal-600">${item.score_punctuality}/5</span></div>
+                    <div class="grid grid-cols-3 gap-y-3 gap-x-2 text-center text-xs text-gray-600 bg-slate-50 p-3 rounded-xl font-bold">
+                        <div>🤝 ทีมงาน<br><span class="text-teal-600 text-sm">${item.score_teamwork || '-'}/5</span></div>
+                        <div>🗣️ สื่อสาร<br><span class="text-teal-600 text-sm">${item.score_communication || '-'}/5</span></div>
+                        <div>⏰ ตรงเวลา<br><span class="text-teal-600 text-sm">${item.score_punctuality || '-'}/5</span></div>
+                        
+                        <div>🧘 คุมอารมณ์<br><span class="text-teal-600 text-sm">${item.score_eq || '-'}/5</span></div>
+                        <div>👑 ผู้นำ<br><span class="text-teal-600 text-sm">${item.score_leadership || '-'}/5</span></div>
+                        <div>🙏 ให้เกียรติ<br><span class="text-teal-600 text-sm">${item.score_respect || '-'}/5</span></div>
                     </div>
 
                     <div class="bg-amber-50/70 border border-amber-100 p-3 rounded-xl">
@@ -923,7 +927,7 @@ const app = {
 
                     <div class="flex space-x-2 pt-1">
                         <button onclick="app.approveEval360('${item.record_id}', 'approved')" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition">
-                            ✅ อนุญาตให้เห็น (Allow)
+                            ✅ อนุญาต (Allow)
                         </button>
                         <button onclick="app.approveEval360('${item.record_id}', 'rejected')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-red-600 text-xs font-bold py-2.5 rounded-xl transition">
                             ❌ ซ่อนไว้ (Reject)
@@ -933,8 +937,8 @@ const app = {
         });
         listDiv.innerHTML = html;
     },
-
-    // 👨‍🏫 ยิงคำสั่งส่งเปลี่ยนสถานะอนุมัติลงบน Google Sheets
+    
+	// 👨‍🏫 ยิงคำสั่งส่งเปลี่ยนสถานะอนุมัติลงบน Google Sheets
     approveEval360: async (recordId, status) => {
         Swal.fire({ title: 'กำลังบันทึกสถานะ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
