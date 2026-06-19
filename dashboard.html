@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 I</title>
+    <title>skinEPA Dashboard 1.07 J</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100 font-sans h-screen flex overflow-hidden">
 
@@ -336,7 +338,7 @@
                 }
             },
 
-            // 🔁 2. วาดกราฟ Radar (อัปเดตวิธีทำลายและสร้าง Canvas ใหม่)
+// 🔁 2. วาดกราฟ Radar (เพิ่มระบบป้องกัน Error / Try-Catch)
             render360UI: (mdid) => {
                 const chartContainer = document.getElementById('chart-container');
                 const placeholder = document.getElementById('placeholder-360-chart');
@@ -352,7 +354,7 @@
                 if (!dash.current360Data.evaluations || !dash.current360Data.evaluations[mdid]) {
                     chartContainer.classList.add('hidden');
                     placeholder.classList.remove('hidden');
-                    placeholder.innerHTML = `<span class="text-red-500 font-bold text-lg">ไม่มีประวัติการประเมิน 360 องศา</span><br><br><span class="text-sm text-gray-500">หากคุณมั่นใจว่าในชีตมีข้อมูล โปรดตรวจสอบรหัส resident_mdid อีกครั้ง</span>`;
+                    placeholder.innerHTML = `<span class="text-red-500 font-bold text-lg">ไม่มีประวัติการประเมิน 360 องศา</span>`;
                     commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ไม่พบข้อเสนอแนะ -</p>';
                     return;
                 }
@@ -360,44 +362,43 @@
                 const data = dash.current360Data.evaluations[mdid];
                 const labels = dash.current360Data.labels || ['Teamwork', 'Communication', 'Punctuality'];
 
-                // 1. สั่งเปิดกล่องคอนเทนเนอร์ให้กางออกเต็ม 350px ก่อน
+                // 1. สั่งเปิดกล่องคอนเทนเนอร์
                 placeholder.classList.add('hidden');
                 chartContainer.classList.remove('hidden');
 
-                // 🟢 2. ทุบ Canvas เก่าทิ้ง แล้วยัด Canvas ตัวใหม่ลงไปในกล่องสดๆ
-                // วิธีนี้แก้ปัญหา Chart.js ไม่ยอมปรับขนาดได้ 100% ครับ
+                // 2. ทุบ Canvas เก่าและสร้างใหม่
                 chartContainer.innerHTML = '<canvas id="radarChart"></canvas>';
-                const ctx = document.getElementById('radarChart').getContext('2d');
-
-                // 3. วาดกราฟลงบน Canvas ตัวใหม่
-                dash.radarChartInstance = new Chart(ctx, {
-                    type: 'radar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: `คะแนนเฉลี่ย 360° (ผู้ประเมิน ${data.evalCount} ท่าน)`,
-                            data: data.scores,
-                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                            borderColor: 'rgba(99, 102, 241, 1)',
-                            pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                            pointBorderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            r: {
-                                suggestedMin: 0,
-                                suggestedMax: 5, // ปรับเป็น 10 ได้ถ้าคะแนนเต็ม 10
-                                ticks: { stepSize: 1 }
-                            }
+                
+                // 🟢 3. ลองวาดกราฟ โดยมีเกราะป้องกัน (try-catch)
+                try {
+                    const ctx = document.getElementById('radarChart').getContext('2d');
+                    dash.radarChartInstance = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `คะแนนเฉลี่ย 360° (ผู้ประเมิน ${data.evalCount} ท่าน)`,
+                                data: data.scores,
+                                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                                pointBorderColor: '#fff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }
                         }
-                    }
-                });
+                    });
+                } catch (error) {
+                    // ถ้า Chart.js มีปัญหา โค้ดจะไม่หยุดทำงาน แต่จะฟ้องสีแดงตรงกล่องกราฟแทน
+                    console.error("Chart Error:", error);
+                    chartContainer.innerHTML = `<div class="flex items-center justify-center h-full text-red-500 text-sm font-bold text-center px-4">ระบบไม่สามารถวาดกราฟได้<br>โปรดตรวจสอบการติดตั้ง Chart.js ในแท็ก Head</div>`;
+                }
 
-                // 4. แสดงผลข้อเสนอแนะ
+                // 4. แสดงผลข้อเสนอแนะ (จะแสดงผลได้อย่างปลอดภัยแม้กราฟด้านบนจะ Error ก็ตาม)
                 if (data.comments && data.comments.length > 0) {
                     commentsDiv.innerHTML = data.comments.map(c => `
                         <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-indigo-400 text-sm text-gray-700 flex gap-2">
@@ -408,7 +409,7 @@
                     commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ไม่มีผู้ประเมินระบุข้อเสนอแนะเพิ่มเติม -</p>';
                 }
             },
-
+            
             // -----------------------------------------
             // 📈 1. ดึงข้อมูล EPA (ใช้ API สำหรับ Dashboard โดยเฉพาะ)
             // -----------------------------------------
