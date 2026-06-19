@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.05</title>
+    <title>skinEPA Dashboard 1.06</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -63,14 +63,14 @@
                 </div>
             </div>
 
-<!-- ========================================== -->
+            <!-- ========================================== -->
             <!-- View: 📅 สถิติการเข้ากิจกรรม (Activity) -->
             <!-- ========================================== -->
             <div id="view-activity" class="hidden space-y-6">
                 <div class="bg-white rounded-xl shadow-sm p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold text-gray-800">สรุปการเข้าร่วมกิจกรรม (Attendance)</h3>
-                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold flex items-center">
+                        <button onclick="dash.exportActivityExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold flex items-center transition">
                             📥 Export Excel
                         </button>
                     </div>
@@ -180,6 +180,7 @@
                 }).then(r => r.json());
 
                 if (res && res.success) {
+                    dash.currentActivityData = res.data;
                     dash.renderActivityUI(res.data);
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">ไม่สามารถโหลดข้อมูลได้</td></tr>';
@@ -219,6 +220,47 @@
                 }).join('');
             },
 
+            // -----------------------------------------
+            // 📥 ฟังก์ชัน Export Excel (CSV UTF-8 รองรับภาษาไทย)
+            // -----------------------------------------
+            exportActivityExcel: () => {
+                // ตรวจสอบว่ามีข้อมูลให้ Export หรือไม่
+                if (!dash.currentActivityData || dash.currentActivityData.length === 0) {
+                    Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับ Export', 'warning');
+                    return;
+                }
+
+                // 1. เติมรหัส BOM (\uFEFF) ไว้หน้าสุด เพื่อให้ Excel อ่านภาษาไทยได้ 100%
+                let csvContent = "\uFEFF"; 
+                
+                // 2. สร้างหัวตาราง (Headers)
+                csvContent += "ชื่อ - นามสกุล,ชั้นปี,ชั่วโมงสะสม (หักเพดาน),เป้าหมาย (Maximum),% การเข้าร่วม,สถานะ\n";
+
+                // 3. วนลูปนำข้อมูลแต่ละคนมาต่อกันทีละบรรทัด
+                dash.currentActivityData.forEach(r => {
+                    // แปลงสถานะเป็นภาษาไทย
+                    let statusTh = r.status === 'PASS' ? 'ปกติ' : 'ติดตามพิเศษ';
+                    
+                    // ป้องกันปัญหาชื่อมีลูกน้ำ (,) โดยการครอบด้วยเครื่องหมายคำพูด ("")
+                    let row = `"${r.name}","${r.level}","${r.hours}","${r.target}","${r.pct}%","${statusTh}"`;
+                    csvContent += row + "\n";
+                });
+
+                // 4. สั่งให้เบราว์เซอร์ดาวน์โหลดเป็นไฟล์
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                
+                // ตั้งชื่อไฟล์พร้อมวันที่
+                let dateStr = new Date().toISOString().split('T')[0];
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Activity_Attendance_${dateStr}.csv`);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            
             // 📝 3. วาดการ์ด (Card) แสดงผลการประเมิน (เพิ่มโชว์คะแนนย่อย)
             renderEvalUI: (data) => {
                 const grid = document.getElementById('grid-eval');
