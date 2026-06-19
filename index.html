@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.29</title>
+    <title>EPA Skin App 2.30</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.29</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.30</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1213,7 +1213,7 @@ const actEl = document.getElementById('create-act-id');
         } 
     },
     
-   open360Focus: (mdid, name, level, picUrl) => {
+open360Focus: (mdid, name, level, picUrl) => {
         // ดักสิทธิ์คนประเมิน
         if (app.user.level === 'NEW_RESIDENT') {
             return Swal.fire({ title: 'โหมดเปิดดูรายชื่อ', text: 'ท่านสามารถเข้าดูรายชื่อบอร์ดได้เท่านั้น ระบบยังไม่อนุญาตให้ประเมินคะแนนจนกว่าจะเปิดปีการศึกษาครับ', icon: 'info' });
@@ -1225,41 +1225,45 @@ const actEl = document.getElementById('create-act-id');
 
         document.getElementById('sel-360-resident').value = mdid; document.getElementById('focus-360-name').innerText = name; document.getElementById('focus-360-level').innerText = level;
         const imgEl = document.getElementById('focus-360-pic'); imgEl.src = picUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-        document.getElementById('txt-360-comment').value = ''; document.getElementById('score-teamwork').value = '3'; document.getElementById('score-communication').value = '3';
+        document.getElementById('txt-360-comment').value = ''; 
+        
+        // 🟢 รีเซ็ตค่าคะแนนทั้ง 6 หัวข้อ
+        document.getElementById('score-teamwork').value = '3'; 
+        document.getElementById('score-communication').value = '3';
         document.getElementById('score-punctuality').value = '3';
+        document.getElementById('score-eq').value = '3';
+        document.getElementById('score-leadership').value = '3';
+        document.getElementById('score-respect').value = '3';
+
         app.showView('view-360-focus'); window.scrollTo(0, 0); 
     },
 
-    cancel360Eval: (isNotApplicable = false) => {
-        if (isNotApplicable) {
-            const mdid = document.getElementById('sel-360-resident').value;
-            const card = document.getElementById(`card-res-${mdid}`);
-            if(card) card.style.display = 'none';
-            Swal.fire({ title: 'ข้ามการประเมิน', text: 'ซ่อนรายชื่อนี้เรียบร้อยแล้ว', icon: 'info', timer: 1500, showConfirmButton: false });
-        }
-        app.showView('view-360-grid');
-    },
-
-save360Eval: async () => { 
+    save360Eval: async () => { 
         const resMdid = document.getElementById('sel-360-resident').value;
         let comment = document.getElementById('txt-360-comment').value.trim(); 
         
         if(!resMdid) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสแพทย์เป้าหมาย', 'error'); 
         
-        // 🟢 อ่านค่าคะแนนทั้ง 3 หัวข้อ
+        // 🟢 อ่านค่าคะแนนทั้ง 6 หัวข้อ
         const scoreT = parseInt(document.getElementById('score-teamwork').value);
         const scoreC = parseInt(document.getElementById('score-communication').value);
         const scoreP = parseInt(document.getElementById('score-punctuality').value);
+        const scoreE = parseInt(document.getElementById('score-eq').value);
+        const scoreL = parseInt(document.getElementById('score-leadership').value);
+        const scoreR = parseInt(document.getElementById('score-respect').value);
         
-        // 🟢 ฟังก์ชันคำนวณขั้นต่ำตัวอักษร
         const getRequiredLength = (score) => {
             if (score === 1 || score === 5) return 100;
             if (score === 2 || score === 4) return 30;
             return 5;
         };
-        // 🟢 หาเกณฑ์ที่สูงที่สุดจากคะแนนที่ให้
-        const minReqChars = Math.max(getRequiredLength(scoreT), getRequiredLength(scoreC), getRequiredLength(scoreP));
-        // 🟢 ตรวจสอบ Validation เรื่องความยาวขั้นต่ำ
+        
+        // 🟢 หาเกณฑ์ที่สูงที่สุดจากคะแนนทั้ง 6 มิติ
+        const minReqChars = Math.max(
+            getRequiredLength(scoreT), getRequiredLength(scoreC), getRequiredLength(scoreP),
+            getRequiredLength(scoreE), getRequiredLength(scoreL), getRequiredLength(scoreR)
+        );
+
         if (comment.length < minReqChars) {
             return Swal.fire(
                 'ข้อความสั้นเกินไป', 
@@ -1268,39 +1272,21 @@ save360Eval: async () => {
             );
         }
 
-        // 🟢 ฟังก์ชันดักจับข้อความสแปม (Gibberish Validation)
         const validateGibberish = (text, minChars) => {
-            // ถ้าเกณฑ์บังคับให้พิมพ์ยาว (เช่น 30 หรือ 100 ตัวอักษร) เราจะเข้มงวดเป็นพิเศษ
             if (minChars >= 30) {
-                // 1. ดักการพิมพ์ตัวอักษรเดียวติดๆ กัน (อนุญาตเลข 5 หรือเว้นวรรคได้)
-                if (/([^5\s])\1{6,}/.test(text)) {
-                    return { valid: false, message: 'ตรวจพบการพิมพ์ตัวอักษรเดิมซ้ำกันผิดปกติ กรุณาพิมพ์ข้อความที่มีความหมายครับ' };
-                }
-
-                // 2. ดักการก๊อปปี้กลุ่มคำสั้นๆ มาวางต่อกัน (เช่น "ดีมากดีมากดีมาก")
-                if (/(.{3,})\1{3,}/.test(text.replace(/\s/g, ''))) {
-                    return { valid: false, message: 'ตรวจพบการพิมพ์ข้อความเดิมซ้ำๆ กรุณาอธิบายรายละเอียดเพิ่มเติม ไม่คัดลอกคำเดิมครับ' };
-                }
-
-                // 3. ตรวจสอบความหลากหลายของพยัญชนะและสระ (Entropy)
-                // ถ้าต้องพิมพ์ 100 ตัวอักษร ควรมีตัวอักษรไม่ซ้ำกันเกิน 15 ตัว
-                // ถ้าต้องพิมพ์ 30 ตัวอักษร ควรมีตัวอักษรไม่ซ้ำกันเกิน 8 ตัว
+                if (/([^5\s])\1{6,}/.test(text)) return { valid: false, message: 'ตรวจพบการพิมพ์ตัวอักษรเดิมซ้ำกันผิดปกติ กรุณาพิมพ์ข้อความที่มีความหมายครับ' };
+                if (/(.{3,})\1{3,}/.test(text.replace(/\s/g, ''))) return { valid: false, message: 'ตรวจพบการพิมพ์ข้อความเดิมซ้ำๆ กรุณาอธิบายรายละเอียดเพิ่มเติม ไม่คัดลอกคำเดิมครับ' };
                 let uniqueChars = new Set(text.replace(/\s/g, '').split('')).size;
                 let requiredUnique = minChars >= 100 ? 15 : 8;
-                if (uniqueChars < requiredUnique) {
-                    return { valid: false, message: 'ข้อความดูเหมือนเป็นการสุ่มกดแป้นพิมพ์ กรุณาเขียนคำประเมินให้ชัดเจนขึ้นครับ' };
-                }
+                if (uniqueChars < requiredUnique) return { valid: false, message: 'ข้อความดูเหมือนเป็นการสุ่มกดแป้นพิมพ์ กรุณาเขียนคำประเมินให้ชัดเจนขึ้นครับ' };
             }
             return { valid: true };
         };
 
-        // 🟢 ตรวจสอบด้วยฟังก์ชันดักจับสแปม
         let checkResult = validateGibberish(comment, minReqChars);
-        if (!checkResult.valid) {
-            return Swal.fire('ตรวจพบข้อความไม่สมบูรณ์', checkResult.message, 'warning');
-        }
+        if (!checkResult.valid) return Swal.fire('ตรวจพบข้อความไม่สมบูรณ์', checkResult.message, 'warning');
 
-        // ถ้าผ่านทุกด่านแล้ว ค่อยส่งข้อมูลไปบันทึก
+        // 🟢 ส่งข้อมูลครบ 6 มิติไปยังฐานข้อมูล
         const res = await app.api({ 
             action: 'save_360_evaluation', 
             payload: { 
@@ -1309,41 +1295,24 @@ save360Eval: async () => {
                 score_teamwork: scoreT, 
                 score_communication: scoreC, 
                 score_punctuality: scoreP, 
+                score_eq: scoreE,
+                score_leadership: scoreL,
+                score_respect: scoreR,
                 feedback_comment: comment 
             } 
         }, 'กำลังบันทึกผลการประเมิน...');
         if(res) Swal.fire({ title: 'สำเร็จ', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => app.load360Form());
     },
 
-    loadMy360Feedback: async () => { 
-        document.getElementById('inst-360-selector').classList.add('hidden');
-        app._render360Data(app.user.mdid);
-    },
-    
-    initInst360: async () => {
-        const data = await app.api({ action: 'get_inst_360_residents', user: app.user }, 'ดึงรายชื่อ...');
-        if (data && data.success) {
-            const selector = document.getElementById('inst-360-selector');
-            selector.classList.remove('hidden');
-            const drop = document.getElementById('sel-inst-360-target');
-            drop.innerHTML = '<option value="">-- เลือกศิษย์ในความดูแล --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name} (${r.level})</option>`).join('');
-            document.getElementById('my-360-container').innerHTML = '<p class="text-center text-gray-500 py-6">กรุณาเลือกรายชื่อเพื่อดูผลลัพธ์</p>';
-            app.showView('view-my-360');
-        }
-    },
-    
-    fetchInstructor360: () => { 
-        const target = document.getElementById('sel-inst-360-target').value;
-        if(target) app._render360Data(target); 
-    },
-
-_render360Data: async (targetMdid) => {
+    _render360Data: async (targetMdid) => {
         const isSelf = !targetMdid || targetMdid === app.user.mdid.toString();
         const data = await app.api({ action: 'get_my_360_feedback', user: app.user, target_mdid: targetMdid }, 'ดึงข้อมูลสะท้อนกลับ...');
+        
         if(data) { 
             app.showView('view-my-360'); 
             const container = document.getElementById('my-360-container');
             if(data.feedback.length === 0) return container.innerHTML = '<p class="text-center text-gray-500 py-6">ยังไม่มีประวัติการประเมิน 360 องศา</p>';
+            
             if (isSelf) {
                 let tabsHtml = `<div class="flex overflow-x-auto border-b border-teal-200 mb-4 space-x-2">`;
                 let contentHtml = ``;
@@ -1358,13 +1327,21 @@ _render360Data: async (targetMdid) => {
                     if (index === 0) contentHtml += `<p class="text-sm font-bold text-teal-800">📊 ผลประเมินประจำ: ${t.term}</p>`;
                     
                     t.roles.forEach(f => {
+                         // 🟢 ปรับช่องแสดงผลเป็น 6 มิติ (grid-cols-2 หรือ grid-cols-3)
                          contentHtml += `
                          <div class="border p-4 rounded-lg bg-white shadow-sm border-t-4 border-t-teal-600">
                              <div class="flex justify-between items-center mb-3 border-b pb-2"><span class="font-bold text-teal-800 text-base">👥 กลุ่ม: ${f.role}</span><span class="text-xs text-gray-600 bg-gray-100 border px-2 py-1 rounded-full">ผู้ประเมิน: ${f.eval_count} คน</span></div>
-                             <div class="grid grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-3 rounded border"><div><p class="text-gray-500 mb-1">ทำงานเป็นทีม</p><p class="font-bold text-teal-600 text-lg">${f.avg_teamwork}</p></div><div><p class="text-gray-500 mb-1">การสื่อสาร</p><p class="font-bold text-teal-600 text-lg">${f.avg_communication}</p></div><div><p class="text-gray-500 mb-1">ตรงเวลา</p><p class="font-bold text-teal-600 text-lg">${f.avg_punctuality}</p></div></div>
+                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-center text-xs my-3 bg-gray-50 p-3 rounded border">
+                                <div><p class="text-gray-500 mb-1">ทำงานเป็นทีม</p><p class="font-bold text-teal-600 text-lg">${f.avg_teamwork || '-'}</p></div>
+                                <div><p class="text-gray-500 mb-1">การสื่อสาร</p><p class="font-bold text-teal-600 text-lg">${f.avg_communication || '-'}</p></div>
+                                <div><p class="text-gray-500 mb-1">ตรงเวลา</p><p class="font-bold text-teal-600 text-lg">${f.avg_punctuality || '-'}</p></div>
+                                <div><p class="text-gray-500 mb-1">ควบคุมอารมณ์</p><p class="font-bold text-teal-600 text-lg">${f.avg_eq || '-'}</p></div>
+                                <div><p class="text-gray-500 mb-1">ความเป็นผู้นำ</p><p class="font-bold text-teal-600 text-lg">${f.avg_leadership || '-'}</p></div>
+                                <div><p class="text-gray-500 mb-1">การให้เกียรติ</p><p class="font-bold text-teal-600 text-lg">${f.avg_respect || '-'}</p></div>
+                             </div>
                              <div class="text-sm text-gray-700 mt-3 bg-yellow-50/50 p-3 border border-yellow-100 rounded"><p class="font-bold text-gray-600 mb-2">💬 ข้อคิดเห็น:</p><ul class="list-disc pl-5 space-y-1">${f.comments.map(c => `<li>${c}</li>`).join('')}</ul></div>
                          </div>`;
-                });
+                    });
                     contentHtml += `</div>`;
                 });
                 tabsHtml += `</div>`;
@@ -1379,7 +1356,6 @@ _render360Data: async (targetMdid) => {
                 data.feedback.forEach(t => {
                     let totalSubmissions = t.roles.reduce((sum, r) => sum + r.eval_count, 0);
                     
-                    // ดึงจำนวนผู้ประเมินแยกตามกลุ่มหลัก
                     let ajarn = t.roles.find(r => r.role === 'อาจารย์แพทย์')?.eval_count || 0;
                     let peer = t.roles.find(r => r.role === 'เพื่อนแพทย์ประจำบ้าน')?.eval_count || 0;
                     let nurse = t.roles.find(r => r.role === 'พยาบาลวิชาชีพ')?.eval_count || 0;
@@ -1401,7 +1377,7 @@ _render360Data: async (targetMdid) => {
                 });
                 summaryBreakdownHtml += `</div>`;
 
-                // 📈 ตารางเปรียบเทียบพัฒนาการ (ส่วนเดิมที่มีอยู่แล้ว)
+                // 📈 ตารางเปรียบเทียบพัฒนาการ
                 let comparisonHtml = `<h3 class="font-bold text-teal-900 mb-2">📈 ตารางเปรียบเทียบพัฒนาการ (ย้อนหลัง)</h3>`;
                 comparisonHtml += `<div class="overflow-x-auto bg-white border rounded-lg shadow-sm mb-6"><table class="w-full text-sm text-left"><thead class="bg-teal-50 border-b"><tr><th class="p-3">หัวข้อประเมิน (ภาพรวม)</th>`;
 
@@ -1410,22 +1386,36 @@ _render360Data: async (targetMdid) => {
                 comparisonHtml += `</tr></thead><tbody>`;
                 let getOverall = (termData, key) => {
                     let total = 0, count = 0;
-                    termData.roles.forEach(r => { total += parseFloat(r[key]) * r.eval_count; count += r.eval_count; });
+                    termData.roles.forEach(r => { 
+                        if (r[key]) {
+                            total += parseFloat(r[key]) * r.eval_count; 
+                            count += r.eval_count; 
+                        }
+                    });
                     return count > 0 ? (total/count).toFixed(2) : "-";
                 };
 
-                let rows = [{label: "1. ทำงานเป็นทีม", key: "avg_teamwork"}, {label: "2. การสื่อสาร", key: "avg_communication"}, {label: "3. ตรงต่อเวลา", key: "avg_punctuality"}];
+                // 🟢 เพิ่มข้อมูลลงในตารางการเปรียบเทียบเป็น 6 มิติ
+                let rows = [
+                    {label: "1. ทำงานเป็นทีม", key: "avg_teamwork"}, 
+                    {label: "2. การสื่อสาร", key: "avg_communication"}, 
+                    {label: "3. ตรงต่อเวลา", key: "avg_punctuality"},
+                    {label: "4. ควบคุมอารมณ์", key: "avg_eq"},
+                    {label: "5. ความเป็นผู้นำ", key: "avg_leadership"},
+                    {label: "6. การให้เกียรติ", key: "avg_respect"}
+                ];
+                
                 rows.forEach(row => {
                     comparisonHtml += `<tr class="border-b"><td class="p-3 font-semibold text-gray-700">${row.label}</td>`;
                     reversedFeedback.forEach(t => {
                         let score = getOverall(t, row.key);
-                        let color = score >= 4 ? 'text-green-600' : (score < 3 ? 'text-red-500' : 'text-teal-700');
+                        let color = score !== "-" && score >= 4 ? 'text-green-600' : (score !== "-" && score < 3 ? 'text-red-500' : 'text-teal-700');
                         comparisonHtml += `<td class="p-3 text-center border-l font-bold ${color}">${score}</td>`;
                     });
                     comparisonHtml += `</tr>`;
                 });
                 comparisonHtml += `</tbody></table></div>`;
-                // 💬 รวบรวมข้อคิดเห็นแยกตามเทอม (ส่วนเดิม)
+                
                 comparisonHtml += `<h3 class="font-bold text-teal-900 mb-2">💬 รวบรวมข้อคิดเห็น (แยกตามเทอม)</h3><div class="space-y-4">`;
                 data.feedback.forEach(t => {
                     comparisonHtml += `<div class="border p-4 rounded-lg bg-gray-50 shadow-sm border-l-4 border-l-teal-500"><h4 class="font-bold text-teal-800 mb-2">${t.term}</h4>`;
@@ -1441,13 +1431,12 @@ _render360Data: async (targetMdid) => {
                 });
                 comparisonHtml += `</div>`;
                 
-                // 🟢 นำการ์ดสรุปยอดที่มาของคะแนนมาต่อหัวแถวคู่กับเนื้อหาหลัก
                 container.innerHTML = summaryBreakdownHtml + comparisonHtml;
             }
         }
-    },    
-    
-    switch360Tab: (index) => {
+    },
+	
+	switch360Tab: (index) => {
         document.querySelectorAll('.tab-360-content').forEach(el => el.classList.add('hidden'));
         document.getElementById(`tab-content-${index}`).classList.remove('hidden');
         document.querySelectorAll('.tab-360-btn').forEach(el => { el.classList.remove('bg-teal-600', 'text-white'); el.classList.add('bg-teal-50', 'text-teal-700'); });
