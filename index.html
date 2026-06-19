@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.30 C</title>
+    <title>EPA Skin App 2.30 D</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1278,6 +1278,20 @@ open360Focus: (mdid, name, level, picUrl) => {
         app.showView('view-360-focus'); window.scrollTo(0, 0); 
     },
 
+	// -----------------------------------------
+    // 🟢 เติมฟังก์ชันนี้กลับเข้าไปเพื่อให้ปุ่มถอยกลับ/ไม่รู้จัก ทำงานได้ครับ
+    // -----------------------------------------
+    cancel360Eval: (isNotApplicable = false) => {
+        if (isNotApplicable) {
+            const mdid = document.getElementById('sel-360-resident').value;
+            const card = document.getElementById(`card-res-${mdid}`);
+            if(card) card.style.display = 'none';
+            Swal.fire({ title: 'ข้ามการประเมิน', text: 'ซ่อนรายชื่อนี้เรียบร้อยแล้ว', icon: 'info', timer: 1500, showConfirmButton: false });
+        }
+        app.showView('view-360-grid');
+    },
+    // -----------------------------------------
+	
     save360Eval: async () => { 
         const resMdid = document.getElementById('sel-360-resident').value;
         let comment = document.getElementById('txt-360-comment').value.trim(); 
