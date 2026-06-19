@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.06</title>
+    <title>skinEPA Dashboard 1.07</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -407,77 +407,99 @@
             },
             
             // -----------------------------------------
-            // 📈 1. ดึงข้อมูล EPA จากหลังบ้าน
+            // 📈 1. ดึงข้อมูล EPA (ใช้ API เดิมของระบบที่สมบูรณ์อยู่แล้ว)
             // -----------------------------------------
             fetchEpaData: async () => {
                 const tbody = document.getElementById('table-epa-body');
                 document.getElementById('table-epa-head').innerHTML = '';
                 tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
                 
+                // 🟢 วิ่งไปเรียก API 'get_dashboard_data' ของเดิมของคุณหมอโดยตรง
                 const res = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user.institute })
+                    body: JSON.stringify({ action: 'get_dashboard_data', user: { institute: dash.user.institute } })
                 }).then(r => r.json());
 
-                if (res && res.success) {
-                    dash.currentEpaData = res.data; // เก็บข้อมูลไว้ในหน่วยความจำเผื่อกด Filter
-                    dash.renderEpaUI(res.data, 'ALL'); // วาดตารางโดยแสดงทุกคนเป็นค่าเริ่มต้น
+                // ค้นหาว่าข้อมูล Array ถูกซ่อนอยู่ในตัวแปรไหน
+                let dataArr = [];
+                if (res && res.dashboard) dataArr = res.dashboard;
+                else if (res && res.data) dataArr = res.data;
+                else if (res && Array.isArray(res.result)) dataArr = res.result;
+
+                if (dataArr.length > 0) {
+                    dash.currentEpaData = dataArr; 
+                    dash.renderEpaUI(dataArr, 'ALL'); 
                 } else {
-                    tbody.innerHTML = '<tr><td class="text-center py-4 text-red-500">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                    // 🔴 ถ้าไม่เจอจริงๆ ให้ปริ้นท์ข้อความ Debug ออกมาโชว์หน้าเว็บ
+                    tbody.innerHTML = `<tr><td class="text-center py-8 text-red-500 font-bold">ไม่พบข้อมูล หรือโครงสร้างข้อมูลหลังบ้านไม่ตรงกัน<br><br><span class="text-xs text-gray-400 font-normal">Debug Data: ${JSON.stringify(res).substring(0, 200)}...</span></td></tr>`;
                 }
             },
 
-            // 📈 2. วาดตารางแบบ Pivot Table
+            // 📈 2. วาดตารางแบบ Pivot Table (ปรับให้หาชื่อตัวแปรอัตโนมัติ)
             renderEpaUI: (allData, filterLevel = 'ALL') => {
-                // 2.1 กรองข้อมูลตามชั้นปี (ถ้ายกเลิกตัวกรองให้ใช้ ALL)
                 let groupData = allData;
                 if (filterLevel !== 'ALL') {
-                    groupData = allData.filter(r => r.level === filterLevel || (filterLevel === 'Fellow' && r.level.includes('Fellow')));
+                    groupData = allData.filter(r => r.level === filterLevel || (filterLevel === 'Fellow' && String(r.level).includes('Fellow')));
                 }
 
                 if (!groupData || groupData.length === 0) {
                     document.getElementById('table-epa-head').innerHTML = '';
-                    document.getElementById('table-epa-body').innerHTML = '<tr><td class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลของกลุ่มนี้</td></tr>';
+                    document.getElementById('table-epa-body').innerHTML = '<tr><td class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลของกลุ่มชั้นปีนี้</td></tr>';
                     return;
                 }
 
-                // 2.2 สร้างหัวตาราง (Headers)
+                // 🟢 ค้นหาชื่อ Key ภายใน Array อัตโนมัติ (เช่น items หรือ epas)
+                let samplePerson = groupData[0];
+                let itemsArray = samplePerson.items || samplePerson.epas || samplePerson.epa_list || [];
+
+                if (itemsArray.length === 0) {
+                    document.getElementById('table-epa-body').innerHTML = `<tr><td class="text-center py-8 text-red-500 font-bold">ไม่พบรายการย่อย EPA (Items) ในข้อมูลของแพทย์<br><br><span class="text-xs text-gray-400 font-normal">ข้อมูลตัวอย่าง: ${JSON.stringify(samplePerson).substring(0, 200)}...</span></td></tr>`;
+                    return;
+                }
+
+                // สร้างหัวตาราง (แกน X - ชื่อแพทย์)
                 let headHtml = `
                     <tr>
-                        <th class="px-4 py-3 min-w-[250px]">รายการประเมิน / กิจกรรม</th>
-                        <th class="px-4 py-3 text-center bg-indigo-100 min-w-[80px]">เป้าหมาย</th>
+                        <th class="px-4 py-3 min-w-[250px] bg-white sticky left-0 z-10 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">รายการประเมิน / กิจกรรม</th>
+                        <th class="px-4 py-3 text-center bg-indigo-50 min-w-[80px] border-b border-r">เป้าหมาย</th>
                 `;
                 groupData.forEach(r => {
-                    let displayLevel = r.level.includes('Fellow') ? 'Fellow' : r.level;
-                    headHtml += `<th class="px-4 py-3 text-center min-w-[120px] leading-tight">${r.name} <br><span class="text-xs text-indigo-500">(${displayLevel})</span></th>`;
+                    let displayLevel = String(r.level).includes('Fellow') ? 'Fellow' : r.level;
+                    headHtml += `<th class="px-4 py-3 text-center min-w-[120px] leading-tight border-b">${r.name} <br><span class="text-xs text-indigo-500">(${displayLevel})</span></th>`;
                 });
                 headHtml += `</tr>`;
                 document.getElementById('table-epa-head').innerHTML = headHtml;
 
-                // 2.3 สร้างข้อมูลแต่ละแถว (Rows)
-                let bodyHtml = '';
-                // ใช้รายการ EPA จากคนแรกมาเป็นแกน Y (เพราะในกลุ่มเดียวกันเป้าหมายจะเหมือนกัน)
-                const templateItems = groupData[0].items || [];
+                // 🟢 เดาชื่อตัวแปรภายใน Item อัตโนมัติ (เช่น desc หรือ name, pass หรือ count)
+                let sampleItem = itemsArray[0];
+                let descKey = sampleItem.desc !== undefined ? 'desc' : (sampleItem.name !== undefined ? 'name' : 'epa_name');
+                let targetKey = sampleItem.target !== undefined ? 'target' : (sampleItem.req !== undefined ? 'req' : 'target_score');
+                let idKey = sampleItem.id !== undefined ? 'id' : (sampleItem.epa_id !== undefined ? 'epa_id' : 'code');
+                let passKey = sampleItem.pass !== undefined ? 'pass' : (sampleItem.count !== undefined ? 'count' : 'score');
 
-                templateItems.forEach(item => {
-                    bodyHtml += `<tr class="hover:bg-indigo-50 transition border-b border-gray-100">`;
-                    // ชื่อ EPA
-                    bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700">${item.desc}</td>`;
-                    // เป้าหมาย
-                    bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-gray-50 text-indigo-800">${item.target}</td>`;
+                // สร้างเนื้อหาตาราง (แกน Y - รายการ EPA)
+                let bodyHtml = '';
+                itemsArray.forEach(item => {
+                    bodyHtml += `<tr class="hover:bg-indigo-50 transition">`;
                     
-                    // วนลูปใส่คะแนนของแพทย์แต่ละคนในแกน X
+                    // คอลัมน์ที่ 1: ชื่อรายการ (ทำ Sticky ให้เลื่อนซ้ายขวาได้ง่าย)
+                    bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700 bg-white sticky left-0 z-10 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${item[descKey] || 'ไม่ระบุชื่อ EPA'}</td>`;
+                    
+                    // คอลัมน์ที่ 2: เป้าหมาย
+                    bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-indigo-50 text-indigo-800 border-r border-b">${item[targetKey] || 0}</td>`;
+                    
+                    // คอลัมน์แพทย์แต่ละคน
                     groupData.forEach(r => {
-                        let resItem = r.items.find(i => i.id === item.id);
-                        let score = resItem ? resItem.pass : 0;
-                        let target = item.target;
+                        let rItems = r.items || r.epas || r.epa_list || [];
+                        let resItem = rItems.find(i => i[idKey] === item[idKey]);
+                        let score = resItem ? (resItem[passKey] || 0) : 0;
+                        let target = item[targetKey] || 0;
                         
-                        // ไฮไลท์สีตัวเลข (ผ่าน = เขียว, มีคะแนนแต่ไม่ถึง = ส้ม, เป็นศูนย์ = สีเทาจาง)
                         let scoreClass = 'text-gray-300 font-normal';
-                        if (score >= target && target > 0) scoreClass = 'text-green-600 font-bold bg-green-50 rounded';
+                        if (score >= target && target > 0) scoreClass = 'text-green-600 font-bold bg-green-50 rounded border border-green-100';
                         else if (score > 0) scoreClass = 'text-orange-500 font-bold';
 
-                        bodyHtml += `<td class="px-4 py-3 text-center ${scoreClass}">${score}</td>`;
+                        bodyHtml += `<td class="px-4 py-3 text-center border-b ${scoreClass}">${score}</td>`;
                     });
                     bodyHtml += `</tr>`;
                 });
