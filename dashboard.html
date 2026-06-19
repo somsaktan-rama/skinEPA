@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 B</title>
+    <title>skinEPA Dashboard 1.07 C</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -543,7 +543,7 @@
                 if (viewId === 'overview') dash.fetchOverviewData();
                 else if (viewId === 'activity') dash.fetchActivityData();
                 else if (viewId === 'eval') dash.renderEvalUI();
-                else if (viewId === 'epa') fetchEpaData();
+                else if (viewId === 'epa') dash.fetchEpaData();
                 else if (viewId === 'feedback') dash.fetch360Data();
             },
 
