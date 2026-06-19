@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07</title>
+    <title>skinEPA Dashboard 1.07 A</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -305,61 +305,71 @@
                 `}).join('');
             },
 
-            // -----------------------------------------
-            // 🔁 1. ดึงข้อมูล 360 และเตรียม Dropdown
+// -----------------------------------------
+            // 🔁 1. ดึงรายชื่อ 360 (เรียกใช้ get_inst_360_residents)
             // -----------------------------------------
             fetch360Data: async () => {
                 const selectEl = document.getElementById('select-360-user');
                 selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
                 
-                // รีเซ็ตหน้าจอกราฟ
                 document.getElementById('placeholder-360-chart').classList.remove('hidden');
                 document.getElementById('radarChart').classList.add('hidden');
                 document.getElementById('feedback-comments').innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>';
 
+                // 🟢 ใช้ API ดึงรายชื่อเดิม
                 const res = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user.institute })
+                    body: JSON.stringify({ action: 'get_inst_360_residents', user: dash.user })
                 }).then(r => r.json());
 
-                if (res && res.success) {
-                    dash.current360Data = res; // เก็บข้อมูลทั้งหมดไว้ในเครื่อง
-                    
-                    // สร้างตัวเลือก Dropdown
+                if (res && res.success && res.residents) {
                     selectEl.innerHTML = '<option value="">-- เลือกแพทย์ประจำบ้าน / Fellow --</option>' +
                         res.residents.map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
                     
-                    // ฝังคำสั่งเปลี่ยนกราฟเมื่อกดเลือก Dropdown
-                    selectEl.onchange = (e) => dash.render360UI(e.target.value);
+                    // 🟢 เมื่อเลือกชื่อ ให้วิ่งไปดึงข้อมูลเฉพาะคนนั้น
+                    selectEl.onchange = (e) => dash.fetchTarget360Feedback(e.target.value);
                 } else {
-                    selectEl.innerHTML = '<option value="">ไม่สามารถโหลดข้อมูลได้</option>';
+                    selectEl.innerHTML = '<option value="">ไม่พบข้อมูลรายชื่อในสังกัด</option>';
                 }
             },
 
-            // 🔁 2. วาด Radar Chart และข้อความ Feedback
-            render360UI: (mdid) => {
+            // 🔁 2. ดึงกราฟและคอมเมนต์ (เรียกใช้ get_my_360_feedback)
+            fetchTarget360Feedback: async (targetMdid) => {
+                if (!targetMdid) return;
+
+                document.getElementById('placeholder-360-chart').classList.remove('hidden');
+                document.getElementById('placeholder-360-chart').innerText = 'กำลังประมวลผลกราฟ...';
+                document.getElementById('radarChart').classList.add('hidden');
+                document.getElementById('feedback-comments').innerHTML = '<div class="text-center mt-10"><div class="animate-spin inline-block w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full"></div></div>';
+
+                // 🟢 ใช้ API ดึงผลประเมินรายบุคคลเดิม
+                const res = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_my_360_feedback', user: dash.user, target_mdid: targetMdid })
+                }).then(r => r.json());
+
+                if (res && res.success) {
+                    dash.render360UI(res);
+                } else {
+                    document.getElementById('placeholder-360-chart').innerText = 'ไม่พบข้อมูลการประเมินของแพทย์ท่านนี้';
+                    document.getElementById('feedback-comments').innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ยังไม่มีผู้ประเมิน -</p>';
+                }
+            },
+
+            // 🔁 3. วาดกราฟ Radar และข้อความ
+            render360UI: (data) => {
                 const chartCanvas = document.getElementById('radarChart');
                 const placeholder = document.getElementById('placeholder-360-chart');
                 const commentsDiv = document.getElementById('feedback-comments');
 
-                // ถ้าเลือก "หน้าว่าง" หรือคนนี้ยังไม่มีใครประเมินเลย
-                if (!mdid || !dash.current360Data.evaluations[mdid]) {
-                    chartCanvas.classList.add('hidden');
-                    placeholder.classList.remove('hidden');
-                    placeholder.innerText = mdid ? "แพทย์ท่านนี้ยังไม่มีข้อมูลการประเมิน 360 องศา" : "กรุณาเลือกรายชื่อเพื่อดูกราฟ";
-                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">ไม่พบข้อเสนอแนะ</p>';
-                    if(dash.radarChartInstance) dash.radarChartInstance.destroy();
-                    return;
-                }
+                // ดึงตัวแปรแบบยืดหยุ่น (เผื่อชื่อตัวแปรต่างกันนิดหน่อย)
+                let labels = data.labels || data.chart_labels || ['ด้านที่ 1', 'ด้านที่ 2', 'ด้านที่ 3', 'ด้านที่ 4', 'ด้านที่ 5'];
+                let scores = data.scores || data.avg_scores || data.chart_data || [0, 0, 0, 0, 0];
+                let comments = data.comments || data.feedback_list || [];
 
-                const data = dash.current360Data.evaluations[mdid];
-                const labels = dash.current360Data.labels;
-
-                // โชว์กราฟ ซ่อน Placeholder
                 placeholder.classList.add('hidden');
                 chartCanvas.classList.remove('hidden');
 
-                // วาดกราฟใยแมงมุม (Radar Chart)
                 const ctx = chartCanvas.getContext('2d');
                 if(dash.radarChartInstance) dash.radarChartInstance.destroy();
 
@@ -368,74 +378,55 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: `คะแนนเฉลี่ย (ประเมินแล้ว ${data.evalCount} คน)`,
-                            data: data.scores,
-                            backgroundColor: 'rgba(99, 102, 241, 0.2)', // สีม่วงอ่อนโปร่งใส
+                            label: `คะแนนประเมิน 360 องศา`,
+                            data: scores,
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
                             borderColor: 'rgba(99, 102, 241, 1)',
                             pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
                             borderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            r: {
-                                angleLines: { display: true },
-                                suggestedMin: 0,
-                                suggestedMax: 5, // สมมติว่าเต็ม 5 ถ้าเต็ม 10 ให้แก้ตัวเลขนี้ครับ
-                                ticks: { stepSize: 1 }
-                            }
-                        }
+                        scales: { r: { suggestedMin: 0, suggestedMax: 5 } } // หากเต็ม 10 ให้แก้ suggestedMax ตรงนี้ครับ
                     }
                 });
 
-                // วาดข้อเสนอแนะเชิงคุณภาพ (แบบไม่เปิดเผยชื่อ)
-                if (data.comments && data.comments.length > 0) {
-                    commentsDiv.innerHTML = data.comments.map(c => `
-                        <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-indigo-400 text-sm text-gray-700 italic flex gap-2">
-                            <span class="text-indigo-300 text-xl font-serif">"</span> 
-                            <span>${c}</span>
+                if (comments && comments.length > 0) {
+                    commentsDiv.innerHTML = comments.map(c => `
+                        <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-indigo-400 text-sm text-gray-700 flex gap-2">
+                            <span class="text-indigo-300 font-bold">💬</span> <span>${c}</span>
                         </div>
                     `).join('');
                 } else {
-                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ยังไม่มีข้อเสนอแนะ -</p>';
+                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ยังไม่มีข้อเสนอแนะเชิงคุณภาพ -</p>';
                 }
             },
             
             // -----------------------------------------
-            // 📈 1. ดึงข้อมูล EPA (ใช้ API เดิมของระบบที่สมบูรณ์อยู่แล้ว)
+            // 📈 1. ดึงข้อมูล EPA (เรียกใช้ get_dashboard_data เดิม)
             // -----------------------------------------
             fetchEpaData: async () => {
                 const tbody = document.getElementById('table-epa-body');
                 document.getElementById('table-epa-head').innerHTML = '';
                 tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
                 
-                // 🟢 วิ่งไปเรียก API 'get_dashboard_data' ของเดิมของคุณหมอโดยตรง
+                // 🟢 ใช้ API เดิมที่สมบูรณ์อยู่แล้ว
                 const res = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_data', user: { institute: dash.user.institute } })
+                    body: JSON.stringify({ action: 'get_dashboard_data', user: dash.user })
                 }).then(r => r.json());
 
-                // ค้นหาว่าข้อมูล Array ถูกซ่อนอยู่ในตัวแปรไหน
-                let dataArr = [];
-                if (res && res.dashboard) dataArr = res.dashboard;
-                else if (res && res.data) dataArr = res.data;
-                else if (res && Array.isArray(res.result)) dataArr = res.result;
-
-                if (dataArr.length > 0) {
-                    dash.currentEpaData = dataArr; 
-                    dash.renderEpaUI(dataArr, 'ALL'); 
+                if (res && res.success && res.dashboard && res.dashboard.length > 0) {
+                    dash.currentEpaData = res.dashboard; 
+                    dash.renderEpaUI(res.dashboard, 'ALL'); 
                 } else {
-                    // 🔴 ถ้าไม่เจอจริงๆ ให้ปริ้นท์ข้อความ Debug ออกมาโชว์หน้าเว็บ
-                    tbody.innerHTML = `<tr><td class="text-center py-8 text-red-500 font-bold">ไม่พบข้อมูล หรือโครงสร้างข้อมูลหลังบ้านไม่ตรงกัน<br><br><span class="text-xs text-gray-400 font-normal">Debug Data: ${JSON.stringify(res).substring(0, 200)}...</span></td></tr>`;
+                    tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold">ไม่พบข้อมูล หรือท่านไม่มีสิทธิ์เข้าถึงข้อมูลชุดนี้</td></tr>';
                 }
             },
 
-            // 📈 2. วาดตารางแบบ Pivot Table (ปรับให้หาชื่อตัวแปรอัตโนมัติ)
+            // 📈 2. วาดตารางแบบ Pivot Table
             renderEpaUI: (allData, filterLevel = 'ALL') => {
                 let groupData = allData;
                 if (filterLevel !== 'ALL') {
@@ -445,15 +436,6 @@
                 if (!groupData || groupData.length === 0) {
                     document.getElementById('table-epa-head').innerHTML = '';
                     document.getElementById('table-epa-body').innerHTML = '<tr><td class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลของกลุ่มชั้นปีนี้</td></tr>';
-                    return;
-                }
-
-                // 🟢 ค้นหาชื่อ Key ภายใน Array อัตโนมัติ (เช่น items หรือ epas)
-                let samplePerson = groupData[0];
-                let itemsArray = samplePerson.items || samplePerson.epas || samplePerson.epa_list || [];
-
-                if (itemsArray.length === 0) {
-                    document.getElementById('table-epa-body').innerHTML = `<tr><td class="text-center py-8 text-red-500 font-bold">ไม่พบรายการย่อย EPA (Items) ในข้อมูลของแพทย์<br><br><span class="text-xs text-gray-400 font-normal">ข้อมูลตัวอย่าง: ${JSON.stringify(samplePerson).substring(0, 200)}...</span></td></tr>`;
                     return;
                 }
 
@@ -470,30 +452,21 @@
                 headHtml += `</tr>`;
                 document.getElementById('table-epa-head').innerHTML = headHtml;
 
-                // 🟢 เดาชื่อตัวแปรภายใน Item อัตโนมัติ (เช่น desc หรือ name, pass หรือ count)
-                let sampleItem = itemsArray[0];
-                let descKey = sampleItem.desc !== undefined ? 'desc' : (sampleItem.name !== undefined ? 'name' : 'epa_name');
-                let targetKey = sampleItem.target !== undefined ? 'target' : (sampleItem.req !== undefined ? 'req' : 'target_score');
-                let idKey = sampleItem.id !== undefined ? 'id' : (sampleItem.epa_id !== undefined ? 'epa_id' : 'code');
-                let passKey = sampleItem.pass !== undefined ? 'pass' : (sampleItem.count !== undefined ? 'count' : 'score');
+                // ดึงรายการ EPA จากคนแรกมาเป็นแกน Y
+                let templateItems = groupData[0].items || [];
 
                 // สร้างเนื้อหาตาราง (แกน Y - รายการ EPA)
                 let bodyHtml = '';
-                itemsArray.forEach(item => {
+                templateItems.forEach(item => {
                     bodyHtml += `<tr class="hover:bg-indigo-50 transition">`;
+                    bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700 bg-white sticky left-0 z-10 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${item.desc || item.name || 'ไม่ระบุ'}</td>`;
+                    bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-indigo-50 text-indigo-800 border-r border-b">${item.target || item.req || 0}</td>`;
                     
-                    // คอลัมน์ที่ 1: ชื่อรายการ (ทำ Sticky ให้เลื่อนซ้ายขวาได้ง่าย)
-                    bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700 bg-white sticky left-0 z-10 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${item[descKey] || 'ไม่ระบุชื่อ EPA'}</td>`;
-                    
-                    // คอลัมน์ที่ 2: เป้าหมาย
-                    bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-indigo-50 text-indigo-800 border-r border-b">${item[targetKey] || 0}</td>`;
-                    
-                    // คอลัมน์แพทย์แต่ละคน
+                    // ใส่คะแนนของแพทย์แต่ละคน
                     groupData.forEach(r => {
-                        let rItems = r.items || r.epas || r.epa_list || [];
-                        let resItem = rItems.find(i => i[idKey] === item[idKey]);
-                        let score = resItem ? (resItem[passKey] || 0) : 0;
-                        let target = item[targetKey] || 0;
+                        let resItem = (r.items || []).find(i => (i.id === item.id) || (i.desc === item.desc));
+                        let score = resItem ? (resItem.pass || resItem.count || 0) : 0;
+                        let target = item.target || item.req || 0;
                         
                         let scoreClass = 'text-gray-300 font-normal';
                         if (score >= target && target > 0) scoreClass = 'text-green-600 font-bold bg-green-50 rounded border border-green-100';
