@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.30 B</title>
+    <title>EPA Skin App 2.30 C</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -155,7 +155,6 @@
         <p class="text-xs font-semibold text-gray-500 text-center mb-2">* 1=ปรับปรุงมาก, 2=พอใช้, 3=มาตรฐาน, 4=ดีมาก, 5=ดีเยี่ยม</p>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-xl border">
-            
             <div>
                 <label class="block text-sm font-bold text-teal-900 mb-1">1. การทำงานเป็นทีม (Teamwork)</label>
                 <select id="score-teamwork" class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white shadow-sm">
@@ -221,29 +220,29 @@
                     <option value="1">1 = ต้องปรับปรุง</option>
                 </select>
             </div>
-        </div>			
-		
-    <div class="bg-gray-50 p-3 rounded border">
-    <label class="block font-bold mb-2 text-teal-900">
-        ข้อคิดเห็น / คำแนะนำเพิ่มเติม
-        <p class="text-xs text-red-500 font-normal mt-1">🎙️ แนะนำให้ใช้ปุ่มไมโครโฟนบนแป้นพิมพ์เพื่อพูดแทนการพิมพ์ (ไม่อนุญาตให้ Copy/Paste)</p>
-    </label>
-    <textarea id="txt-360-comment" rows="3" 
-        class="w-full border-gray-300 rounded p-2 bg-white shadow-sm" 
-        placeholder="กดไอคอนไมค์ 🎙️ ที่แป้นพิมพ์ แล้วพูดข้อเสนอแนะได้เลยครับ..."
-        oncopy="return false;" onpaste="return false;" oncut="return false;"></textarea>
-    </div>                
-                
-                <div class="flex flex-col space-y-3 pt-4 pb-6">
-                    <button onclick="app.save360Eval()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
-                    <div class="flex space-x-2">
-                        <button onclick="app.cancel360Eval(false)" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-bold transition">ถอยกลับ</button>
-                        <button onclick="app.cancel360Eval(true)" class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-bold transition border border-red-200">ไม่รู้จัก (N/A)</button>
-                    </div>
-                </div>
-            </div>
         </div>
         
+        <div class="bg-gray-50 p-3 rounded border">
+            <label class="block font-bold mb-2 text-teal-900">
+                ข้อคิดเห็น / คำแนะนำเพิ่มเติม
+                <p class="text-xs text-red-500 font-normal mt-1">🎙️ แนะนำให้ใช้ปุ่มไมโครโฟนบนแป้นพิมพ์เพื่อพูดแทนการพิมพ์ (ไม่อนุญาตให้ Copy/Paste)</p>
+            </label>
+            <textarea id="txt-360-comment" rows="3" 
+                class="w-full border-gray-300 rounded p-2 bg-white shadow-sm focus:ring-2 focus:ring-teal-500 focus:outline-none resize-none" 
+                placeholder="กดไอคอนไมค์ 🎙️ ที่แป้นพิมพ์ แล้วพูดข้อเสนอแนะได้เลยครับ..."
+                oncopy="return false;" onpaste="return false;" oncut="return false;"></textarea>
+        </div>                
+        
+        <div class="flex flex-col space-y-3 pt-4 pb-6">
+            <button onclick="app.save360Eval()" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold shadow-md text-base transition">✅ ยืนยันและส่งผลประเมิน</button>
+            <div class="flex space-x-2">
+                <button onclick="app.cancel360Eval(false)" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-bold transition">ถอยกลับ</button>
+                <button onclick="app.cancel360Eval(true)" class="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-bold transition border border-red-200">ไม่รู้จัก (N/A)</button>
+            </div>
+        </div>
+    </div>
+</div>
+		
         <div id="view-my-360" class="hidden">
             <h2 class="text-xl font-bold mb-2 text-teal-800">📊 ผลประเมิน 360 องศา</h2>
             <div id="inst-360-selector" class="hidden mb-4 p-3 bg-teal-50 border border-teal-200 rounded">
