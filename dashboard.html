@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 D</title>
+    <title>skinEPA Dashboard 1.07 E</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -112,7 +112,7 @@
                 <div class="bg-white rounded-xl shadow-sm p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold text-gray-800">ตารางความก้าวหน้า EPA (Pivot View)</h3>
-                        <button onclick="app.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold">
+                        <button onclick="dash.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold transition">
                             📥 Export Pivot
                         </button>
                     </div>
@@ -414,6 +414,56 @@
                 }
             },
 
+            // -----------------------------------------
+            // 📥 ฟังก์ชัน Export Excel (Pivot EPA)
+            // -----------------------------------------
+            exportEpaPivotExcel: () => {
+                // ดึงข้อมูลแถวหัวตารางและเนื้อหาจากหน้าจอ
+                const headRow = document.querySelector('#table-epa-head tr');
+                const bodyRows = document.querySelectorAll('#table-epa-body tr');
+
+                // เช็คว่ามีข้อมูลให้ Export ไหม (ถ้าหน้าจอว่างเปล่า หรือขึ้น Error ให้หยุดทำงาน)
+                if (!headRow || bodyRows.length === 0 || bodyRows[0].innerText.includes('ไม่พบข้อมูล')) {
+                    Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับ Export', 'warning');
+                    return;
+                }
+
+                // เติมรหัส BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยได้สมบูรณ์
+                let csvContent = "\uFEFF"; 
+
+                // 1. ดึงชื่อคอลัมน์จากหัวตาราง (Headers)
+                let headers = [];
+                headRow.querySelectorAll('th').forEach(th => {
+                    // ใช้ innerText จะช่วยตัดแท็ก HTML (เช่น <br>) ออกให้เหลือแต่ข้อความล้วนๆ 
+                    let text = th.innerText.replace(/\r?\n|\r/g, ' ').trim();
+                    headers.push(`"${text}"`);
+                });
+                csvContent += headers.join(',') + "\n";
+
+                // 2. ดึงข้อมูลคะแนนแต่ละแถว (Rows)
+                bodyRows.forEach(tr => {
+                    let rowData = [];
+                    tr.querySelectorAll('td').forEach(td => {
+                        let text = td.innerText.replace(/\r?\n|\r/g, ' ').trim();
+                        rowData.push(`"${text}"`);
+                    });
+                    csvContent += rowData.join(',') + "\n";
+                });
+
+                // 3. สร้างไฟล์และสั่งดาวน์โหลด
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                
+                let dateStr = new Date().toISOString().split('T')[0];
+                link.setAttribute("href", url);
+                link.setAttribute("download", `EPA_Progress_Pivot_${dateStr}.csv`);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            
             // 📈 2. วาดตารางแบบ Pivot Table
             renderEpaUI: (allData, filterLevel = 'ALL') => {
                 let groupData = allData;
