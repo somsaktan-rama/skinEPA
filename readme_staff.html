@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คู่มือการใช้งาน - Staff & Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4 md:p-10 font-sans">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-md">
+        <h1 class="text-2xl md:text-3xl font-bold text-teal-800 mb-2 border-b-2 border-teal-200 pb-4">
+            ⚙️ คู่มือการใช้งานระบบ skinEPA V 2.20
+            <span class="block text-lg text-gray-500 mt-2">สำหรับ Staff / Admin</span>
+        </h1>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">1. การจัดการตารางกิจกรรม (Schedule)</h2>
+            <ul class="list-disc pl-6 text-gray-700 space-y-2">
+                <li><b>Single Session:</b> เปิดกิจกรรมใหม่แบบรายครั้ง</li>
+                <li><b>Weekly Batch Template:</b> เข้าเมนู <i>"ระบบแม่แบบรายสัปดาห์"</i> เพื่อเปิดคลาสเรียนล่วงหน้าทั้งสัปดาห์ (สูงสุด 10 คลาส) ในคลิกเดียว</li>
+            </ul>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">2. Live Attendee Tracker (ควบคุมห้องเรียน)</h2>
+            <p class="text-gray-700 mb-3">ตรวจสอบพิกัดผู้เข้าเรียนแบบ Real-time ตามสีสถานะ:</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-center mb-4">
+                <div class="bg-purple-100 text-purple-800 p-2 rounded">พิกัดอาจารย์</div>
+                <div class="bg-green-100 text-green-800 p-2 rounded">อยู่ในระยะ</div>
+                <div class="bg-red-100 text-red-800 p-2 rounded font-bold">อยู่นอกพื้นที่</div>
+                <div class="bg-blue-100 text-blue-800 p-2 rounded">รอเปิดคลาส</div>
+            </div>
+            <p class="text-sm text-gray-500">หมายเหตุ: ปุ่ม <b>"ลบกิจกรรม"</b> จะทำงานได้ก็ต่อเมื่อยังไม่มีผู้ลงชื่อเข้าเรียนเท่านั้น</p>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">3. แดชบอร์ดติดตามผลเชิงบริหาร (Analytics)</h2>
+            
+            <h3 class="text-lg font-bold text-gray-800 mt-4 mb-2">📊 ความก้าวหน้า EPA</h3>
+            <p class="text-gray-700 mb-2">ตรวจสอบสถานะ <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">🚩 เสี่ยงล่าช้า (At Risk)</span> และสามารถกด <b>Export Pivot</b> เป็นไฟล์ Excel ได้</p>
+
+            <h3 class="text-lg font-bold text-gray-800 mt-4 mb-2">🔄 ระบบติดตามยอดประเมิน 360</h3>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mt-2">
+                <p class="text-red-700 text-sm">
+                    <span class="font-bold">เป้าหมายขั้นต่ำ:</span><br>
+                    หากแพทย์ประจำบ้านคนใดได้รับยอดประเมิน <b>น้อยกว่า 5 ฉบับ</b> ระบบจะแสดงแถบไฮไลท์สีแดง เพื่อให้เจ้าหน้าที่เร่งติดตามก่อนปิดเทอม
+                </p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
