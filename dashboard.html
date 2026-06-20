@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 J</title>
+    <title>skinEPA Dashboard 1.07 H</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
@@ -268,30 +268,24 @@
             // ==========================================
             // 📥 4. ฟังก์ชันดึงข้อมูล "ผลประเมินการนำเสนอกิจกรรม"
             // ==========================================
-            fetchEvalData: async (institute = '') => {
-                // เคลียร์หน้าจอก่อนโหลด
+            fetchEvalData: (institute = '') => {
                 const container = document.getElementById('list-eval');
                 if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 animate-pulse font-bold">กำลังโหลดข้อมูลผลประเมิน...</div>';
 
-                try {
-                    // 🟢 เรียกใช้ API ไปที่หลังบ้าน (action อาจจะเป็น 'get_dashboard_eval')
-                    const res = await app.api({ 
-                        action: 'get_dashboard_eval', // <- เช็คชื่อ action ให้ตรงกับในเมนูของ Code.gs ด้วยนะครับ
-                        institute: institute 
-                    });
-
-                    if (res && res.success) {
-                        // โหลดสำเร็จ โยนข้อมูลไปวาด UI
-                        if (dash.renderEvalUI) {
-                            dash.renderEvalUI(res.data);
+                // 🟢 ใช้ google.script.run วิ่งตรงไปหาฟังก์ชันหลังบ้านแทน app.api
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if (res && res.success) {
+                            if (dash.renderEvalUI) dash.renderEvalUI(res.data);
+                        } else {
+                            if (container) container.innerHTML = `<div class="text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'ไม่มีข้อมูล'}</div>`;
                         }
-                    } else {
-                        if (container) container.innerHTML = `<div class="text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'Error'}</div>`;
-                    }
-                } catch (error) {
-                    console.error("Fetch Eval Error:", error);
-                    if (container) container.innerHTML = '<div class="text-center py-8 text-red-500">❌ เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
-                }
+                    })
+                    .withFailureHandler(error => {
+                        console.error("Fetch Eval Error:", error);
+                        if (container) container.innerHTML = '<div class="text-center py-8 text-red-500">❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</div>';
+                    })
+                    .getDashboardEvalData(institute); // เรียกฟังก์ชันใน Code.gs ตรงๆ
             },
             
             // 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม (Presenter Scores)
