@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 J</title>
+    <title>skinEPA Dashboard 1.07 K</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
@@ -273,23 +273,24 @@
                 if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 animate-pulse font-bold">กำลังโหลดข้อมูลผลประเมิน...</div>';
 
                 try {
-                    // 🟢 ตรวจสอบว่าในไฟล์นี้มีตัวแปรช่วยดึง API (เช่น dash.api หรือ api) สร้างไว้หรือไม่
-                    // หากมี ให้เปลี่ยนไปใช้ตัวนั้นแทนได้เลยครับ เช่น:
-                    // const res = await dash.api({ action: 'get_dashboard_eval', institute: institute });
-                    
-                    // 🟢 หากไม่มีฟังก์ชันช่วย ให้ใช้ fetch() ส่งข้อมูลตรงๆ แบบนี้ครับ
-                    // ⚠️ อย่าลืม! เปลี่ยน URL ด้านล่างเป็นลิงก์ Web App (Exec) ของคุณหมอนะครับ
+                    // ป้องกันกรณีปุ่ม onclick เผลอส่ง Event Object เข้ามาแทนข้อความ
+                    let safeInstitute = typeof institute === 'string' ? institute : '';
+
                     const scriptUrl = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
                     
                     const response = await fetch(scriptUrl, {
                         method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8', // ป้องกันปัญหา CORS
+                        },
                         body: JSON.stringify({ 
                             action: 'get_dashboard_eval', 
-                            institute: institute 
+                            institute: safeInstitute 
                         })
                     });
                     
                     const res = await response.json();
+                    console.log("📥 ข้อมูลที่ได้รับจากหลังบ้าน (Eval):", res); // 🟢 ลองดูค่านี้ใน Console
 
                     if (res && res.success) {
                         if (dash.renderEvalUI) dash.renderEvalUI(res.data);
@@ -302,12 +303,15 @@
                 }
             },
             
-            // 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม (Presenter Scores)
+// 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม (Presenter Scores)
             renderEvalUI: (data) => {
-                // 🟢 รบกวนเช็ค ID ตรงนี้ให้ตรงกับใน HTML (เช่น 'list-eval' หรือ 'presenter-scores')
                 const container = document.getElementById('list-eval'); 
                 
-                if (!container) return; // ถ้าหาพื้นที่วาดไม่เจอให้หยุดทำงาน
+                // 🟢 ดักจับ Error หากหาที่วางตารางไม่เจอ
+                if (!container) {
+                    console.error("❌ หา <div> ที่มี id='list-eval' ไม่เจอในไฟล์ HTML ครับ! รบกวนไปเช็คในหน้าเว็บว่าใส่กล่องนี้ไว้หรือยัง");
+                    return; 
+                }
                 
                 if (!data || data.length === 0) {
                     container.innerHTML = '<div class="text-center py-8 text-gray-500 font-bold bg-white rounded-xl border">ยังไม่มีประวัติการประเมินผู้นำเสนอในสังกัด</div>';
