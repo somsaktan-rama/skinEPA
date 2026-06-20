@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 L</title>
+    <title>skinEPA Dashboard 1.07 M</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
@@ -298,47 +298,51 @@
                 }
             },
 
-            // ==========================================
-            // 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม
+// ==========================================
+            // 📝 วาดรายการผลประเมินการนำเสนอกิจกรรม (พร้อม Dark Mode & Group Comments)
             // ==========================================
             renderEvalUI: (data) => {
-                // 🟢 เปลี่ยนมาใช้ grid-eval ให้ตรงกับหน้า HTML
                 const container = document.getElementById('grid-eval'); 
-                
                 if (!container) return; 
                 
                 if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500 font-bold bg-gray-50 rounded-xl border">ยังไม่มีประวัติการประเมินผู้นำเสนอในสังกัด</div>';
+                    container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800 rounded-xl border dark:border-gray-700">ยังไม่มีประวัติการประเมินผู้นำเสนอในสังกัด</div>';
                     return;
                 }
                 
-                // โครงสร้างกล่องนี้จะถูกจัดเรียงเป็น Grid 3 คอลัมน์โดยอัตโนมัติตามคลาสที่คุณหมอตั้งไว้
                 container.innerHTML = data.map(r => `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition">
-                        <div class="flex justify-between items-start mb-3 border-b pb-2">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-3 border-b dark:border-gray-700 pb-2">
                             <div class="flex-1 pr-2">
-                                <h4 class="font-bold text-teal-800 text-sm line-clamp-1" title="${r.topic}">${r.topic}</h4>
-                                <p class="text-xs text-gray-500 mt-1">ผู้นำเสนอ: <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded">${r.name}</span></p>
+                                <h4 class="font-bold text-teal-800 dark:text-teal-400 text-sm line-clamp-1" title="${r.topic}">${r.topic}</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ผู้นำเสนอ: <span class="font-bold text-gray-800 dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">${r.name}</span></p>
                             </div>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full font-bold whitespace-nowrap">${r.date}</span>
+                            <div class="text-right">
+                                <span class="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-1 rounded-full font-bold whitespace-nowrap block mb-1">${r.date}</span>
+                                <span class="text-[9px] bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold border border-teal-200 dark:border-teal-700 shadow-sm">ผู้ประเมิน ${r.eval_count} ท่าน</span>
+                            </div>
                         </div>
                         
                         <div class="flex items-center gap-2 mb-3">
-                            <div class="bg-teal-50 px-3 py-2 rounded-lg text-center border border-teal-100">
-                                <p class="text-[10px] text-teal-700 font-bold">เฉลี่ย</p>
-                                <p class="text-lg font-black text-teal-600">${r.score}</p>
+                            <div class="bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg text-center border border-teal-100 dark:border-teal-800 shadow-inner">
+                                <p class="text-[10px] text-teal-700 dark:text-teal-400 font-bold">เฉลี่ยรวม</p>
+                                <p class="text-lg font-black text-teal-600 dark:text-teal-300">${r.score}</p>
                             </div>
-                            <div class="grid grid-cols-3 gap-1 flex-1 text-center text-[10px] text-gray-600">
-                                <div class="bg-gray-50 p-1.5 rounded border border-gray-100">นำเสนอ<br><span class="font-bold text-teal-600">${r.details.pres}</span></div>
-                                <div class="bg-gray-50 p-1.5 rounded border border-gray-100">เนื้อหา<br><span class="font-bold text-teal-600">${r.details.cont}</span></div>
-                                <div class="bg-gray-50 p-1.5 rounded border border-gray-100">เวลา<br><span class="font-bold text-teal-600">${r.details.time}</span></div>
+                            <div class="grid grid-cols-3 gap-1 flex-1 text-center text-[10px] text-gray-600 dark:text-gray-300">
+                                <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">นำเสนอ<br><span class="font-bold text-teal-600 dark:text-teal-400">${r.details.pres}</span></div>
+                                <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">เนื้อหา<br><span class="font-bold text-teal-600 dark:text-teal-400">${r.details.cont}</span></div>
+                                <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">เวลา<br><span class="font-bold text-teal-600 dark:text-teal-400">${r.details.time}</span></div>
                             </div>
                         </div>
                         
-                        <div class="bg-amber-50/70 p-2.5 rounded-lg text-xs text-gray-700 border border-amber-100 min-h-[60px]">
-                            <span class="font-bold text-amber-800">💬 ข้อคิดเห็น:</span> <span class="italic text-gray-600">${r.comment || '- ไม่มีข้อเสนอแนะ -'}</span>
+                        <div class="bg-amber-50/70 dark:bg-amber-900/20 p-3 rounded-lg text-xs text-gray-700 dark:text-gray-300 border border-amber-100 dark:border-amber-800 min-h-[70px]">
+                            <p class="font-bold text-amber-800 dark:text-amber-400 mb-1">💬 รวบรวมข้อคิดเห็น:</p>
+                            ${(r.comments && r.comments.length > 0) 
+                                ? `<ul class="list-disc pl-4 space-y-1">${r.comments.map(c => `<li><span class="italic text-gray-700 dark:text-gray-300">"${c.text}"</span> <span class="text-[9px] text-gray-400 dark:text-gray-500">(${c.reviewer})</span></li>`).join('')}</ul>` 
+                                : `<p class="italic text-gray-500 dark:text-gray-400 text-center mt-2">- ไม่มีผู้ประเมินท่านใดให้ข้อเสนอแนะ -</p>`}
                         </div>
-                        <p class="text-[10px] text-right text-gray-400 mt-2">ประเมินโดย: ${r.reviewer}</p>
+                        
+                        <p class="text-[9px] text-right text-gray-400 mt-2 line-clamp-1" title="${r.reviewer}">คณะกรรมการ: ${r.reviewer}</p>
                     </div>
                 `).join('');
             },
@@ -638,7 +642,8 @@
                     epa: 'ความก้าวหน้า EPA', 
                     feedback: '360° Evaluation & Feedback' 
                 };
-                document.getElementById('page-title').innerText = titles[viewId] || 'Dashboard';
+                const titleEl = document.getElementById('page-title');
+                if (titleEl) titleEl.innerText = titles[viewId] || 'Dashboard';
 
                 // แสดง/ซ่อน แถบปุ่ม Filter ด้านบนขวา
                 const filterEl = document.getElementById('group-filters');
@@ -647,14 +652,16 @@
                     else filterEl.classList.remove('hidden');
                 }
 
-                // 🟢 สั่งดึงข้อมูลจริงจากหลังบ้าน (แก้ eval ให้เป็น fetch แล้ว)
-                if (viewId === 'overview') dash.fetchOverviewData();
-                else if (viewId === 'activity') dash.fetchActivityData();
-                else if (viewId === 'eval') dash.fetchEvalData(); // ต้องเป็น fetchEvalData ครับ
-                else if (viewId === 'epa') dash.fetchEpaData();
-                else if (viewId === 'feedback') dash.fetch360Data();
-            },
+                // 🟢 ดึงค่า Institute ของ User ปัจจุบัน (เพื่อส่งไปดึงเฉพาะข้อมูลของสถาบันตนเอง)
+                let inst = dash.user ? dash.user.institute : '';
 
+                // 🟢 สั่งดึงข้อมูลจริงจากหลังบ้าน (แก้ส่งค่า inst พ่วงไปด้วย)
+                if (viewId === 'overview') dash.fetchOverviewData(inst);
+                else if (viewId === 'activity') dash.fetchActivityData(inst);
+                else if (viewId === 'eval') dash.fetchEvalData(inst); 
+                else if (viewId === 'epa') dash.fetchEpaData(inst);
+                else if (viewId === 'feedback') dash.fetch360Data(inst);
+            },
             
             // 3. โหลดข้อมูลและวาด Progress Bar
             fetchOverviewData: async () => {
