@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 H</title>
+    <title>skinEPA Dashboard 1.07 J</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
@@ -265,27 +265,41 @@
                 document.body.removeChild(link);
             },
             
-            // ==========================================
+// ==========================================
             // 📥 4. ฟังก์ชันดึงข้อมูล "ผลประเมินการนำเสนอกิจกรรม"
             // ==========================================
-            fetchEvalData: (institute = '') => {
+            fetchEvalData: async (institute = '') => {
                 const container = document.getElementById('list-eval');
                 if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 animate-pulse font-bold">กำลังโหลดข้อมูลผลประเมิน...</div>';
 
-                // 🟢 ใช้ google.script.run วิ่งตรงไปหาฟังก์ชันหลังบ้านแทน app.api
-                google.script.run
-                    .withSuccessHandler(res => {
-                        if (res && res.success) {
-                            if (dash.renderEvalUI) dash.renderEvalUI(res.data);
-                        } else {
-                            if (container) container.innerHTML = `<div class="text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'ไม่มีข้อมูล'}</div>`;
-                        }
-                    })
-                    .withFailureHandler(error => {
-                        console.error("Fetch Eval Error:", error);
-                        if (container) container.innerHTML = '<div class="text-center py-8 text-red-500">❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</div>';
-                    })
-                    .getDashboardEvalData(institute); // เรียกฟังก์ชันใน Code.gs ตรงๆ
+                try {
+                    // 🟢 ตรวจสอบว่าในไฟล์นี้มีตัวแปรช่วยดึง API (เช่น dash.api หรือ api) สร้างไว้หรือไม่
+                    // หากมี ให้เปลี่ยนไปใช้ตัวนั้นแทนได้เลยครับ เช่น:
+                    // const res = await dash.api({ action: 'get_dashboard_eval', institute: institute });
+                    
+                    // 🟢 หากไม่มีฟังก์ชันช่วย ให้ใช้ fetch() ส่งข้อมูลตรงๆ แบบนี้ครับ
+                    // ⚠️ อย่าลืม! เปลี่ยน URL ด้านล่างเป็นลิงก์ Web App (Exec) ของคุณหมอนะครับ
+                    const scriptUrl = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
+                    
+                    const response = await fetch(scriptUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({ 
+                            action: 'get_dashboard_eval', 
+                            institute: institute 
+                        })
+                    });
+                    
+                    const res = await response.json();
+
+                    if (res && res.success) {
+                        if (dash.renderEvalUI) dash.renderEvalUI(res.data);
+                    } else {
+                        if (container) container.innerHTML = `<div class="text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'ไม่มีข้อมูล'}</div>`;
+                    }
+                } catch (error) {
+                    console.error("Fetch Eval Error:", error);
+                    if (container) container.innerHTML = '<div class="text-center py-8 text-red-500">❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</div>';
+                }
             },
             
             // 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม (Presenter Scores)
