@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08</title>
+    <title>skinEPA Dashboard 1.08 A</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -22,18 +22,15 @@
             <p id="display-institute" class="text-indigo-300 text-sm mt-1">...</p>
         </div>
 
-        <div class="flex items-center space-x-4">
-        
-        <div class="flex items-center space-x-3">
-            <button onclick="dash.toggleDarkMode()" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm" title="เปลี่ยนโหมดสี">
+        <div class="px-6 pt-4 flex items-center space-x-3">
+            <button onclick="dash.toggleDarkMode()" class="p-2 bg-indigo-800 rounded-full text-indigo-100 hover:bg-indigo-700 transition shadow-sm" title="เปลี่ยนโหมดสี">
                 <span id="icon-dark">🌙</span>
             </button>
-            <button onclick="dash.toggleFullScreen()" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm" title="แสดงเต็มจอ">
+            <button onclick="dash.toggleFullScreen()" class="p-2 bg-indigo-800 rounded-full text-indigo-100 hover:bg-indigo-700 transition shadow-sm" title="แสดงเต็มจอ">
                 <span id="icon-fullscreen">🔲</span>
             </button>
         </div>
-        
-        <nav class="flex-1 px-4 py-6 space-y-2">
+        <nav class="flex-1 px-4 py-4 space-y-2">
             <a href="#" onclick="dash.loadView('overview')" class="block px-4 py-3 rounded-lg bg-indigo-800 text-white font-medium">📊 ภาพรวมความก้าวหน้า</a>
             <a href="#" onclick="dash.loadView('activity')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📅 สถิติการเข้ากิจกรรม</a>
             <a href="#" onclick="dash.loadView('eval')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📝 ผลประเมินกิจกรรม</a>
