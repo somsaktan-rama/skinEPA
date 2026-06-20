@@ -265,7 +265,36 @@
                 document.body.removeChild(link);
             },
             
-// 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม (Presenter Scores)
+            // ==========================================
+            // 📥 4. ฟังก์ชันดึงข้อมูล "ผลประเมินการนำเสนอกิจกรรม"
+            // ==========================================
+            fetchEvalData: async (institute = '') => {
+                // เคลียร์หน้าจอก่อนโหลด
+                const container = document.getElementById('list-eval');
+                if (container) container.innerHTML = '<div class="text-center py-8 text-gray-400 animate-pulse font-bold">กำลังโหลดข้อมูลผลประเมิน...</div>';
+
+                try {
+                    // 🟢 เรียกใช้ API ไปที่หลังบ้าน (action อาจจะเป็น 'get_dashboard_eval')
+                    const res = await app.api({ 
+                        action: 'get_dashboard_eval', // <- เช็คชื่อ action ให้ตรงกับในเมนูของ Code.gs ด้วยนะครับ
+                        institute: institute 
+                    });
+
+                    if (res && res.success) {
+                        // โหลดสำเร็จ โยนข้อมูลไปวาด UI
+                        if (dash.renderEvalUI) {
+                            dash.renderEvalUI(res.data);
+                        }
+                    } else {
+                        if (container) container.innerHTML = `<div class="text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'Error'}</div>`;
+                    }
+                } catch (error) {
+                    console.error("Fetch Eval Error:", error);
+                    if (container) container.innerHTML = '<div class="text-center py-8 text-red-500">❌ เกิดข้อผิดพลาดในการเชื่อมต่อ</div>';
+                }
+            },
+            
+            // 📝 3. วาดรายการผลประเมินการนำเสนอกิจกรรม (Presenter Scores)
             renderEvalUI: (data) => {
                 // 🟢 รบกวนเช็ค ID ตรงนี้ให้ตรงกับใน HTML (เช่น 'list-eval' หรือ 'presenter-scores')
                 const container = document.getElementById('list-eval'); 
@@ -336,7 +365,7 @@
                 }
             },
 
-// 🔁 2. วาดกราฟ Radar (เพิ่มระบบป้องกัน Error / Try-Catch)
+            // 🔁 2. วาดกราฟ Radar (เพิ่มระบบป้องกัน Error / Try-Catch)
             render360UI: (mdid) => {
                 const chartContainer = document.getElementById('chart-container');
                 const placeholder = document.getElementById('placeholder-360-chart');
@@ -580,7 +609,7 @@
                 }
             },
 
-// 2. การสลับหน้าจอ และแสดงปุ่ม Filter
+            // 2. การสลับหน้าจอ และแสดงปุ่ม Filter
             loadView: (viewId) => {
                 // 🟢 สำคัญมาก: Array นี้ต้องมีชื่อครบทั้ง 5 หน้า เพื่อให้ระบบรู้ว่าต้องซ่อน/แสดงหน้าไหน
                 const views = ['overview', 'activity', 'eval', 'epa', 'feedback'];
