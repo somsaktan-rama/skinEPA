@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 G</title>
+    <title>skinEPA Dashboard 1.08 H</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -227,7 +227,7 @@
                 // สั่งวาดข้อมูลใหม่ในหน้าปัจจุบัน
                 if (dash.currentView === 'activity' && dash.currentActivityData) dash.renderActivityUI(dash.currentActivityData);
                 else if (dash.currentView === 'eval' && dash.currentEvalData) dash.renderEvalUI(dash.currentEvalData);
-                else if (dash.currentView === 'epa' && dash.currentEpaData) dash.renderEpaUI(dash.currentEpaData);
+                else if (dash.currentView === 'epa' && dash.currentEpaData) dash.(dash.currentEpaData);
                 else if (dash.currentView === 'feedback' && dash.current360Data) {
                     // หากหน้า 360 ใช้ฟังก์ชันชื่ออื่น ให้เปลี่ยนชื่อตรงนี้นะครับ
                     if(dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
@@ -279,7 +279,7 @@
                         dash.currentEpaData = dataArr; 
                         
                         // สั่งวาดตารางครั้งแรกตอนเปิดหน้าเว็บ
-                        if (dash.renderEpaUI) dash.renderEpaUI(dash.currentEpaData); 
+                        if (dash.) dash.(dash.currentEpaData); 
                     } else {
                         if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA ของแพทย์ในสังกัด</td></tr>';
                     }
@@ -292,7 +292,7 @@
             // ==========================================
             // 📈 2. วาดตารางแบบ Pivot Table (ความก้าวหน้า EPA)
             // ==========================================
-            renderEpaUI: (data) => { 
+            : (data) => { 
                 
                 // 🟢 1. ดักจับ Filter: กรองข้อมูลจากระบบส่วนกลาง
                 let groupData = data || [];
@@ -758,59 +758,6 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            },
-            
-            // 📈 2. วาดตารางแบบ Pivot Table
-            renderEpaUI: (allData, filterLevel = 'ALL') => {
-                let groupData = allData;
-                if (filterLevel !== 'ALL') {
-                    groupData = allData.filter(r => r.level === filterLevel || (filterLevel === 'Fellow' && String(r.level).includes('Fellow')));
-                }
-
-                if (!groupData || groupData.length === 0) {
-                    document.getElementById('table-epa-head').innerHTML = '';
-                    document.getElementById('table-epa-body').innerHTML = '<tr><td class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลของกลุ่มชั้นปีนี้</td></tr>';
-                    return;
-                }
-
-                // สร้างหัวตาราง (แกน X)
-                let headHtml = `
-                    <tr>
-                        <th class="px-4 py-3 min-w-[250px] bg-white sticky left-0 z-10 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">รายการประเมิน / กิจกรรม</th>
-                        <th class="px-4 py-3 text-center bg-indigo-50 min-w-[80px] border-b border-r">เป้าหมาย</th>
-                `;
-                groupData.forEach(r => {
-                    let displayLevel = String(r.level).includes('Fellow') ? 'Fellow' : r.level;
-                    headHtml += `<th class="px-4 py-3 text-center min-w-[120px] leading-tight border-b">${r.name} <br><span class="text-xs text-indigo-500">(${displayLevel})</span></th>`;
-                });
-                headHtml += `</tr>`;
-                document.getElementById('table-epa-head').innerHTML = headHtml;
-
-                // สร้างเนื้อหาตาราง (แกน Y)
-                let itemsArray = groupData[0].items || groupData[0].epas || [];
-                let bodyHtml = '';
-
-                itemsArray.forEach(item => {
-                    bodyHtml += `<tr class="hover:bg-indigo-50 transition">`;
-                    bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700 bg-white sticky left-0 z-10 border-r border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${item.desc || item.name || 'ไม่ระบุชื่อ EPA'}</td>`;
-                    bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-indigo-50 text-indigo-800 border-r border-b">${item.target || item.req || 0}</td>`;
-                    
-                    groupData.forEach(r => {
-                        let rItems = r.items || r.epas || [];
-                        let resItem = rItems.find(i => (i.id === item.id) || (i.desc === item.desc));
-                        let score = resItem ? (resItem.pass || resItem.count || 0) : 0;
-                        let target = item.target || item.req || 0;
-                        
-                        let scoreClass = 'text-gray-300 font-normal';
-                        if (score >= target && target > 0) scoreClass = 'text-green-600 font-bold bg-green-50 rounded border border-green-100';
-                        else if (score > 0) scoreClass = 'text-orange-500 font-bold';
-
-                        bodyHtml += `<td class="px-4 py-3 text-center border-b ${scoreClass}">${score}</td>`;
-                    });
-                    bodyHtml += `</tr>`;
-                });
-
-                document.getElementById('table-epa-body').innerHTML = bodyHtml;
             },
             
             // 1. ระบบ Login ด้วย SweetAlert2 (ด่านแรกก่อนเข้าใช้งาน)
