@@ -339,7 +339,7 @@
                         let target = item.target || item.req || 0;
                         
                         // คำนวณสี
-                        let scoreClass = 'text-gray-300 dark:text-gray-600 font-normal';
+                        let scoreClass = 'text-gray-300 dark:text-gray-400 font-normal';
                         if (score >= target && target > 0) {
                             scoreClass = 'text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30';
                         } else if (score > 0) {
@@ -812,12 +812,11 @@
                 }
             },
 
-            // 4. วาด HTML ของ Progress Bar แยกตามชั้นปี
+// 4. วาด HTML ของ Progress Bar แยกตามชั้นปี
             renderProgressBars: (data) => {
                 const container = document.getElementById('progress-container');
                 let html = '';
                 
-                // กำหนดสีให้แต่ละกลุ่ม
                 const groups = [
                     { key: 'R2', title: 'ชั้นปีที่ 2 (R2)', color: 'blue' },
                     { key: 'R3', title: 'ชั้นปีที่ 3 (R3)', color: 'green' },
@@ -828,24 +827,23 @@
                 groups.forEach(g => {
                     if (data[g.key] && data[g.key].length > 0) {
                         html += `
-                        <div class="border rounded-lg p-4 bg-gray-50">
-                            <h4 class="font-bold text-${g.color}-800 mb-4 flex items-center">
-                                <span class="bg-${g.color}-200 px-2 py-1 rounded text-xs mr-2">${g.key}</span> ${g.title}
+                        <div class="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 transition-colors">
+                            <h4 class="font-bold text-${g.color}-800 dark:text-${g.color}-400 mb-4 flex items-center">
+                                <span class="bg-${g.color}-200 dark:bg-${g.color}-900/50 px-2 py-1 rounded text-xs mr-2">${g.key}</span> ${g.title}
                             </h4>
                             <div class="space-y-4">
                         `;
                         
                         data[g.key].forEach(person => {
-                            // ปรับสี Bar ให้เป็นสีแดงถ้าคะแนนต่ำกว่า 50%
                             let barColor = person.progress < 50 ? 'bg-red-500' : `bg-${g.color}-500`;
                             
                             html += `
                                 <div>
                                     <div class="flex justify-between text-sm mb-1">
-                                        <span class="font-medium text-gray-700">${person.name}</span>
-                                        <span class="font-bold text-gray-600">${person.progress}%</span>
+                                        <span class="font-medium text-gray-700 dark:text-gray-200">${person.name}</span>
+                                        <span class="font-bold text-gray-600 dark:text-gray-300">${person.progress}%</span>
                                     </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
                                         <div class="${barColor} h-2.5 rounded-full transition-all duration-1000" style="width: ${person.progress}%"></div>
                                     </div>
                                 </div>
@@ -856,7 +854,7 @@
                     }
                 });
                 container.innerHTML = html;
-            }
+            } // 🟢 เช็คลูกน้ำ/ปีกกา ตามตำแหน่งเดิมของคุณหมอนะครับ
         };
 
         // เริ่มการทำงานโดยบังคับให้ Login ทันที
