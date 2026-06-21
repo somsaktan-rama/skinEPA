@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 M</title>
+    <title>skinEPA Dashboard 1.08 N</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -77,7 +77,7 @@
                 </div>
             </div>
 
-<!-- ========================================== -->
+            <!-- ========================================== -->
             <!-- View: 📅 สถิติการเข้ากิจกรรม (Activity) -->
             <!-- ========================================== -->
             <div id="view-activity" class="hidden space-y-6">
@@ -235,7 +235,7 @@
                 else if (viewId === 'feedback') dash.fetch360Data(inst);
             },
 
-// ==========================================
+            // ==========================================
             // 🟢 3. ฟังก์ชันคุมปุ่ม Filter สำหรับทุกหน้า
             // ==========================================
             applyFilter: (group) => {
@@ -772,16 +772,32 @@
             },
             
             // 1. ระบบ Login ด้วย SweetAlert2 (ด่านแรกก่อนเข้าใช้งาน)
-            requireLogin: async () => {
+                requireLogin: async () => {
                 const { value: mdid } = await Swal.fire({
                     title: '🔑 เข้าสู่ระบบ',
                     text: 'กรอก MdID เพื่อเข้าถึงข้อมูล skinEPA',
-                    input: 'text',
-                    inputPlaceholder: 'RamaID',
+                    input: 'password', // 🟢 เปลี่ยนจาก 'text' เป็น 'password' เพื่อซ่อนเป็น ********
+                    inputPlaceholder: 'ตัวเลข 4-10 หลัก',
+                    inputAttributes: {
+                        maxlength: 10,
+                        autocapitalize: 'off',
+                        autocorrect: 'off',
+                        inputmode: 'numeric' // 🟢 เด้งแป้นพิมพ์ตัวเลขบนมือถือ
+                    },
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     confirmButtonText: 'เข้าสู่ระบบ',
                     showLoaderOnConfirm: true,
+                    // 🟢 เพิ่มระบบดักจับ บังคับกรอกเฉพาะตัวเลข 4-10 ตัว
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'กรุณากรอก MdID เพื่อเข้าสู่ระบบ!';
+                        }
+                        // ใช้ Regex เช็คว่าเป็นตัวเลข 0-9 จำนวน 4-10 ตัว
+                        if (!/^\d{4,10}$/.test(value)) {
+                            return 'กรุณากรอกเฉพาะตัวเลข 4 - 10 หลักเท่านั้น!';
+                        }
+                    },
                     preConfirm: async (loginId) => {
                         try {
                             const response = await fetch(GAS_WEBAPP_URL, {
@@ -810,7 +826,7 @@
                     }, 100);
 
                     dash.loadView('overview');
-                } else {
+                } else if (mdid) { 
                     Swal.fire('ข้อผิดพลาด', mdid.message || 'รหัสไม่ถูกต้อง', 'error').then(() => dash.requireLogin());
                 }
             },
@@ -833,7 +849,7 @@
                 }
             },
 
-// 4. วาด HTML ของ Progress Bar แยกตามชั้นปี
+            // 4. วาด HTML ของ Progress Bar แยกตามชั้นปี
             renderProgressBars: (data) => {
                 const container = document.getElementById('progress-container');
                 let html = '';
