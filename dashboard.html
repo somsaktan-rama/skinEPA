@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 K</title>
+    <title>skinEPA Dashboard 1.08 L</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -69,27 +69,28 @@
                     </div>
                 </div>
                 
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-6 border-b pb-2">ความก้าวหน้ารายบุคคล (แยกตามกลุ่ม)</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 border-b dark:border-gray-700 pb-2">ความก้าวหน้ารายบุคคล (แยกตามกลุ่ม)</h3>
                     <div id="progress-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        </div>
+                        <!-- วาดข้อมูลด้วย JS -->
+                    </div>
                 </div>
             </div>
 
-            <!-- ========================================== -->
+<!-- ========================================== -->
             <!-- View: 📅 สถิติการเข้ากิจกรรม (Activity) -->
             <!-- ========================================== -->
             <div id="view-activity" class="hidden space-y-6">
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-gray-800">สรุปการเข้าร่วมกิจกรรม (Attendance)</h3>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">สรุปการเข้าร่วมกิจกรรม (Attendance)</h3>
                         <button onclick="dash.exportActivityExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold flex items-center transition">
                             📥 Export Excel
                         </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50 text-gray-600 font-bold border-b">
+                            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200 font-bold border-b dark:border-gray-600">
                                 <tr>
                                     <th class="px-4 py-3">ชื่อ - นามสกุล</th>
                                     <th class="px-4 py-3 text-center">ชั้นปี</th>
@@ -98,7 +99,7 @@
                                     <th class="px-4 py-3 text-center">สถานะ</th>
                                 </tr>
                             </thead>
-                            <tbody id="table-activity" class="divide-y text-gray-700">
+                            <tbody id="table-activity" class="divide-y dark:divide-gray-700 text-gray-700">
                                 <!-- วาดข้อมูลด้วย JS -->
                             </tbody>
                         </table>
@@ -110,8 +111,8 @@
             <!-- View: 📝 การประเมินกิจกรรม (Activity Evaluation) -->
             <!-- ========================================== -->
             <div id="view-eval" class="hidden space-y-6">
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">คะแนนการนำเสนอกิจกรรม (Presenter Scores)</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border dark:border-gray-800">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">คะแนนการนำเสนอกิจกรรม (Presenter Scores)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="grid-eval">
                         <!-- วาดข้อมูลด้วย JS -->
                     </div>
@@ -144,29 +145,28 @@
             <!-- View: 🔁 360° Evaluation & Feedback -->
             <!-- ========================================== -->
             <div id="view-feedback" class="hidden space-y-6">
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-gray-800">ผลการประเมิน 360 องศา</h3>
-                        <select id="select-360-user" class="border p-2 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 mt-2 md:mt-0">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">ผลการประเมิน 360 องศา</h3>
+                        <select id="select-360-user" class="border dark:border-gray-600 p-2 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 mt-2 md:mt-0 transition-colors">
                             <option value="">-- เลือกแพทย์ประจำบ้าน --</option>
-                            <!-- เติมรายชื่อด้วย JS -->
                         </select>
                     </div>
                     
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="border rounded-lg p-4 bg-gray-50 flex flex-col items-center justify-center h-[350px] relative w-full shadow-inner">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="border dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 flex flex-col items-center justify-center h-[350px] relative w-full shadow-inner transition-colors">
                             <div id="placeholder-360-chart" class="text-center w-full px-4">
-                                <p class="text-gray-400 text-sm">กรุณาเลือกรายชื่อเพื่อดูกราฟ</p>
+                                <p class="text-gray-400 dark:text-gray-400 text-sm">กรุณาเลือกรายชื่อเพื่อดูกราฟ</p>
                             </div>
                             <div id="chart-container" class="hidden w-full h-full relative">
                                 <canvas id="radarChart"></canvas>
                             </div>
                         </div>
                         
-                        <div class="border rounded-lg p-4 bg-gray-50">
-                            <h4 class="font-bold text-gray-700 mb-3 border-b pb-2">💬 ข้อเสนอแนะเชิงคุณภาพ (Anonymous)</h4>
+                        <div class="border dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 transition-colors">
+                            <h4 class="font-bold text-gray-700 dark:text-gray-200 mb-3 border-b dark:border-gray-600 pb-2">💬 ข้อเสนอแนะเชิงคุณภาพ (Anonymous)</h4>
                             <div id="feedback-comments" class="space-y-3 h-[250px] overflow-y-auto">
-                                <p class="text-gray-400 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>
+                                <p class="text-gray-400 dark:text-gray-400 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>
                             </div>
                         </div>
                     </div>
