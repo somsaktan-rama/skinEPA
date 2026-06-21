@@ -214,7 +214,9 @@
                 else if (viewId === 'feedback') dash.fetch360Data(inst);
             },
 
-            // 🟢 3. อัปเดต applyFilter ให้วาดข้อมูลซ้ำเมื่อกดปุ่ม
+            // ==========================================
+            // 🟢 3. ฟังก์ชันคุมปุ่ม Filter สำหรับทุกหน้า
+            // ==========================================
             applyFilter: (group) => {
                 dash.currentFilter = group;
                 
@@ -225,15 +227,20 @@
                 });
 
                 // สั่งวาดข้อมูลใหม่ในหน้าปัจจุบัน
-                if (dash.currentView === 'activity' && dash.currentActivityData) dash.renderActivityUI(dash.currentActivityData);
-                else if (dash.currentView === 'eval' && dash.currentEvalData) dash.renderEvalUI(dash.currentEvalData);
-                else if (dash.currentView === 'epa' && dash.currentEpaData) dash.(dash.currentEpaData);
+                if (dash.currentView === 'activity' && dash.currentActivityData) {
+                    dash.renderActivityUI(dash.currentActivityData);
+                }
+                else if (dash.currentView === 'eval' && dash.currentEvalData) {
+                    dash.renderEvalUI(dash.currentEvalData);
+                }
+                else if (dash.currentView === 'epa' && dash.currentEpaData) {
+                    dash.renderEpaUI(dash.currentEpaData); // 🟢 แก้ไขเติม renderEpaUI ตรงนี้ครับ
+                }
                 else if (dash.currentView === 'feedback' && dash.current360Data) {
-                    // หากหน้า 360 ใช้ฟังก์ชันชื่ออื่น ให้เปลี่ยนชื่อตรงนี้นะครับ
                     if(dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
                 }
             },
-
+            
             // 🟢 ฟังก์ชันควบคุม Dark Mode และ Full Screen ที่หายไป
             toggleDarkMode: () => {
                 const htmlEl = document.documentElement;
