@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 J</title>
+    <title>skinEPA Dashboard 1.08 K</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -214,7 +214,7 @@
                 else if (viewId === 'feedback') dash.fetch360Data(inst);
             },
 
-            // ==========================================
+// ==========================================
             // 🟢 3. ฟังก์ชันคุมปุ่ม Filter สำหรับทุกหน้า
             // ==========================================
             applyFilter: (group) => {
@@ -234,33 +234,14 @@
                     dash.renderEvalUI(dash.currentEvalData);
                 }
                 else if (dash.currentView === 'epa' && dash.currentEpaData) {
-                    dash.renderEpaUI(dash.currentEpaData); // 🟢 แก้ไขเติม renderEpaUI ตรงนี้ครับ
+                    dash.renderEpaUI(dash.currentEpaData); 
                 }
                 else if (dash.currentView === 'feedback' && dash.current360Data) {
-                    if(dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
-                }
-            },
-            
-            // 🟢 ฟังก์ชันควบคุม Dark Mode และ Full Screen ที่หายไป
-            toggleDarkMode: () => {
-                const htmlEl = document.documentElement;
-                htmlEl.classList.toggle('dark');
-                const isDark = htmlEl.classList.contains('dark');
-                const icon = document.getElementById('icon-dark');
-                if(icon) icon.innerText = isDark ? '☀️' : '🌙';
-            },
-            toggleFullScreen: () => {
-                const icon = document.getElementById('icon-fullscreen');
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen();
-                    if(icon) icon.innerText = '🔳';
-                } else {
-                    document.exitFullscreen();
-                    if(icon) icon.innerText = '🔲';
+                    if (dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
                 }
             },
 
- // ==========================================
+            // ==========================================
             // 📥 5. ฟังก์ชันดึงข้อมูล "ความก้าวหน้า EPA"
             // ==========================================
             fetchEpaData: async () => {
@@ -282,11 +263,13 @@
                     if (res && res.data) dataArr = res.data;
 
                     if (dataArr.length > 0) {
-                        // 🟢 จุดสำคัญที่สุด: เซฟข้อมูลลง dash.currentEpaData ก่อนวาดตาราง!
+                        // เซฟข้อมูลลง dash.currentEpaData ก่อนวาดตาราง
                         dash.currentEpaData = dataArr; 
                         
-                        // 🟢 สั่งวาดตารางครั้งแรกตอนเปิดหน้าเว็บ (แก้ชื่อฟังก์ชันที่ตกหล่นแล้ว)
-                        if (dash.renderEpaUI) dash.renderEpaUI(dash.currentEpaData); 
+                        // สั่งวาดตารางครั้งแรกตอนเปิดหน้าเว็บ
+                        if (dash.renderEpaUI) {
+                            dash.renderEpaUI(dash.currentEpaData);
+                        }
                     } else {
                         if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA ของแพทย์ในสังกัด</td></tr>';
                     }
