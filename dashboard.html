@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 L</title>
+    <title>skinEPA Dashboard 1.08 M</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -187,6 +187,27 @@
             currentEpaData: null,
             current360Data: null,
 
+            // 🟢 ฟังก์ชันควบคุม Dark Mode
+            toggleDarkMode: () => {
+                const htmlEl = document.documentElement;
+                htmlEl.classList.toggle('dark');
+                const isDark = htmlEl.classList.contains('dark');
+                const icon = document.getElementById('icon-dark');
+                if(icon) icon.innerText = isDark ? '☀️' : '🌙';
+            },
+
+            // 🟢 ฟังก์ชันควบคุม Full Screen (เต็มจอ)
+            toggleFullScreen: () => {
+                const icon = document.getElementById('icon-fullscreen');
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                    if(icon) icon.innerText = '🔳';
+                } else {
+                    document.exitFullscreen();
+                    if(icon) icon.innerText = '🔲';
+                }
+            },
+            
             // 🟢 2. อัปเดต loadView (ต้องมี dash.currentView = viewId;)
             loadView: (viewId) => {
                 dash.currentView = viewId; // ให้ระบบจำว่าอยู่หน้าไหน
