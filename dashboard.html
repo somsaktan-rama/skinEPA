@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 D</title>
+    <title>skinEPA Dashboard 1.08 E</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -259,17 +259,18 @@
             renderEpaUI: (data) => { 
                 
                 // 🟢 1. ดักจับ Filter: กรองข้อมูลจากระบบส่วนกลาง
-                renderEpaUI: (data) => {  // 🟢 ลบ filterLevel ออก เหลือแค่ data
                 let groupData = data;
-                
-                // 🟢 ดึงค่า Filter จากระบบกลาง (dash.currentFilter) มาใช้ตรงๆ
                 if (dash.currentFilter !== 'ALL') {
                     groupData = data.filter(r => r.level && String(r.level).toUpperCase().includes(dash.currentFilter.toUpperCase()));
                 }
 
+                const thead = document.getElementById('table-epa-head');
+                const tbody = document.getElementById('table-epa-body');
+
+                // 🟢 2. กรณีไม่มีข้อมูล
                 if (!groupData || groupData.length === 0) {
-                    document.getElementById('table-epa-head').innerHTML = '';
-                    document.getElementById('table-epa-body').innerHTML = `<tr><td class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลความก้าวหน้า EPA สำหรับชั้นปี ${dash.currentFilter}</td></tr>`;
+                    if (thead) thead.innerHTML = '';
+                    if (tbody) tbody.innerHTML = `<tr><td class="text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA สำหรับชั้นปี ${dash.currentFilter}</td></tr>`;
                     return;
                 }
 
@@ -326,7 +327,7 @@
                 });
 
                 if (tbody) tbody.innerHTML = bodyHtml;
-            },
+            }, // 🟢 อย่าลืมปีกกาและลูกน้ำปิดท้ายตรงนี้นะครับ
             
             // 🟢 ฟังก์ชันวาด Dropdown ของหน้า 360 (หลุดหายไปจากไฟล์เดิม)
             render360Dropdown: (data) => {
