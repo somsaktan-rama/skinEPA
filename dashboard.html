@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 E</title>
+    <title>skinEPA Dashboard 1.08 A</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -321,6 +321,7 @@
                             scoreClass = 'text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30'; // สีเขียวถ้าผ่าน
                         } else if (score > 0) {
                             scoreClass = 'text-orange-500 dark:text-orange-400 font-bold'; // สีส้มถ้ามีแต่ยังไม่ผ่าน
+                        } // 🟢 (แก้ไขแล้ว) เพิ่มปีกกาปิดตรงนี้ครับ
 
                         bodyHtml += `<td class="px-4 py-3 text-center ${scoreClass}">${score}</td>`;
                     });
@@ -330,7 +331,7 @@
 
                 if (tbody) tbody.innerHTML = bodyHtml;
             },
-
+            
             // 🟢 ฟังก์ชันวาด Dropdown ของหน้า 360 (หลุดหายไปจากไฟล์เดิม)
             render360Dropdown: (data) => {
                 const selectEl = document.getElementById('select-360-user');
