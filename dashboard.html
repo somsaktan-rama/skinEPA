@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 M</title>
+    <title>skinEPA Dashboard 1.07 N</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
@@ -33,11 +33,11 @@
         <header class="bg-white shadow-sm p-4 flex justify-between items-center">
             <h2 id="page-title" class="text-2xl font-bold text-gray-800">ภาพรวมระบบ (Overview)</h2>
             <div id="group-filters" class="hidden flex space-x-2">
-                <button onclick="dash.renderEpaUI(dash.currentEpaData, 'ALL')" class="px-3 py-1 text-sm bg-gray-200 text-gray-800 rounded-full font-bold hover:bg-gray-300 shadow-sm">ทั้งหมด</button>
-                <button onclick="dash.renderEpaUI(dash.currentEpaData, 'R2')" class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full font-bold hover:bg-blue-200 shadow-sm">R2</button>
-                <button onclick="dash.renderEpaUI(dash.currentEpaData, 'R3')" class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-bold hover:bg-green-200 shadow-sm">R3</button>
-                <button onclick="dash.renderEpaUI(dash.currentEpaData, 'R4')" class="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full font-bold hover:bg-purple-200 shadow-sm">R4</button>
-                <button onclick="dash.renderEpaUI(dash.currentEpaData, 'Fellow')" class="px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded-full font-bold hover:bg-orange-200 shadow-sm">Fellow</button>
+                <button onclick="dash.applyFilter('ALL')" class="filter-btn px-3 py-1 text-sm bg-gray-200 text-gray-800 rounded-full font-bold hover:bg-gray-300 shadow-sm" data-group="ALL">ทั้งหมด</button>
+                <button onclick="dash.applyFilter('R2')" class="filter-btn px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full font-bold hover:bg-blue-200 shadow-sm" data-group="R2">R2</button>
+                <button onclick="dash.applyFilter('R3')" class="filter-btn px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-bold hover:bg-green-200 shadow-sm" data-group="R3">R3</button>
+                <button onclick="dash.applyFilter('R4')" class="filter-btn px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full font-bold hover:bg-purple-200 shadow-sm" data-group="R4">R4</button>
+                <button onclick="dash.applyFilter('Fellow')" class="filter-btn px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded-full font-bold hover:bg-orange-200 shadow-sm" data-group="Fellow">Fellow</button>
             </div>
         </header>
 
@@ -170,7 +170,37 @@
         const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
         const dash = {
             user: null,
+            currentFilter: 'ALL',
+            currentView: 'overview',
 
+            // ==========================================
+            // 🟢 ฟังก์ชันคุมปุ่ม Filter สำหรับทุกหน้า
+            // ==========================================
+            applyFilter: (group) => {
+                dash.currentFilter = group;
+                
+                // 1. เพิ่มกรอบไฮไลท์ให้ปุ่มที่ถูกกด
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    if(btn.dataset.group === group) {
+                        btn.classList.add('ring-2', 'ring-teal-500', 'ring-offset-1');
+                    } else {
+                        btn.classList.remove('ring-2', 'ring-teal-500', 'ring-offset-1');
+                    }
+                });
+
+                // 2. สั่งให้หน้าปัจจุบัน "วาดข้อมูลใหม่" โดยใช้ Filter ใหม่
+                if (dash.currentView === 'activity' && dash.currentActivityData) {
+                    dash.renderActivityUI(dash.currentActivityData);
+                } else if (dash.currentView === 'eval' && dash.currentEvalData) {
+                    dash.renderEvalUI(dash.currentEvalData);
+                } else if (dash.currentView === 'epa' && dash.currentEpaData) {
+                    dash.renderEpaUI(dash.currentEpaData);
+                } else if (dash.currentView === 'feedback' && dash.current360Data) {
+                    // 🟢 เรียกฟังก์ชันวาด Dropdown ของ 360 (เปลี่ยนชื่อตามที่คุณหมอใช้จริงนะครับ)
+                    if(dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
+                }
+            },
+            
             // -----------------------------------------
             // 📅 1. ดึงข้อมูลสถิติการเข้ากิจกรรม
             // -----------------------------------------
@@ -193,6 +223,11 @@
 
             // 📅 2. วาดตารางสถิติกิจกรรม
             renderActivityUI: (data) => {
+                // 🟢 1. กรองข้อมูลก่อนวาด
+                let filteredData = data;
+                if (dash.currentFilter !== 'ALL') {
+                    filteredData = data.filter(r => r.level && r.level.includes(dash.currentFilter));
+                }
                 const tbody = document.getElementById('table-activity');
                 if (!data || data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลรายชื่อแพทย์ในสังกัด</td></tr>';
@@ -298,10 +333,15 @@
                 }
             },
 
-// ==========================================
+            // ==========================================
             // 📝 วาดรายการผลประเมินการนำเสนอกิจกรรม (พร้อม Dark Mode & Group Comments)
             // ==========================================
             renderEvalUI: (data) => {
+                // 🟢 1. กรองข้อมูลก่อนวาด
+                let filteredData = data;
+                if (dash.currentFilter !== 'ALL') {
+                    filteredData = data.filter(r => r.level && r.level.includes(dash.currentFilter));
+                }
                 const container = document.getElementById('grid-eval'); 
                 if (!container) return; 
                 
@@ -351,6 +391,11 @@
             // 🔁 1. ดึงข้อมูล 360 (ใช้ API สำหรับ Dashboard)
             // -----------------------------------------
             fetch360Data: async () => {
+                // 🟢 1. กรองข้อมูลก่อนวาด
+                let filteredData = data;
+                if (dash.currentFilter !== 'ALL') {
+                    filteredData = data.filter(r => r.level && r.level.includes(dash.currentFilter));
+                }
                 const selectEl = document.getElementById('select-360-user');
                 selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
                 
