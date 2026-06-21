@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 I</title>
+    <title>skinEPA Dashboard 1.08 J</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -260,7 +260,7 @@
                 }
             },
 
-            // ==========================================
+ // ==========================================
             // 📥 5. ฟังก์ชันดึงข้อมูล "ความก้าวหน้า EPA"
             // ==========================================
             fetchEpaData: async () => {
@@ -285,8 +285,8 @@
                         // 🟢 จุดสำคัญที่สุด: เซฟข้อมูลลง dash.currentEpaData ก่อนวาดตาราง!
                         dash.currentEpaData = dataArr; 
                         
-                        // สั่งวาดตารางครั้งแรกตอนเปิดหน้าเว็บ
-                        if (dash.) dash.(dash.currentEpaData); 
+                        // 🟢 สั่งวาดตารางครั้งแรกตอนเปิดหน้าเว็บ (แก้ชื่อฟังก์ชันที่ตกหล่นแล้ว)
+                        if (dash.renderEpaUI) dash.renderEpaUI(dash.currentEpaData); 
                     } else {
                         if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA ของแพทย์ในสังกัด</td></tr>';
                     }
@@ -295,7 +295,7 @@
                     if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">❌ เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>';
                 }
             },
-
+            
             // ==========================================
             // 📈 2. วาดตารางแบบ Pivot Table (ความก้าวหน้า EPA)
             // ==========================================
