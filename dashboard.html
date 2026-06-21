@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 E</title>
+    <title>skinEPA Dashboard 1.08 F</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -274,7 +274,7 @@
                     return;
                 }
 
-                // 🟢 3. สร้างหัวตาราง (แกน X) - รองรับ Dark Mode
+                // 🟢 3. สร้างหัวตาราง (แกน X)
                 let headHtml = `
                     <tr class="bg-indigo-50 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200">
                         <th class="px-4 py-3 min-w-[250px] bg-white dark:bg-gray-800 sticky left-0 z-10 border-r dark:border-gray-600 border-b dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">รายการประเมิน / กิจกรรม</th>
@@ -292,33 +292,28 @@
                 
                 if (thead) thead.innerHTML = headHtml;
 
-                // 🟢 4. สร้างเนื้อหาตาราง (แกน Y) - รองรับ Dark Mode
+                // 🟢 4. สร้างเนื้อหาตาราง (แกน Y)
                 let itemsArray = groupData[0].items || groupData[0].epas || [];
                 let bodyHtml = '';
 
                 itemsArray.forEach(item => {
                     bodyHtml += `<tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition border-b dark:border-gray-700">`;
                     
-                    // คอลัมน์ชื่อ EPA (ล็อคไว้ด้านซ้าย)
                     bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 sticky left-0 z-10 border-r dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${item.desc || item.name || 'ไม่ระบุชื่อ EPA'}</td>`;
-                    
-                    // คอลัมน์เป้าหมาย
                     bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 border-r dark:border-gray-700">${item.target || item.req || 0}</td>`;
                     
-                    // วนลูปคะแนนรายบุคคล
                     groupData.forEach(r => {
                         let rItems = r.items || r.epas || [];
                         let resItem = rItems.find(i => (i.id === item.id) || (i.desc === item.desc));
                         let score = resItem ? (resItem.pass || resItem.count || 0) : 0;
                         let target = item.target || item.req || 0;
                         
-                        // คำนวณสี
                         let scoreClass = 'text-gray-300 dark:text-gray-600 font-normal';
                         if (score >= target && target > 0) {
                             scoreClass = 'text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30';
                         } else if (score > 0) {
                             scoreClass = 'text-orange-500 dark:text-orange-400 font-bold';
-                        }
+                        } 
 
                         bodyHtml += `<td class="px-4 py-3 text-center ${scoreClass}">${score}</td>`;
                     });
@@ -327,7 +322,7 @@
                 });
 
                 if (tbody) tbody.innerHTML = bodyHtml;
-            }, // 🟢 อย่าลืมปีกกาและลูกน้ำปิดท้ายตรงนี้นะครับ
+            },
             
             // 🟢 ฟังก์ชันวาด Dropdown ของหน้า 360 (หลุดหายไปจากไฟล์เดิม)
             render360Dropdown: (data) => {
@@ -508,17 +503,18 @@
                 // 🟢 1. กรองข้อมูลก่อนวาด
                 let filteredData = data;
                 if (dash.currentFilter !== 'ALL') {
-                    filteredData = data.filter(r => r.level && r.level.includes(dash.currentFilter));
+                    filteredData = data.filter(r => r.level && String(r.level).toUpperCase().includes(dash.currentFilter.toUpperCase()));
                 }
+
                 const container = document.getElementById('grid-eval'); 
                 if (!container) return; 
                 
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800 rounded-xl border dark:border-gray-700">ยังไม่มีประวัติการประเมินผู้นำเสนอในสังกัด</div>';
+                if (!filteredData || filteredData.length === 0) {
+                    container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800 rounded-xl border dark:border-gray-700">ไม่พบประวัติการประเมินของชั้นปี ${dash.currentFilter}</div>`;
                     return;
                 }
                 
-                container.innerHTML = data.map(r => `
+                container.innerHTML = filteredData.map(r => `
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
                         <div class="flex justify-between items-start mb-3 border-b dark:border-gray-700 pb-2">
                             <div class="flex-1 pr-2">
