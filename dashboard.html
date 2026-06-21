@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.07 N</title>
+    <title>skinEPA Dashboard 1.07 O</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
@@ -170,37 +170,61 @@
         const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
         const dash = {
             user: null,
+            // 🟢 1. เพิ่มตัวแปรความจำ ไว้ด้านบนสุดของ dash
             currentFilter: 'ALL',
             currentView: 'overview',
+            currentActivityData: null,
+            currentEvalData: null,
+            currentEpaData: null,
+            current360Data: null,
 
-            // ==========================================
-            // 🟢 ฟังก์ชันคุมปุ่ม Filter สำหรับทุกหน้า
-            // ==========================================
+            // 🟢 2. อัปเดต loadView (ต้องมี dash.currentView = viewId;)
+            loadView: (viewId) => {
+                dash.currentView = viewId; // ให้ระบบจำว่าอยู่หน้าไหน
+                
+                const views = ['overview', 'activity', 'eval', 'epa', 'feedback'];
+                views.forEach(v => {
+                    const el = document.getElementById(`view-${v}`);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const activeEl = document.getElementById(`view-${viewId}`);
+                if (activeEl) activeEl.classList.remove('hidden');
+                
+                const filterEl = document.getElementById('group-filters');
+                if (filterEl) {
+                    if(viewId === 'overview') filterEl.classList.add('hidden');
+                    else filterEl.classList.remove('hidden');
+                }
+
+                let inst = dash.user ? dash.user.institute : '';
+                if (viewId === 'overview') dash.fetchOverviewData(inst);
+                else if (viewId === 'activity') dash.fetchActivityData(inst);
+                else if (viewId === 'eval') dash.fetchEvalData(inst); 
+                else if (viewId === 'epa') dash.fetchEpaData(inst);
+                else if (viewId === 'feedback') dash.fetch360Data(inst);
+            },
+
+            // 🟢 3. อัปเดต applyFilter ให้วาดข้อมูลซ้ำเมื่อกดปุ่ม
             applyFilter: (group) => {
                 dash.currentFilter = group;
                 
-                // 1. เพิ่มกรอบไฮไลท์ให้ปุ่มที่ถูกกด
+                // ไฮไลท์สีปุ่ม
                 document.querySelectorAll('.filter-btn').forEach(btn => {
-                    if(btn.dataset.group === group) {
-                        btn.classList.add('ring-2', 'ring-teal-500', 'ring-offset-1');
-                    } else {
-                        btn.classList.remove('ring-2', 'ring-teal-500', 'ring-offset-1');
-                    }
+                    if(btn.dataset.group === group) btn.classList.add('ring-2', 'ring-teal-500', 'ring-offset-1');
+                    else btn.classList.remove('ring-2', 'ring-teal-500', 'ring-offset-1');
                 });
 
-                // 2. สั่งให้หน้าปัจจุบัน "วาดข้อมูลใหม่" โดยใช้ Filter ใหม่
-                if (dash.currentView === 'activity' && dash.currentActivityData) {
-                    dash.renderActivityUI(dash.currentActivityData);
-                } else if (dash.currentView === 'eval' && dash.currentEvalData) {
-                    dash.renderEvalUI(dash.currentEvalData);
-                } else if (dash.currentView === 'epa' && dash.currentEpaData) {
-                    dash.renderEpaUI(dash.currentEpaData);
-                } else if (dash.currentView === 'feedback' && dash.current360Data) {
-                    // 🟢 เรียกฟังก์ชันวาด Dropdown ของ 360 (เปลี่ยนชื่อตามที่คุณหมอใช้จริงนะครับ)
+                // สั่งวาดข้อมูลใหม่ในหน้าปัจจุบัน
+                if (dash.currentView === 'activity' && dash.currentActivityData) dash.renderActivityUI(dash.currentActivityData);
+                else if (dash.currentView === 'eval' && dash.currentEvalData) dash.renderEvalUI(dash.currentEvalData);
+                else if (dash.currentView === 'epa' && dash.currentEpaData) dash.renderEpaUI(dash.currentEpaData);
+                else if (dash.currentView === 'feedback' && dash.current360Data) {
+                    // หากหน้า 360 ใช้ฟังก์ชันชื่ออื่น ให้เปลี่ยนชื่อตรงนี้นะครับ
                     if(dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
                 }
             },
-            
+
             // -----------------------------------------
             // 📅 1. ดึงข้อมูลสถิติการเข้ากิจกรรม
             // -----------------------------------------
@@ -221,42 +245,53 @@
                 }
             },
 
-            // 📅 2. วาดตารางสถิติกิจกรรม
+// ==========================================
+            // 📝 วาดตารางสถิติการเข้ากิจกรรม
+            // ==========================================
             renderActivityUI: (data) => {
-                // 🟢 1. กรองข้อมูลก่อนวาด
+                const tbody = document.getElementById('table-activity');
+                if (!tbody) return;
+
+                // 🟢 1. ดักจับ Filter: กรองข้อมูลตามชั้นปีที่เลือกไว้
                 let filteredData = data;
                 if (dash.currentFilter !== 'ALL') {
-                    filteredData = data.filter(r => r.level && r.level.includes(dash.currentFilter));
+                    // กรองเอาเฉพาะคนที่ level ตรงกับปุ่มที่กด
+                    filteredData = data.filter(r => r.level && r.level.toUpperCase().includes(dash.currentFilter.toUpperCase()));
                 }
-                const tbody = document.getElementById('table-activity');
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500 font-bold">ไม่พบข้อมูลรายชื่อแพทย์ในสังกัด</td></tr>';
+
+                // 🟢 2. กรณีไม่มีข้อมูลหลังกรอง
+                if (!filteredData || filteredData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลสำหรับชั้นปี ${dash.currentFilter}</td></tr>`;
                     return;
                 }
-                
-                tbody.innerHTML = data.map(r => {
-                    // กำหนดป้ายสถานะ
-                    let badge = r.status === 'PASS' 
-                        ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">ปกติ</span>'
-                        : '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200 animate-pulse">ติดตามพิเศษ</span>';
+
+                // 🟢 3. วาดตารางโดยใช้ filteredData แทน data
+                tbody.innerHTML = filteredData.map((r, index) => {
                     
-                    // ปรับชื่อ Fellow ให้อ่านง่าย
-                    let displayLevel = r.level === 'FellowDermsurg' ? 'Fellow' : r.level;
-                    // แยกสีของ Badge ตามชั้นปี
-                    let levelColor = r.level === 'R2' ? 'blue' : (r.level === 'R3' ? 'green' : (r.level === 'R4' ? 'purple' : 'orange'));
+                    // คำนวณสีของ % การเข้าร่วม
+                    let pctColor = 'text-gray-600 dark:text-gray-300';
+                    if (r.percent >= 80) pctColor = 'text-green-600 dark:text-green-400 font-bold';
+                    else if (r.percent >= 60) pctColor = 'text-orange-500 dark:text-orange-400 font-bold';
+                    else pctColor = 'text-red-500 dark:text-red-400 font-bold';
 
                     return `
-                        <tr class="hover:bg-gray-50 transition border-b border-gray-100 last:border-0">
-                            <td class="px-4 py-4 font-medium text-gray-800">${r.name}</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="bg-${levelColor}-100 text-${levelColor}-800 px-2 py-1 rounded text-xs font-bold">${displayLevel}</span>
-                            </td>
-                            <td class="px-4 py-4 text-center text-indigo-600 font-bold text-base">${r.hours} <span class="text-xs text-indigo-400">ชม.</span></td>
-                            <td class="px-4 py-4 text-center font-bold text-gray-700">${r.pct}%</td>
-                            <td class="px-4 py-4 text-center">${badge}</td>
-                        </tr>
-                    `;
-                }).join('');
+                    <tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition border-b dark:border-gray-700">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-gray-800 dark:text-gray-200">${r.name}</div>
+                            <div class="text-[10px] text-gray-400 dark:text-gray-500">${r.mdid}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs font-bold">${r.level || '-'}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold text-gray-700 dark:text-gray-300">${r.total_hours.toFixed(1)} <span class="text-xs font-normal text-gray-400">ชม.</span></td>
+                        <td class="px-4 py-3 text-center ${pctColor}">${r.percent.toFixed(1)}%</td>
+                        <td class="px-4 py-3 text-center">
+                            ${r.percent >= 80 
+                                ? '<span class="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-1 rounded-full text-xs font-bold">ผ่านเกณฑ์</span>' 
+                                : '<span class="bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 px-2 py-1 rounded-full text-xs font-bold">ต้องติดตาม</span>'}
+                        </td>
+                    </tr>
+                `}).join('');
             },
 
             // -----------------------------------------
@@ -304,14 +339,12 @@
             // 📥 4. ฟังก์ชันดึงข้อมูล "ผลประเมินการนำเสนอกิจกรรม"
             // ==========================================
             fetchEvalData: async (institute = '') => {
-                // 🟢 เปลี่ยนจาก list-eval เป็น grid-eval ให้ตรงกับ HTML ของคุณหมอ
                 const container = document.getElementById('grid-eval');
                 if (container) container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-400 animate-pulse font-bold">กำลังโหลดข้อมูลผลประเมิน...</div>';
 
                 try {
                     let safeInstitute = typeof institute === 'string' ? institute : '';
                     
-                    // ⚠️ อย่าลืมเช็ค URL ให้เป็นของ Web App ปัจจุบันนะครับ
                     const scriptUrl = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
                     
                     const response = await fetch(scriptUrl, {
@@ -323,6 +356,9 @@
                     const res = await response.json();
 
                     if (res && res.success) {
+                        // 🟢 เติมบรรทัดนี้: เซฟข้อมูลลงใน dash.currentEvalData ก่อนวาดหน้าจอ
+                        dash.currentEvalData = res.data; 
+                        
                         if (dash.renderEvalUI) dash.renderEvalUI(res.data);
                     } else {
                         if (container) container.innerHTML = `<div class="col-span-full text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'ไม่มีข้อมูล'}</div>`;
@@ -387,41 +423,43 @@
                 `).join('');
             },
             
-            // -----------------------------------------
-            // 🔁 1. ดึงข้อมูล 360 (ใช้ API สำหรับ Dashboard)
-            // -----------------------------------------
+            // ==========================================
+            // 📥 6. ฟังก์ชันดึงข้อมูล "360 องศา"
+            // ==========================================
             fetch360Data: async () => {
-                // 🟢 1. กรองข้อมูลก่อนวาด
-                let filteredData = data;
-                if (dash.currentFilter !== 'ALL') {
-                    filteredData = data.filter(r => r.level && r.level.includes(dash.currentFilter));
-                }
                 const selectEl = document.getElementById('select-360-user');
-                selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
+                if (selectEl) selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
                 
                 document.getElementById('placeholder-360-chart').classList.remove('hidden');
-                document.getElementById('radarChart').classList.add('hidden');
+                const chartCont = document.getElementById('chart-container');
+                if (chartCont) chartCont.classList.add('hidden');
                 document.getElementById('feedback-comments').innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>';
 
-                // 🟢 ใช้ get_dashboard_360 (ดึงทีเดียวได้ครบทั้งรายชื่อและคอมเมนต์ทั้งหมด)
-                const res = await fetch(GAS_WEBAPP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user.institute })
-                }).then(r => r.json());
+                try {
+                    // 🟢 ใช้ get_dashboard_360
+                    const res = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user ? dash.user.institute : '' })
+                    }).then(r => r.json());
 
-                if (res && res.success && res.residents && res.residents.length > 0) {
-                    dash.current360Data = res; 
-                    
-                    selectEl.innerHTML = '<option value="">-- เลือกแพทย์ประจำบ้าน / Fellow --</option>' +
-                        res.residents.map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
-                    
-                    selectEl.onchange = (e) => dash.render360UI(e.target.value);
-                } else {
-                    selectEl.innerHTML = '<option value="">ไม่พบข้อมูล หรือยังไม่มีการประเมินในระบบ</option>';
+                    if (res && res.success && res.residents && res.residents.length > 0) {
+                        // 🟢 1. บันทึกข้อมูลที่โหลดมาได้ไว้ในตัวแปรกลาง
+                        dash.current360Data = res; 
+                        
+                        // 🟢 2. ส่งต่อไปให้ฟังก์ชันสร้าง Dropdown ทำการกรองและวาดหน้าจอ
+                        if (dash.render360Dropdown) dash.render360Dropdown(dash.current360Data); 
+                    } else {
+                        if (selectEl) selectEl.innerHTML = '<option value="">ไม่พบข้อมูล หรือยังไม่มีการประเมินในระบบ</option>';
+                    }
+                } catch (error) {
+                    console.error("Fetch 360 Error:", error);
+                    if (selectEl) selectEl.innerHTML = '<option value="">เกิดข้อผิดพลาดในการโหลดข้อมูล</option>';
                 }
             },
 
-            // 🔁 2. วาดกราฟ Radar (เพิ่มระบบป้องกัน Error / Try-Catch)
+            // ==========================================
+            // 📝 วาด Dropdown เลือกรายชื่อหน้า 360 (พร้อมระบบ Filter)
+            // ==========================================
             render360UI: (mdid) => {
                 const chartContainer = document.getElementById('chart-container');
                 const placeholder = document.getElementById('placeholder-360-chart');
@@ -430,7 +468,7 @@
                 if (!mdid) {
                     chartContainer.classList.add('hidden');
                     placeholder.classList.remove('hidden');
-                    placeholder.innerHTML = '<p class="text-gray-400 text-sm">กรุณาเลือกรายชื่อเพื่อดูกราฟ</p>';
+                    placeholder.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm">กรุณาเลือกรายชื่อเพื่อดูกราฟ</p>';
                     return;
                 }
 
@@ -438,7 +476,7 @@
                     chartContainer.classList.add('hidden');
                     placeholder.classList.remove('hidden');
                     placeholder.innerHTML = `<span class="text-red-500 font-bold text-lg">ไม่มีประวัติการประเมิน 360 องศา</span>`;
-                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ไม่พบข้อเสนอแนะ -</p>';
+                    commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">- ไม่พบข้อเสนอแนะ -</p>';
                     return;
                 }
 
@@ -452,7 +490,7 @@
                 // 2. ทุบ Canvas เก่าและสร้างใหม่
                 chartContainer.innerHTML = '<canvas id="radarChart"></canvas>';
                 
-                // 🟢 3. ลองวาดกราฟ โดยมีเกราะป้องกัน (try-catch)
+                // 3. วาดกราฟ
                 try {
                     const ctx = document.getElementById('radarChart').getContext('2d');
                     dash.radarChartInstance = new Chart(ctx, {
@@ -472,49 +510,66 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }
+                            scales: { 
+                                r: { 
+                                    suggestedMin: 0, 
+                                    suggestedMax: 5, 
+                                    ticks: { 
+                                        stepSize: 1,
+                                        backdropColor: 'transparent' // 🟢 เติมตรงนี้ เพื่อลบกรอบสี่เหลี่ยมสีขาวหลังตัวเลขเวลาเปิดโหมดกลางคืน
+                                    },
+                                    grid: { color: 'rgba(156, 163, 175, 0.3)' }, // 🟢 ทำให้เส้นตารางมองเห็นได้ดีขึ้นทั้งสองโหมด
+                                    angleLines: { color: 'rgba(156, 163, 175, 0.3)' }
+                                } 
+                            }
                         }
                     });
                 } catch (error) {
-                    // ถ้า Chart.js มีปัญหา โค้ดจะไม่หยุดทำงาน แต่จะฟ้องสีแดงตรงกล่องกราฟแทน
                     console.error("Chart Error:", error);
                     chartContainer.innerHTML = `<div class="flex items-center justify-center h-full text-red-500 text-sm font-bold text-center px-4">ระบบไม่สามารถวาดกราฟได้<br>โปรดตรวจสอบการติดตั้ง Chart.js ในแท็ก Head</div>`;
                 }
 
-                // 4. แสดงผลข้อเสนอแนะ (จะแสดงผลได้อย่างปลอดภัยแม้กราฟด้านบนจะ Error ก็ตาม)
+                // 4. แสดงผลข้อเสนอแนะ (🟢 ปรับสีให้รองรับ Dark Mode)
                 if (data.comments && data.comments.length > 0) {
                     commentsDiv.innerHTML = data.comments.map(c => `
-                        <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-indigo-400 text-sm text-gray-700 flex gap-2">
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border-l-4 border-indigo-400 dark:border-indigo-500 text-sm text-gray-700 dark:text-gray-300 flex gap-2">
                             <span class="text-indigo-400 font-bold">💬</span> <span>${c}</span>
                         </div>
                     `).join('');
                 } else {
-                    commentsDiv.innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">- ไม่มีผู้ประเมินระบุข้อเสนอแนะเพิ่มเติม -</p>';
+                    commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">- ไม่มีผู้ประเมินระบุข้อเสนอแนะเพิ่มเติม -</p>';
                 }
             },
             
-            // -----------------------------------------
-            // 📈 1. ดึงข้อมูล EPA (ใช้ API สำหรับ Dashboard โดยเฉพาะ)
-            // -----------------------------------------
+            // ==========================================
+            // 📥 5. ฟังก์ชันดึงข้อมูล "ความก้าวหน้า EPA"
+            // ==========================================
             fetchEpaData: async () => {
                 const tbody = document.getElementById('table-epa-body');
-                document.getElementById('table-epa-head').innerHTML = '';
-                tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+                const thead = document.getElementById('table-epa-head');
                 
-                // 🟢 ใช้ get_dashboard_epa ที่ส่งค่า institute ไปกรองข้อมูลทุกคน
-                const res = await fetch(GAS_WEBAPP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user.institute })
-                }).then(r => r.json());
+                if (thead) thead.innerHTML = '';
+                if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+                
+                try {
+                    // 🟢 ใช้ get_dashboard_epa ที่ส่งค่า institute ไปกรองข้อมูลทุกคน
+                    const response = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user ? dash.user.institute : '' })
+                    });
+                    
+                    const res = await response.json();
 
-                let dataArr = [];
-                if (res && res.data) dataArr = res.data;
-
-                if (dataArr.length > 0) {
-                    dash.currentEpaData = dataArr; 
-                    dash.renderEpaUI(dataArr, 'ALL'); 
-                } else {
-                    tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold">ไม่พบข้อมูลความก้าวหน้า EPA ของแพทย์ในสังกัด</td></tr>';
+                    if (res && res.data && res.data.length > 0) {
+                        dash.currentEpaData = res.data; 
+                        // 🟢 เรียกฟังก์ชันวาดตาราง โดยปล่อยให้ renderEpaUI ไปดึง dash.currentFilter มาใช้เอง
+                        if (dash.renderEpaUI) dash.renderEpaUI(res.data); 
+                    } else {
+                        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA ของแพทย์ในสังกัด</td></tr>';
+                    }
+                } catch (error) {
+                    console.error("Fetch EPA Error:", error);
+                    if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">❌ เกิดข้อผิดพลาดในการดึงข้อมูลฐานข้อมูล</td></tr>';
                 }
             },
 
@@ -665,49 +720,6 @@
                 }
             },
 
-            // 2. การสลับหน้าจอ และแสดงปุ่ม Filter
-            loadView: (viewId) => {
-                // 🟢 สำคัญมาก: Array นี้ต้องมีชื่อครบทั้ง 5 หน้า เพื่อให้ระบบรู้ว่าต้องซ่อน/แสดงหน้าไหน
-                const views = ['overview', 'activity', 'eval', 'epa', 'feedback'];
-                
-                // สั่งซ่อนทุกหน้าก่อน
-                views.forEach(v => {
-                    const el = document.getElementById(`view-${v}`);
-                    if (el) el.classList.add('hidden');
-                });
-                
-                // สั่งแสดงเฉพาะหน้าที่ถูกคลิก
-                const activeEl = document.getElementById(`view-${viewId}`);
-                if (activeEl) activeEl.classList.remove('hidden');
-                
-                const titles = { 
-                    overview: 'ภาพรวมระบบ (Overview)', 
-                    activity: 'สถิติการเข้ากิจกรรม', 
-                    eval: 'ผลประเมินกิจกรรม', 
-                    epa: 'ความก้าวหน้า EPA', 
-                    feedback: '360° Evaluation & Feedback' 
-                };
-                const titleEl = document.getElementById('page-title');
-                if (titleEl) titleEl.innerText = titles[viewId] || 'Dashboard';
-
-                // แสดง/ซ่อน แถบปุ่ม Filter ด้านบนขวา
-                const filterEl = document.getElementById('group-filters');
-                if (filterEl) {
-                    if(viewId === 'overview') filterEl.classList.add('hidden');
-                    else filterEl.classList.remove('hidden');
-                }
-
-                // 🟢 ดึงค่า Institute ของ User ปัจจุบัน (เพื่อส่งไปดึงเฉพาะข้อมูลของสถาบันตนเอง)
-                let inst = dash.user ? dash.user.institute : '';
-
-                // 🟢 สั่งดึงข้อมูลจริงจากหลังบ้าน (แก้ส่งค่า inst พ่วงไปด้วย)
-                if (viewId === 'overview') dash.fetchOverviewData(inst);
-                else if (viewId === 'activity') dash.fetchActivityData(inst);
-                else if (viewId === 'eval') dash.fetchEvalData(inst); 
-                else if (viewId === 'epa') dash.fetchEpaData(inst);
-                else if (viewId === 'feedback') dash.fetch360Data(inst);
-            },
-            
             // 3. โหลดข้อมูลและวาด Progress Bar
             fetchOverviewData: async () => {
                 Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม...', didOpen: () => Swal.showLoading() });
