@@ -74,6 +74,16 @@
         </a>
     </div>
 
+	<div class="bg-indigo-50 p-4 rounded-xl shadow-sm border border-indigo-200 mb-4 flex justify-between items-center">
+        <div>
+            <h3 class="font-bold text-indigo-800 text-sm">🔄 ระบบประเมิน 360 องศา (นอกรอบ)</h3>
+            <p id="status-360-text" class="text-xs text-indigo-600 mt-1">กำลังตรวจสอบสถานะ...</p>
+        </div>
+        <button id="btn-toggle-360" onclick="app.toggle360Override()" class="bg-gray-400 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm transition">
+            รอสักครู่...
+        </button>
+    </div>
+		
     <div id="super-search-box" class="bg-white p-4 rounded-xl shadow-sm border mb-4">
         <label class="block text-xs font-bold text-gray-500 mb-2">ระบุ MDID เพื่อดึงข้อมูล</label>
         <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="super-search-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1117,10 +1127,10 @@ const app = {
                      </button>`;
         }
 
-        // 🟢 10. เมนูพิเศษสำหรับ SuperStaff (เปลี่ยนสีกรอบให้เด่นชัด)
+        // 🟢 10. เมนูพิเศษสำหรับ SuperStaff
         if (roleRaw.includes('superstaff')) {
             html += `<div class="border-t-2 border-red-200 my-4 pt-4">
-                        <button onclick="app.showView('view-superstaff-edit')" class="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl shadow-md text-left flex items-center justify-between">
+                        <button onclick="app.openSuperstaffView()" class="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-xl shadow-md text-left flex items-center justify-between">
                             <span class="font-bold flex items-center"><span class="text-xl mr-3">🔧</span> จัดการข้อมูลบุคลากร</span>
                             <span class="text-red-200">→</span>
                         </button>
@@ -1236,9 +1246,41 @@ const actEl = document.getElementById('create-act-id');
         }
     },
     
- // --- 360 Eval Flow ---
+// --- 360 Eval Flow ---
     load360Form: async () => { 
-        // 🟢 เพิ่มข้อความ Loading เพื่อให้ปุ่มตอบสนองทันที
+        // 🟢 1. ตรวจสอบสถานะและตั้งเวลาเปิดอัตโนมัติ
+        const statusRes = await app.api({ action: 'get_360_status' }, 'กำลังตรวจสอบรอบประเมิน...');
+        const currentMonth = new Date().getMonth() + 1; 
+        const allowedMonths = [5, 11]; 
+        let isSystemOpen = allowedMonths.includes(currentMonth);
+
+        // ดึงคำสั่ง override จาก Superstaff
+        if (statusRes && statusRes.success && statusRes.is_open) {
+            isSystemOpen = true; 
+        }
+
+        if (!isSystemOpen) {
+            return Swal.fire({
+                title: '🔒 ปิดรอบการประเมิน',
+                html: `
+                    <div class="text-sm text-gray-700 mt-2 text-left">
+                        <p class="mb-3 text-center">ระบบประเมิน 360 องศา ปิดให้บริการชั่วคราว</p>
+                        <div class="bg-teal-50 border border-teal-200 p-4 rounded-lg text-teal-800 shadow-sm">
+                            <p class="font-bold mb-2">📅 ระบบจะเปิดให้ประเมินปีละ 2 ครั้ง:</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><b>ครั้งที่ 1:</b> กลางปีการศึกษา (เดือนพฤศจิกายน)</li>
+                                <li><b>ครั้งที่ 2:</b> ปลายปีการศึกษา (เดือนพฤษภาคม)</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: 'รับทราบ',
+                confirmButtonColor: '#0d9488' 
+            });
+        }
+
+        // 🟢 2. ดึงข้อมูลรายชื่อหากระบบเปิดอยู่
         const data = await app.api({ action: 'get_360_form_data', user: app.user }, 'กำลังโหลดรายชื่อ...');
         if(data) { 
             const grid = document.getElementById('grid-360-residents');
@@ -2578,12 +2620,57 @@ closeActivitySession: async () => {
         }
     },
 
-resetSuperSearch: () => {
+	resetSuperSearch: () => {
             document.getElementById('super-search-input').value = "";
             document.getElementById('super-search-box').classList.remove('hidden');
             document.getElementById('super-edit-form').classList.add('hidden');
-        }
+        },
 
+	// ==========================================
+    // 🔧 ระบบเปิด-ปิด 360 นอกรอบ (Superstaff)
+    // ==========================================
+    is360ForceOpen: false,
+
+    openSuperstaffView: async () => {
+        app.showView('view-superstaff-edit');
+        app.fetch360SystemStatus(); // สั่งให้ดึงสถานะทันทีที่เปิดหน้า
+    },
+
+    fetch360SystemStatus: async () => {
+        const res = await app.api({ action: 'get_360_status' });
+        if (res && res.success) {
+            app.is360ForceOpen = res.is_open;
+            const btn = document.getElementById('btn-toggle-360');
+            const txt = document.getElementById('status-360-text');
+            if (btn && txt) {
+                if (app.is360ForceOpen) {
+                    btn.className = "bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm transition";
+                    btn.innerText = "ปิดระบบ";
+                    txt.innerHTML = "สถานะ: <span class='text-red-600 font-bold'>เปิดใช้งานนอกรอบ (Manual)</span>";
+                } else {
+                    btn.className = "bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-sm transition";
+                    btn.innerText = "เปิดระบบด่วน";
+                    txt.innerHTML = "สถานะ: <span class='text-gray-500 font-bold'>ปิด (รอเปิดอัตโนมัติตามรอบเดือน พ.ค./พ.ย.)</span>";
+                }
+            }
+        }
+    },
+
+    toggle360Override: async () => {
+        const newState = !app.is360ForceOpen;
+        const confirmText = newState ? "ยืนยันที่จะ 'เปิด' ระบบ 360 องศานอกรอบเวลา ใช่หรือไม่?" : "ยืนยันที่จะ 'ปิด' ระบบ 360 องศา กลับสู่โหมดอัตโนมัติ ใช่หรือไม่?";
+        if (!confirm(confirmText)) return;
+        
+        Swal.fire({ title: 'กำลังบันทึกตั้งค่า...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await app.api({ action: 'toggle_360_status', payload: { is_open: newState } });
+        if (res && res.success) {
+            Swal.fire({title: 'สำเร็จ', text: res.message, icon: 'success', timer: 1500});
+            app.fetch360SystemStatus();
+        } else {
+            Swal.fire('ผิดพลาด', 'ไม่สามารถบันทึกการตั้งค่าได้', 'error');
+        }
+    },	
+	
 }; // 👈 🟢 ปิดท้าย Object app อย่างสมบูรณ์ตรงนี้
 
 // ==========================================
