@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.08 N</title>
+    <title>skinEPA Dashboard 1.09</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -603,30 +603,60 @@
                 `).join('');
             },
             
-            // ==========================================
+// ==========================================
             // 📥 6. ฟังก์ชันดึงข้อมูล "360 องศา"
             // ==========================================
             fetch360Data: async () => {
                 const selectEl = document.getElementById('select-360-user');
-                if (selectEl) selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
-                
-                document.getElementById('placeholder-360-chart').classList.remove('hidden');
+                const placeholder = document.getElementById('placeholder-360-chart');
                 const chartCont = document.getElementById('chart-container');
+                const commentsDiv = document.getElementById('feedback-comments');
+
+                // 🟢 1. ระบบควบคุมการเปิด-ปิดหน้า 360 องศา
+                // วิธีที่ 1: สับสวิตช์ด้วยตัวเอง (true = เปิดให้ดูผล, false = ล็อกหน้าจอ)
+                const IS_360_OPEN = true; // <--- ตอนนี้ตั้งเป็น false เพื่อล็อกไว้ก่อนครับ
+
+                // วิธีที่ 2: ถ้าอยากตั้งเวลาอัตโนมัติ (ลบเครื่องหมาย // ข้างหน้าออกเพื่อใช้งาน)
+                // const currentMonth = new Date().getMonth() + 1; // ดึงเดือนปัจจุบัน (1-12)
+                // const IS_360_OPEN = [5, 6, 11, 12].includes(currentMonth); // เปิดอัตโนมัติเดือน พ.ค.-มิ.ย. และ พ.ย.-ธ.ค.
+
+                if (!IS_360_OPEN) {
+                    if (selectEl) {
+                        selectEl.innerHTML = '<option value="">-- นอกรอบเวลาประเมิน --</option>';
+                        selectEl.disabled = true; // ล็อกปุ่มกด
+                    }
+                    if (placeholder) {
+                        placeholder.classList.remove('hidden');
+                        placeholder.innerHTML = `
+                            <div class="flex flex-col items-center justify-center py-10 text-center">
+                                <span class="text-5xl mb-4">🔒</span>
+                                <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300">ปิดระบบประเมิน 360 องศาชั่วคราว</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">เปิดให้ดูผลเฉพาะรอบ กลางปี (พ.ย.) และ ปลายปี (พ.ค.)</p>
+                            </div>`;
+                    }
+                    if (chartCont) chartCont.classList.add('hidden');
+                    if (commentsDiv) commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">- ปิดการแสดงข้อเสนอแนะชั่วคราว -</p>';
+                    return; // 🛑 หยุดการทำงานตรงนี้เลย ไม่ดึงข้อมูลหลังบ้านให้โหลดหนัก
+                }
+
+                // 🟢 2. กรณีเปิดระบบ (IS_360_OPEN = true) ให้โหลดข้อมูลตามปกติ
+                if (selectEl) {
+                    selectEl.disabled = false;
+                    selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
+                }
+                
+                if (placeholder) placeholder.classList.remove('hidden');
                 if (chartCont) chartCont.classList.add('hidden');
-                document.getElementById('feedback-comments').innerHTML = '<p class="text-gray-400 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>';
+                if (commentsDiv) commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>';
 
                 try {
-                    // 🟢 ใช้ get_dashboard_360
                     const res = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
                         body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user ? dash.user.institute : '' })
                     }).then(r => r.json());
 
                     if (res && res.success && res.residents && res.residents.length > 0) {
-                        // 🟢 1. บันทึกข้อมูลที่โหลดมาได้ไว้ในตัวแปรกลาง
                         dash.current360Data = res; 
-                        
-                        // 🟢 2. ส่งต่อไปให้ฟังก์ชันสร้าง Dropdown ทำการกรองและวาดหน้าจอ
                         if (dash.render360Dropdown) dash.render360Dropdown(dash.current360Data); 
                     } else {
                         if (selectEl) selectEl.innerHTML = '<option value="">ไม่พบข้อมูล หรือยังไม่มีการประเมินในระบบ</option>';
@@ -636,7 +666,6 @@
                     if (selectEl) selectEl.innerHTML = '<option value="">เกิดข้อผิดพลาดในการโหลดข้อมูล</option>';
                 }
             },
-
             // ==========================================
             // 📝 วาด Dropdown เลือกรายชื่อหน้า 360 (พร้อมระบบ Filter)
             // ==========================================
