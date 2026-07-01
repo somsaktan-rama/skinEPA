@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.33</title>
+    <title>EPA Skin App 2.34</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.33</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.34</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -139,15 +139,17 @@
             <button onclick="app.logout()" class="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">ออกจากระบบ</button>
         </div>
 
-        <div id="view-360-grid" class="hidden">
+		<div id="view-360-grid" class="hidden">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-xl font-bold text-teal-800">🔄 เลือกแพทย์เพื่อประเมิน</h2>
                 <button onclick="app.showView('view-menu')" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm shadow">กลับหน้าหลัก</button>
             </div>
+            
+            <div id="360-status-banner"></div>
+            
             <p class="text-sm text-red-500 font-semibold mb-4 bg-red-50 p-2 rounded border border-red-100">* เลือกประเมินเฉพาะแพทย์ที่ท่าน "รู้จักและเคยร่วมงานด้วย" ในเทอมนี้เท่านั้น</p>
             <div id="grid-360-residents" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto p-1 pb-4"></div>
         </div>
-
 <div id="view-360-focus" class="hidden">
     <div class="flex justify-between items-center mb-4 border-b pb-2">
         <h2 class="text-xl font-bold text-teal-800">📝 แบบประเมิน 360 องศา</h2>
@@ -1247,53 +1249,78 @@ const actEl = document.getElementById('create-act-id');
     },
     
 // --- 360 Eval Flow ---
+    
+    // 🟢 สร้างฟังก์ชันแจ้งเตือนแยกออกมา เพื่อไม่ให้โค้ดซ้ำซ้อน
+    show360ClosedAlert: () => {
+        Swal.fire({
+            title: '🔒 ปิดรอบการประเมิน',
+            html: `
+                <div class="text-sm text-gray-700 mt-2 text-left">
+                    <p class="mb-3 text-center text-teal-600 font-bold">ขณะนี้เปิดให้ใช้งานในโหมด "ทำเนียบรายชื่อ"</p>
+                    <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg text-gray-700 shadow-sm">
+                        <p class="font-bold mb-2 text-teal-800">📅 ระบบจะเปิดให้กดประเมินได้ปีละ 2 ครั้ง:</p>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><b>ครั้งที่ 1:</b> กลางปีการศึกษา (เดือนพฤศจิกายน)</li>
+                            <li><b>ครั้งที่ 2:</b> ปลายปีการศึกษา (เดือนพฤษภาคม)</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            icon: 'info',
+            confirmButtonText: 'รับทราบ',
+            confirmButtonColor: '#0d9488'
+        });
+    },
+
     load360Form: async () => { 
-        // 🟢 1. ตรวจสอบสถานะและตั้งเวลาเปิดอัตโนมัติ
-        const statusRes = await app.api({ action: 'get_360_status' }, 'กำลังตรวจสอบรอบประเมิน...');
+        // 🟢 1. ตรวจสอบสถานะการเปิดระบบ (แต่ยังไงก็โหลดรายชื่อ)
+        const statusRes = await app.api({ action: 'get_360_status' }, 'กำลังโหลดรายชื่อแพทย์...');
         const currentMonth = new Date().getMonth() + 1; 
         const allowedMonths = [5, 11]; 
         let isSystemOpen = allowedMonths.includes(currentMonth);
 
-        // ดึงคำสั่ง override จาก Superstaff
+        // เช็คการสับสวิตช์เปิดฉุกเฉินจาก Superstaff
         if (statusRes && statusRes.success && statusRes.is_open) {
             isSystemOpen = true; 
         }
 
-        if (!isSystemOpen) {
-            return Swal.fire({
-                title: '🔒 ปิดรอบการประเมิน',
-                html: `
-                    <div class="text-sm text-gray-700 mt-2 text-left">
-                        <p class="mb-3 text-center">ระบบประเมิน 360 องศา ปิดให้บริการชั่วคราว</p>
-                        <div class="bg-teal-50 border border-teal-200 p-4 rounded-lg text-teal-800 shadow-sm">
-                            <p class="font-bold mb-2">📅 ระบบจะเปิดให้ประเมินปีละ 2 ครั้ง:</p>
-                            <ul class="list-disc pl-5 space-y-1">
-                                <li><b>ครั้งที่ 1:</b> กลางปีการศึกษา (เดือนพฤศจิกายน)</li>
-                                <li><b>ครั้งที่ 2:</b> ปลายปีการศึกษา (เดือนพฤษภาคม)</li>
-                            </ul>
-                        </div>
-                    </div>
-                `,
-                icon: 'info',
-                confirmButtonText: 'รับทราบ',
-                confirmButtonColor: '#0d9488' 
-            });
-        }
-
-        // 🟢 2. ดึงข้อมูลรายชื่อหากระบบเปิดอยู่
-        const data = await app.api({ action: 'get_360_form_data', user: app.user }, 'กำลังโหลดรายชื่อ...');
+        // 🟢 2. ดึงข้อมูลรายชื่อ (ดึงมาโชว์เสมอ ไม่ว่าจะเปิดหรือปิด)
+        const data = await app.api({ action: 'get_360_form_data', user: app.user });
         if(data) { 
+            const banner = document.getElementById('360-status-banner');
+            if (!isSystemOpen) {
+                // โชว์แบนเนอร์แจ้งว่าปิดอยู่
+                banner.innerHTML = `
+                <div class="bg-gray-100 border-l-4 border-gray-400 p-3 mb-3 rounded shadow-sm flex items-center justify-between cursor-pointer" onclick="app.show360ClosedAlert()">
+                    <span class="text-gray-700 text-sm font-bold">🔒 นอกรอบเวลาประเมิน (โหมดทำเนียบแพทย์)</span>
+                    <span class="text-gray-500 text-[10px] bg-white px-2 py-1 rounded border">ดูรอบเวลา</span>
+                </div>`;
+            } else {
+                banner.innerHTML = ``; // ล้างแบนเนอร์ออกถ้าระบบเปิดปกติ
+            }
+
             const grid = document.getElementById('grid-360-residents');
             if(data.residents.length === 0) { 
                 grid.innerHTML = `<div class="col-span-full bg-green-50 border border-green-200 rounded-lg p-6 text-center"><p class="text-green-700 font-bold text-lg mb-2">🎉 ยอดเยี่ยมมาก!</p><p class="text-green-600 text-sm">คุณประเมินแพทย์ประจำบ้านในเทอมนี้ครบทุกคนแล้วครับ</p></div>`;
             } else { 
-                grid.innerHTML = data.residents.map(r => `
-                    <div id="card-res-${r.mdid}" onclick="app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')" class="border border-gray-200 bg-white shadow-sm rounded-xl p-3 text-center cursor-pointer hover:shadow-md hover:border-teal-400 hover:bg-teal-50 transition transform hover:-translate-y-1">
+                grid.innerHTML = data.residents.map(r => {
+                    // 🟢 ลอจิกแยก: ถ้าเปิดระบบ ให้กดแล้วประเมิน | ถ้าปิดระบบ ให้กดแล้วเด้ง Alert
+                    let clickAction = isSystemOpen 
+                        ? `app.open360Focus('${r.mdid}', '${r.name}', '${r.level}', '${r.pic}')`
+                        : `app.show360ClosedAlert()`;
+                    
+                    // 🟢 สไตล์แยก: ถ้าปิดระบบ การ์ดจะดูหม่นๆ ลงนิดนึง (grayscale) เพื่อบอกใบ้ทางสายตา
+                    let cardStyle = isSystemOpen
+                        ? `border-gray-200 bg-white hover:border-teal-400 hover:bg-teal-50 cursor-pointer`
+                        : `border-gray-200 bg-gray-50 opacity-90 grayscale-[25%] cursor-not-allowed`;
+
+                    return `
+                    <div id="card-res-${r.mdid}" onclick="${clickAction}" class="border shadow-sm rounded-xl p-3 text-center transition transform hover:-translate-y-1 ${cardStyle}">
                         <img src="${r.pic}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(r.name)}&background=random&color=fff'" loading="lazy" class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl mx-auto mb-2 object-cover border-2 border-gray-100 shadow-sm">
                         <p class="text-xs sm:text-sm font-bold text-gray-800 line-clamp-1 mb-1">${r.name}</p>
                         <p class="text-[10px] sm:text-xs text-teal-800 bg-teal-100 rounded-full inline-block px-2 py-0.5 font-bold">${r.level}</p>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             } 
             app.showView('view-360-grid');
         } 
