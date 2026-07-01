@@ -416,9 +416,9 @@
 
 		<div id="view-staff-dashboard" class="hidden">
             <div class="flex justify-between items-center mb-2">
-                <h2 class="text-xl font-bold text-blue-800">📊 </h2>
+                <h2 class="text-xl font-bold text-blue-800">📊 Dashboard ความก้าวหน้า</h2>
                 
-                <div class="hidden md:flex space-x-2">
+                <div id="export-buttons" class="flex space-x-2">
                     <button onclick="app.exportCSV()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export กิจกรรม</button>
                     
                     <button onclick="app.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export EPA</button>
@@ -2392,8 +2392,18 @@ closeActivitySession: async () => {
         }
     },
     
-    // --- Dashboard ---
+// --- Dashboard ---
     loadDashboard: async () => { 
+        // 🟢 ตรวจสอบอุปกรณ์: ถ้าเปิดผ่านแอป LINE บนมือถือ (iOS/Android) ให้ซ่อนปุ่ม
+        const exportBtns = document.getElementById('export-buttons');
+        if (exportBtns && window.liff) {
+            if (liff.isInClient() && (liff.getOS() === 'ios' || liff.getOS() === 'android')) {
+                exportBtns.style.display = 'none'; // ซ่อนบนมือถือ
+            } else {
+                exportBtns.style.display = 'flex'; // แสดงปกติบนเว็บ/PC
+            }
+        }
+
         // 🟢 เพิ่มข้อความ Loading เพื่อให้ระบบแสดง Popup ทันทีที่กดปุ่ม
         const res = await app.api({ action: 'get_dashboard_data', user: app.user }, 'กำลังประมวลผลข้อมูลความก้าวหน้า...');
         if(res && res.success) { 
