@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.31</title>
+    <title>EPA Skin App 2.32</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1644,96 +1644,97 @@ open360Focus: (mdid, name, level, picUrl) => {
 
 // --- Checkin Flow ---
 loadCheckin: async () => {
-        const data = await app.api({ action: 'get_open_checkins', user: app.user }, 'กำลังค้นหากิจกรรม...');
-        if(data) {
-            const list = document.getElementById('checkin-list');
-            if(data.activities.length === 0) {
-                list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมที่เปิดให้ลงชื่อในขณะนี้</p>';
-            } else {
-                
-                // 🟢 1. เพิ่มคำสั่งเรียงลำดับกิจกรรมตามเวลาเริ่ม (act_begin) จากใกล้ที่สุด (น้อย) ไปไกลที่สุด (มาก)
-                data.activities.sort((a, b) => {
-                    let timeA = new Date(a.act_begin).getTime();
-                    let timeB = new Date(b.act_begin).getTime();
-                    return timeA - timeB; 
-                });
+    const data = await app.api({ action: 'get_open_checkins', user: app.user }, 'กำลังค้นหากิจกรรม...');
+    if (data) {
+        const list = document.getElementById('checkin-list');
+        if (data.activities.length === 0) {
+            list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมที่เปิดให้ลงชื่อในขณะนี้</p>';
+        } else {
+            
+            // 🟢 1. เรียงลำดับกิจกรรมตามเวลาเริ่มจากใกล้ที่สุด (น้อย) ไปไกลที่สุด (มาก)
+            data.activities.sort((a, b) => {
+                let timeA = new Date(a.act_begin).getTime();
+                let timeB = new Date(b.act_begin).getTime();
+                return timeA - timeB; 
+            });
 
-                // 🟢 2. นำข้อมูลที่เรียงแล้วมาวาดลงหน้าจอ
-                list.innerHTML = data.activities.map(a => {
-                    let btnHtml = '';
-                    let linkHtml = '';
+            // 🟢 2. วาดข้อมูลกิจกรรม
+            list.innerHTML = data.activities.map(a => {
+                let btnHtml = '';
+                let linkHtml = '';
+                const hasLink = (a.act_link && a.act_link.trim() !== "");
 
-                    // 🎨 ลอจิกแยกสีปุ่มลิงก์ประชุม (Zoom / Webex / MS Teams)
-                    if (a.act_link) {
-                        let platformName = "ออนไลน์";
-                        let colorTheme = "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-300"; // ค่าเริ่มต้น (ถ้าเป็นลิงก์อื่นๆ)
+                // 🎨 ลอจิกแยกสีปุ่มลิงก์ประชุม (Zoom / Webex / MS Teams)
+                if (hasLink) {
+                    let platformName = "ออนไลน์";
+                    let colorTheme = "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-300"; // ค่าเริ่มต้น
 
-                        if (a.act_link.includes('zoom.us')) {
-                            platformName = "Zoom";
-                            colorTheme = "bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200";
-                        } else if (a.act_link.includes('webex.com')) {
-                            platformName = "Webex";
-                            colorTheme = "bg-green-100 hover:bg-green-200 text-green-800 border-green-200";
-                        } else if (a.act_link.includes('teams.microsoft')) {
-                            platformName = "MS Teams";
-                            colorTheme = "bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-200";
-                        }
-
-                        linkHtml = `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center ${colorTheme} font-bold py-1.5 rounded text-sm shadow-sm border">📹 เข้าร่วมผ่าน ${platformName}</a>`;
+                    if (a.act_link.includes('zoom.us')) {
+                        platformName = "Zoom";
+                        colorTheme = "bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200";
+                    } else if (a.act_link.includes('webex.com')) {
+                        platformName = "Webex";
+                        colorTheme = "bg-green-100 hover:bg-green-200 text-green-800 border-green-200";
+                    } else if (a.act_link.includes('teams.microsoft')) {
+                        platformName = "MS Teams";
+                        colorTheme = "bg-purple-100 hover:bg-purple-200 text-purple-800 border-purple-200";
                     }
-                     
-                    if (a.already_joined) {
-                        btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center block">✔️ เข้าร่วมแล้ว</span>`;
-                    } else if (!a.is_ready) {
-                        btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full block">รอเปิดลงชื่อ</button>`;
+
+                    linkHtml = `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center ${colorTheme} font-bold py-1.5 rounded text-sm shadow-sm border">📹 เข้าร่วมผ่าน ${platformName}</a>`;
+                }
+                 
+                // 🟢 ลอจิกการแสดงปุ่ม Check-in 
+                if (a.already_joined) {
+                    btnHtml = `<span class="bg-gray-100 text-gray-500 border border-gray-300 px-4 py-2 rounded font-bold w-full text-center block">✔️ เข้าร่วมแล้ว</span>`;
+                } else if (!a.is_ready) {
+                    btnHtml = `<button disabled class="bg-gray-300 text-gray-500 cursor-not-allowed font-bold px-5 py-2 rounded shadow w-full block">รอเปิดลงชื่อ</button>`;
+                } else {
+                    // แบบที่ 1: กิจกรรม Hybrid/Online (มี Link) -> โชว์ 2 ปุ่ม
+                    if (hasLink) {
+                        btnHtml = `
+                        <div class="flex flex-col space-y-2 w-full">
+                            <button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2 rounded shadow transition w-full">📍 ลงชื่อ On-site (ห้อง)</button>
+                            <button onclick="app.promptJoinHybrid('${a.act_ref_id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded shadow transition w-full">💻 ลงชื่อ Online (PIN)</button>
+                        </div>`;
                     } else {
-                        // 🌟 ลอจิกใหม่ที่สอดคล้องกับระบบหลังบ้าน
-                        if (a.act_link) {
-                            // แบบที่ 1: กิจกรรม Hybrid/Online (มี PIN) -> ใช้ปุ่มสีฟ้า ถามรหัสเสมอ
-                            btnHtml = `<button onclick="app.promptJoinHybrid('${a.act_ref_id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-5 py-2 rounded shadow w-full transition">ลงชื่อเข้าร่วม (ใช้ PIN)</button>`;
-                        } else {
-                            // แบบที่ 2: กิจกรรม On-site ล้วน (ไม่มี PIN) -> ใช้ปุ่มสีเขียว ดึงพิกัด GPS เลย
-                            btnHtml = `<button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full transition">📍 ลงชื่อ On-site</button>`;
-                        }
+                        // แบบที่ 2: กิจกรรม On-site ล้วน (ไม่มี Link) -> โชว์ปุ่มเดียว
+                        btnHtml = `<button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-5 py-2 rounded shadow w-full block transition">📍 ลงชื่อ On-site</button>`;
                     }
-                    let instructorHtml = a.instructor_name ?
-			`<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
+                }
 
-                    // 🟢 3. จัดฟอร์แมตวันและเวลาใหม่ให้อ่านง่าย
-                    let actDate = new Date(a.act_begin);
-                    let actFinish = new Date(a.act_finish);
+                let instructorHtml = a.instructor_name ?
+                    `<div class="text-sm text-purple-700 mt-1 font-bold">👨‍🏫 ${a.instructor_name}</div>` : '';
 
-                    // แสดงวันที่แบบเต็ม เช่น "วันอังคารที่ 2 มิถุนายน 2569"
-                    let dateDisplay = actDate.toLocaleDateString('th-TH', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    });
-                    // แสดงเวลาแบบไม่มีวินาที เช่น "12:00"
-                    let timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
-                    let beginTime = actDate.toLocaleTimeString('th-TH', timeOpts);
-                    let finishTime = actFinish.toLocaleTimeString('th-TH', timeOpts);
-                    return `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 ${a.is_ready ? 'border-l-orange-500' : 'border-l-gray-300'}">
-                        <div class="flex-1 pr-2 mb-3 md:mb-0">
-                            <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
-                            ${instructorHtml}
-                            
-                            <div class="mt-2 bg-gray-50 p-2 rounded inline-block border border-gray-100">
-                                <p class="text-sm font-bold text-gray-800 mb-0.5">${dateDisplay}</p>
-                                <p class="text-sm text-gray-600">เวลา: ${beginTime} - ${finishTime} น.</p>
-                            </div>
-                            
-                            ${linkHtml}
+                // 🟢 3. จัดฟอร์แมตวันและเวลา
+                let actDate = new Date(a.act_begin);
+                let actFinish = new Date(a.act_finish);
+                let dateDisplay = actDate.toLocaleDateString('th-TH', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                });
+                let timeOpts = { hour: '2-digit', minute: '2-digit', hour12: false };
+                let beginTime = actDate.toLocaleTimeString('th-TH', timeOpts);
+                let finishTime = actFinish.toLocaleTimeString('th-TH', timeOpts);
+
+                return `<div class="border p-4 rounded-lg bg-white flex flex-col md:flex-row justify-between mb-3 shadow-sm border-l-4 ${a.is_ready ? 'border-l-orange-500' : 'border-l-gray-300'}">
+                    <div class="flex-1 pr-2 mb-3 md:mb-0">
+                        <div class="font-bold text-gray-800 text-lg">${a.act_id}: ${a.topic}</div>
+                        ${instructorHtml}
+                        
+                        <div class="mt-2 bg-gray-50 p-2 rounded inline-block border border-gray-100">
+                            <p class="text-sm font-bold text-gray-800 mb-0.5">${dateDisplay}</p>
+                            <p class="text-sm text-gray-600">เวลา: ${beginTime} - ${finishTime} น.</p>
                         </div>
-                        <div class="flex items-center md:items-end md:w-32">${btnHtml}</div>
-                    </div>`;
-                }).join('');
-            }
-            app.showView('view-checkin');
+                        
+                        ${linkHtml}
+                    </div>
+                    <div class="flex items-center md:items-end md:w-40 w-full justify-center">${btnHtml}</div>
+                </div>`;
+            }).join('');
         }
-    },
-    
+        app.showView('view-checkin');
+    }
+},
+	
     // --- Weekly Batch (อัปเดต เพิ่มปุ่มถังขยะลบแม่แบบ/sort) ---
     loadWeeklyBatch: async () => {
         const res = await app.api({ action: 'get_fav_act', user: app.user }, 'กำลังเตรียมข้อมูล...');
@@ -1999,59 +2000,6 @@ editActivityForm: async () => {
             app.loadManageActivities();
             // กลับไปโหลดหน้ารายการกิจกรรมใหม่
         }
-    },
-
-// 🟢 1. ดักจับการกด Check-in เพื่อดูว่าต้องแสดงกี่ปุ่ม
-    joinActivity: async (actRefId) => {
-        // หารายละเอียดกิจกรรมจากรายการที่กำลังเปิดอยู่
-        const act = (app.ongoingActs || []).find(a => a.act_ref_id === actRefId);
-        const hasLink = act && act.act_link && act.act_link.trim() !== "";
-
-        if (hasLink) {
-            // กิจกรรม Hybrid (มีลิงก์) -> โชว์ 2 ปุ่ม
-            Swal.fire({
-                title: '📍 เลือกรูปแบบการเข้าร่วม',
-                text: 'กิจกรรมนี้รองรับการเรียนแบบ Hybrid',
-                icon: 'question',
-                showDenyButton: true,
-                showCancelButton: true,
-                confirmButtonText: '📍 เช็คอิน Onsite (ในห้อง)',
-                denyButtonText: '💻 เช็คอิน Online (รอใส่ PIN)',
-                cancelButtonText: 'ยกเลิก',
-                confirmButtonColor: '#3085d6',
-                denyButtonColor: '#10b981'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    app.executeCheckIn(actRefId, 'onsite');
-                } else if (result.isDenied) {
-                    app.executeCheckIn(actRefId, 'online');
-                }
-            });
-        } else {
-            // กิจกรรม Onsite 100% -> ดึง GPS ทันที
-            app.executeCheckIn(actRefId, 'onsite');
-        }
-    },
-
-    // 🟢 2. ดำเนินการดึงพิกัด (เฉพาะ Onsite)
-    executeCheckIn: async (actRefId, type) => {
-        if (type === 'online') {
-            // Online ไม่ต้องสน GPS ส่งค่าว่างไปให้หลังบ้านบันทึก PENDING เลย
-            app.processJoinActivity(actRefId, "", "", 'online', "");
-            return;
-        }
-
-        // Onsite ต้องขอ GPS (ถ้าไม่ได้ ให้ปล่อยผ่านตามกฎ Frictionless)
-        if (!navigator.geolocation) {
-            app.processJoinActivity(actRefId, "", "", 'onsite', "");
-            return;
-        }
-        Swal.fire({ title: '📍 กำลังตรวจสอบพิกัด...', didOpen: () => Swal.showLoading() });
-        navigator.geolocation.getCurrentPosition(
-            (pos) => { Swal.close(); app.processJoinActivity(actRefId, pos.coords.latitude, pos.coords.longitude, 'onsite', ""); },
-            (err) => { Swal.close(); app.processJoinActivity(actRefId, "", "", 'onsite', ""); }, // GPS เออเร่อก็ให้ผ่านไปเลย
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
     },
 
     // 🟢 3. ส่งข้อมูลไปหลังบ้าน
