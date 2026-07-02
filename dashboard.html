@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.11</title>
+    <title>skinEPA Dashboard 1.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -807,11 +807,28 @@
                 document.body.removeChild(link);
             },
 
-// ==========================================
+            // ==========================================
             // 📥 ฟังก์ชัน Export ข้อมูลดิบ (Raw Data) สำหรับ dashboard.html
             // ==========================================
             exportRawDataCSV: async () => { 
-                // 1. สร้าง Pop-up เลือกเงื่อนไข
+                
+                // 🟢 1. สร้างตัวเลือกเดือนแบบไดนามิก (เดือนปัจจุบันอยู่บนสุด ถอยหลัง 12 เดือน)
+                const monthNames = [
+                    "มกราคม (January)", "กุมภาพันธ์ (February)", "มีนาคม (March)", 
+                    "เมษายน (April)", "พฤษภาคม (May)", "มิถุนายน (June)", 
+                    "กรกฎาคม (July)", "สิงหาคม (August)", "กันยายน (September)", 
+                    "ตุลาคม (October)", "พฤศจิกายน (November)", "ธันวาคม (December)"
+                ];
+                let currentMonthIndex = new Date().getMonth(); // 0-11
+                let monthOptionsHtml = '<option value="ALL">ดึงข้อมูลทั้งหมด ทุกเดือน</option>';
+                
+                for (let i = 0; i < 12; i++) {
+                    let mIndex = (currentMonthIndex - i + 12) % 12; // สูตรถอยหลังเดือน
+                    let labelSuffix = (i === 0) ? ' 📌 (เดือนปัจจุบัน)' : '';
+                    monthOptionsHtml += `<option value="${mIndex}">${monthNames[mIndex]}${labelSuffix}</option>`;
+                }
+
+                // 2. สร้าง Pop-up เลือกเงื่อนไข
                 const { value: formValues } = await Swal.fire({
                     title: '📥 ดาวน์โหลด Raw Data',
                     html: `
@@ -827,20 +844,7 @@
                             <div>
                                 <label class="block font-bold text-gray-700 mb-1">ช่วงเวลา (เดือน)</label>
                                 <select id="export-month" class="w-full border p-2 rounded bg-gray-50 focus:ring-indigo-500">
-                                    <option value="ALL">ดึงข้อมูลทั้งหมด ทุกเดือน</option>
-                                    <option value="0">มกราคม (January)</option>
-                                    <option value="1">กุมภาพันธ์ (February)</option>
-                                    <option value="2">มีนาคม (March)</option>
-                                    <option value="3">เมษายน (April)</option>
-                                    <option value="4">พฤษภาคม (May)</option>
-                                    <option value="5">มิถุนายน (June)</option>
-                                    <option value="6">กรกฎาคม (July)</option>
-                                    <option value="7">สิงหาคม (August)</option>
-                                    <option value="8">กันยายน (September)</option>
-                                    <option value="9">ตุลาคม (October)</option>
-                                    <option value="10">พฤศจิกายน (November)</option>
-                                    <option value="11">ธันวาคม (December)</option>
-                                </select>
+                                    ${monthOptionsHtml} </select>
                             </div>
                         </div>
                     `,
@@ -861,13 +865,10 @@
                 Swal.fire({ title: 'กำลังดึงข้อมูลจากฐานข้อมูล...', text: 'อาจใช้เวลาสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
                 try {
-                    // 2. ส่งคำสั่งไปขอดึงข้อมูลดิบจากหลังบ้าน (ซึ่งหลังบ้านจะกรองเอาเฉพาะสถาบันของ user มาให้)
+                    // 3. ส่งคำสั่งไปขอดึงข้อมูลดิบจากหลังบ้าน
                     const response = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ 
-                            action: 'get_raw_export', 
-                            user: dash.user 
-                        })
+                        body: JSON.stringify({ action: 'get_raw_export', user: dash.user })
                     });
                     
                     const res = await response.json();
@@ -876,13 +877,11 @@
                         return Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
                     }
 
-                    // 3. นำข้อมูลมากรอง (Filter) ตามที่ผู้ใช้เลือก
+                    // 4. นำข้อมูลมากรอง (Filter) ตามที่ผู้ใช้เลือก
                     let filteredData = res.data.filter(row => {
                         if (formValues.type !== 'ALL' && row.type !== formValues.type) return false;
-                        
-                        // 🟢 ระบบกรองเฉพาะเดือนที่มีข้อมูล (ถ้าเดือนไหนเลือกมาแล้วไม่มีข้อมูล ก็จะเด้ง Alert)
                         if (formValues.month !== 'ALL') {
-                            let rowMonth = new Date(row.timestamp).getMonth(); // 0-11
+                            let rowMonth = new Date(row.timestamp).getMonth(); 
                             if (rowMonth !== parseInt(formValues.month)) return false;
                         }
                         return true;
@@ -892,18 +891,17 @@
                         return Swal.fire('แจ้งเตือน', 'ไม่พบประวัติข้อมูลในเดือน/ประเภทที่เลือกครับ', 'warning');
                     }
 
-                    // 4. ประกอบร่างไฟล์ CSV (🟢 แทรกคอลัมน์ "สถาบัน" เพิ่มเข้าไป)
+                    // 5. ประกอบร่างไฟล์ CSV
                     let csv = "\uFEFFวัน-เวลา,ประเภท,สถาบัน,MDID,ชื่อ-สกุล,ชั้นปี,Item ID,CCME,รายละเอียด/หัวข้อ,ผลประเมิน/ชั่วโมง\n";
                     
                     filteredData.forEach(r => {
                         let cleanDesc = r.desc ? String(r.desc).replace(/"/g, '""').replace(/\n/g, ' ') : "";
-                        // 🟢 เพิ่มตัวแปร r.institute ลงในบรรทัด CSV
                         csv += `"${r.date_str}","${r.type}","${r.institute || '-'}","${r.mdid}","${r.name}","${r.role}","${r.item_id}","${r.ccme}","${cleanDesc}","${r.result_value}"\n`;
                     });
 
                     Swal.close();
 
-                    // 5. สั่งดาวน์โหลด
+                    // 6. สั่งดาวน์โหลด
                     const link = document.createElement("a"); 
                     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
                     
@@ -917,7 +915,7 @@
                     console.error(error);
                     Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
                 }
-            }, // <-- ปิดฟังก์ชัน
+            },
             
             // 1. ระบบ Login ด้วย SweetAlert2 (ด่านแรกก่อนเข้าใช้งาน)
                 requireLogin: async () => {
