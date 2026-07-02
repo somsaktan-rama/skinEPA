@@ -807,25 +807,30 @@
                 document.body.removeChild(link);
             },
 
-            // ==========================================
+// ==========================================
             // 📥 ฟังก์ชัน Export ข้อมูลดิบ (Raw Data) สำหรับ dashboard.html
             // ==========================================
             exportRawDataCSV: async () => { 
                 
-                // 🟢 1. สร้างตัวเลือกเดือนแบบไดนามิก (เดือนปัจจุบันอยู่บนสุด ถอยหลัง 12 เดือน)
+                // 🟢 1. สร้างตัวเลือกเดือนพร้อมระบุ "ปี" เพื่อป้องกันข้อมูลข้ามปีปะปนกัน
                 const monthNames = [
-                    "มกราคม (January)", "กุมภาพันธ์ (February)", "มีนาคม (March)", 
-                    "เมษายน (April)", "พฤษภาคม (May)", "มิถุนายน (June)", 
-                    "กรกฎาคม (July)", "สิงหาคม (August)", "กันยายน (September)", 
-                    "ตุลาคม (October)", "พฤศจิกายน (November)", "ธันวาคม (December)"
+                    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
+                    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
                 ];
-                let currentMonthIndex = new Date().getMonth(); // 0-11
                 let monthOptionsHtml = '<option value="ALL">ดึงข้อมูลทั้งหมด ทุกเดือน</option>';
                 
+                let currentDate = new Date();
                 for (let i = 0; i < 12; i++) {
-                    let mIndex = (currentMonthIndex - i + 12) % 12; // สูตรถอยหลังเดือน
+                    // ใช้ Date Object ถอยหลังไปทีละเดือน (ระบบจะจัดการเรื่องข้ามปีให้อัตโนมัติ)
+                    let targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                    let mIndex = targetDate.getMonth();
+                    let yyyy = targetDate.getFullYear();
+                    let thYear = yyyy + 543; // แปลงเป็น พ.ศ.
+                    
+                    let valueKey = `${yyyy}-${mIndex}`; // คีย์จะเป็นรูปแบบ "2026-6"
                     let labelSuffix = (i === 0) ? ' 📌 (เดือนปัจจุบัน)' : '';
-                    monthOptionsHtml += `<option value="${mIndex}">${monthNames[mIndex]}${labelSuffix}</option>`;
+                    
+                    monthOptionsHtml += `<option value="${valueKey}">${monthNames[mIndex]} ${thYear}${labelSuffix}</option>`;
                 }
 
                 // 2. สร้าง Pop-up เลือกเงื่อนไข
@@ -877,18 +882,20 @@
                         return Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
                     }
 
-                    // 4. นำข้อมูลมากรอง (Filter) ตามที่ผู้ใช้เลือก
+                    // 4. นำข้อมูลมากรอง (Filter) ให้ตรงทั้ง "เดือน" และ "ปี"
                     let filteredData = res.data.filter(row => {
                         if (formValues.type !== 'ALL' && row.type !== formValues.type) return false;
+                        
                         if (formValues.month !== 'ALL') {
-                            let rowMonth = new Date(row.timestamp).getMonth(); 
-                            if (rowMonth !== parseInt(formValues.month)) return false;
+                            let rowDate = new Date(row.timestamp);
+                            let rowKey = `${rowDate.getFullYear()}-${rowDate.getMonth()}`; 
+                            if (rowKey !== formValues.month) return false; // ถ้าปีหรือเดือนไม่ตรง ให้คัดทิ้ง
                         }
                         return true;
                     });
 
                     if (filteredData.length === 0) {
-                        return Swal.fire('แจ้งเตือน', 'ไม่พบประวัติข้อมูลในเดือน/ประเภทที่เลือกครับ', 'warning');
+                        return Swal.fire('แจ้งเตือน', 'ไม่พบประวัติข้อมูลในเดือนและปีที่เลือกครับ', 'warning');
                     }
 
                     // 5. ประกอบร่างไฟล์ CSV
@@ -905,7 +912,7 @@
                     const link = document.createElement("a"); 
                     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
                     
-                    let monthSuffix = formValues.month === 'ALL' ? 'AllMonths' : `Month_${parseInt(formValues.month) + 1}`;
+                    let monthSuffix = formValues.month === 'ALL' ? 'AllMonths' : formValues.month;
                     link.download = `RawData_${formValues.type}_${monthSuffix}_${new Date().getTime()}.csv`; 
                     
                     document.body.appendChild(link); 
