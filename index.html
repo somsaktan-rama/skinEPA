@@ -421,9 +421,9 @@
                 <h2 class="text-xl font-bold text-blue-800">📊 Dashboard ความก้าวหน้า</h2>
                 
                 <div id="export-buttons" class="flex space-x-2">
-                    <button onclick="app.exportCSV()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export กิจกรรม</button>
+                    <button onclick="app.exportCSV()" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export EPA/Activity รายคน</button>
                     
-                    <button onclick="app.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export EPA</button>
+                    <button onclick="app.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded shadow">📥 Export สรุป ตามชั้นปี</button>
                 </div>
 
             </div>
@@ -2255,7 +2255,7 @@ closeActivitySession: async () => {
         }
     },
 
-// ==========================================
+	// ==========================================
     // 📥 ฟังก์ชัน Export Pivot Excel (แยกตามชั้นปี R2, R3, R4, Fellow)
     // ==========================================
     exportEpaPivotExcel: async () => {
@@ -2505,14 +2505,63 @@ closeActivitySession: async () => {
         document.getElementById(`icon-${id}`).innerText = div.classList.contains('hidden') ? '▼' : '▲'; 
     },
     
-    exportCSV: () => { 
+	// ==========================================
+    // 📥 ฟังก์ชัน Export CSV (เพิ่ม Item ID, CCME และแยกประเภท)
+    // ==========================================
+    exportCSV: async () => { 
         if(!app.dashboardData) return;
-        // 🟢 เปลี่ยนหัวคอลัมน์และข้อมูลที่ดึงจาก item.id เป็น item.desc
-        let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,รายละเอียด,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n" + 
-                  app.dashboardData.map(r => r.items.map(i => `"${r.mdid}","${r.name}","${r.level}","${i.desc}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`).join('\n')).join('\n');
+
+        // 🟢 1. สร้าง Pop-up ถามผู้ใช้ว่าต้องการ Export ข้อมูลประเภทใด
+        const { value: exportType } = await Swal.fire({
+            title: '📥 เลือกข้อมูลที่ต้องการดาวน์โหลด',
+            input: 'radio',
+            inputOptions: {
+                'ALL': 'ทั้งหมด (EPA + Activity)',
+                'EPA': 'เฉพาะความก้าวหน้า (EPA)',
+                'ACT': 'เฉพาะการเข้ากิจกรรม (Activity)'
+            },
+            inputValue: 'ALL',
+            showCancelButton: true,
+            confirmButtonText: 'ดาวน์โหลด CSV',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!exportType) return; // ถ้ายกเลิกการดาวน์โหลด
+
+        Swal.fire({ title: 'กำลังสร้างไฟล์...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        // 🟢 2. สร้างหัวคอลัมน์ใหม่ (แทรก Item ID และ CCME)
+        let csv = "\uFEFFMDID,ชื่อ-สกุล,ชั้นปี,Item ID,CCME,รายละเอียด,เป้าหมาย,ผ่าน,สถานะ,แจ้งเตือนความเสี่ยง\n";
+        
+        let rows = [];
+        app.dashboardData.forEach(r => {
+            r.items.forEach(i => {
+                // เช็คประเภทว่าเป็น EPA หรือ Activity จาก Item ID (ส่วนใหญ่ Activity จะขึ้นต้นด้วย ACT)
+                let isAct = String(i.id).toUpperCase().startsWith('ACT');
+                
+                if (exportType === 'EPA' && isAct) return;  // ข้าม Activity ถ้ายากได้แค่ EPA
+                if (exportType === 'ACT' && !isAct) return; // ข้าม EPA ถ้าอยากได้แค่ Activity
+
+                // ดึงค่า CCME (ถ้าหลังบ้านส่งมา) ถ้าไม่มีให้ใส่ - ไว้ก่อน
+                let ccmeValue = i.ccme ? i.ccme : "-";
+
+                rows.push(`"${r.mdid}","${r.name}","${r.level}","${i.id}","${ccmeValue}","${i.desc}","${i.target}","${i.pass}","${i.is_completed ? 'ผ่าน' : 'ยังไม่ครบ'}","${r.is_at_risk ? 'เสี่ยง' : 'ปกติ'}"`);
+            });
+        });
+
+        Swal.close();
+
+        if (rows.length === 0) {
+            return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับเงื่อนไขที่เลือก', 'warning');
+        }
+
+        csv += rows.join('\n');
+
+        // 🟢 3. สร้างไฟล์และสั่งดาวน์โหลด
         const link = document.createElement("a"); 
         link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
-        link.download = `EPA_Report.csv`; 
+        // เปลี่ยนชื่อไฟล์ตามประเภทที่เลือก เพื่อความเป็นระเบียบ
+        link.download = `Progress_Report_${exportType}_${new Date().toISOString().slice(0,10)}.csv`; 
         document.body.appendChild(link); 
         link.click(); 
         document.body.removeChild(link);
