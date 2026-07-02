@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.09</title>
+    <title>skinEPA Dashboard 1.10</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -126,9 +126,16 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 dark:text-gray-200">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold text-gray-800 dark:text-white">ตารางความก้าวหน้า EPA (Pivot View)</h3>
-                        <button onclick="dash.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold transition">
-                            📥 Export Pivot
-                        </button>
+                        
+                        <div class="flex space-x-2">
+                            <button onclick="dash.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold transition">
+                                📥 Export Pivot
+                            </button>
+                            <button onclick="dash.exportRawDataCSV()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow text-sm font-bold transition">
+                                📥 Export Raw Data
+                            </button>
+                        </div>
+
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left border dark:border-gray-700">
@@ -799,6 +806,115 @@
                 link.click();
                 document.body.removeChild(link);
             },
+
+            // ==========================================
+            // 📥 ฟังก์ชัน Export ข้อมูลดิบ (Raw Data) สำหรับ dashboard.html
+            // ==========================================
+            exportRawDataCSV: async () => { 
+                // 1. สร้าง Pop-up เลือกเงื่อนไข
+                const { value: formValues } = await Swal.fire({
+                    title: '📥 ดาวน์โหลด Raw Data',
+                    html: `
+                        <div class="text-left text-sm space-y-4 mt-3">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">หมวดหมู่ข้อมูล</label>
+                                <select id="export-type" class="w-full border p-2 rounded bg-gray-50 focus:ring-blue-500">
+                                    <option value="ALL">ทั้งหมด (EPA + Activity)</option>
+                                    <option value="EPA">เฉพาะความก้าวหน้า (EPA)</option>
+                                    <option value="ACTIVITY">เฉพาะการเข้ากิจกรรม (Activity)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">ช่วงเวลา (เดือน)</label>
+                                <select id="export-month" class="w-full border p-2 rounded bg-gray-50 focus:ring-blue-500">
+                                    <option value="ALL">ดึงข้อมูลทั้งหมด ทุกเดือน</option>
+                                    <option value="0">มกราคม (January)</option>
+                                    <option value="1">กุมภาพันธ์ (February)</option>
+                                    <option value="2">มีนาคม (March)</option>
+                                    <option value="3">เมษายน (April)</option>
+                                    <option value="4">พฤษภาคม (May)</option>
+                                    <option value="5">มิถุนายน (June)</option>
+                                    <option value="6">กรกฎาคม (July)</option>
+                                    <option value="7">สิงหาคม (August)</option>
+                                    <option value="8">กันยายน (September)</option>
+                                    <option value="9">ตุลาคม (October)</option>
+                                    <option value="10">พฤศจิกายน (November)</option>
+                                    <option value="11">ธันวาคม (December)</option>
+                                </select>
+                            </div>
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'สร้างไฟล์ CSV',
+                    cancelButtonText: 'ยกเลิก',
+                    preConfirm: () => {
+                        return {
+                            type: document.getElementById('export-type').value,
+                            month: document.getElementById('export-month').value
+                        }
+                    }
+                });
+
+                if (!formValues) return;
+
+                Swal.fire({ title: 'กำลังดึงข้อมูลจากฐานข้อมูล...', text: 'อาจใช้เวลาสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                try {
+                    // 2. ส่งคำสั่งไปขอดึงข้อมูลดิบจากหลังบ้าน (ใช้โครงสร้าง fetch ของ dashboard.html)
+                    const response = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ 
+                            action: 'get_raw_export', 
+                            user: dash.user 
+                        })
+                    });
+                    
+                    const res = await response.json();
+                    
+                    if (!res || !res.success) {
+                        return Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
+                    }
+
+                    // 3. นำข้อมูลมากรอง (Filter) ตามที่ผู้ใช้เลือก
+                    let filteredData = res.data.filter(row => {
+                        if (formValues.type !== 'ALL' && row.type !== formValues.type) return false;
+                        if (formValues.month !== 'ALL') {
+                            let rowMonth = new Date(row.timestamp).getMonth(); // 0-11
+                            if (rowMonth !== parseInt(formValues.month)) return false;
+                        }
+                        return true;
+                    });
+
+                    if (filteredData.length === 0) {
+                        return Swal.fire('แจ้งเตือน', 'ไม่พบประวัติข้อมูลในเดือน/ประเภทที่เลือกครับ', 'warning');
+                    }
+
+                    // 4. ประกอบร่างไฟล์ CSV
+                    let csv = "\uFEFFวัน-เวลา,ประเภท,MDID,ชื่อ-สกุล,ชั้นปี,Item ID,CCME,รายละเอียด/หัวข้อ,ผลประเมิน/ชั่วโมง\n";
+                    
+                    filteredData.forEach(r => {
+                        let cleanDesc = r.desc ? String(r.desc).replace(/"/g, '""').replace(/\n/g, ' ') : "";
+                        csv += `"${r.date_str}","${r.type}","${r.mdid}","${r.name}","${r.role}","${r.item_id}","${r.ccme}","${cleanDesc}","${r.result_value}"\n`;
+                    });
+
+                    Swal.close();
+
+                    // 5. สั่งดาวน์โหลด
+                    const link = document.createElement("a"); 
+                    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
+                    
+                    let monthSuffix = formValues.month === 'ALL' ? 'AllMonths' : `Month_${parseInt(formValues.month) + 1}`;
+                    link.download = `RawData_${formValues.type}_${monthSuffix}_${new Date().getTime()}.csv`; 
+                    
+                    document.body.appendChild(link); 
+                    link.click(); 
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error(error);
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+                }
+            }, // <-- อย่าลืมลูกน้ำตรงนี้นะครับ
             
             // 1. ระบบ Login ด้วย SweetAlert2 (ด่านแรกก่อนเข้าใช้งาน)
                 requireLogin: async () => {
