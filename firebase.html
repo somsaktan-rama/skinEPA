@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Firestore Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-100 p-8 font-sans">
+
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-2xl font-bold text-indigo-800 mb-4">🚀 ทดสอบเชื่อมต่อ Firebase Firestore</h2>
+        
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+            <h3 class="font-bold text-gray-700 mb-3">1. ทดสอบบันทึกข้อมูล (Write)</h3>
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="input-mdid" placeholder="รหัส MDID" class="border p-2 rounded w-1/3">
+                <input type="text" id="input-name" placeholder="ชื่อ-นามสกุล" class="border p-2 rounded w-2/3">
+            </div>
+            <div class="flex gap-2 mb-3">
+                <select id="input-act" class="border p-2 rounded w-full">
+                    <option value="ACT01">ACT01: Journal Club</option>
+                    <option value="ACT02">ACT02: Topic Review</option>
+                </select>
+            </div>
+            <button id="btn-save" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full transition">
+                💾 บันทึกข้อมูลลง Firebase
+            </button>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 class="font-bold text-gray-700 mb-3">2. ทดสอบดึงข้อมูล (Read)</h3>
+            <button id="btn-load" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full transition mb-4">
+                🔄 โหลดข้อมูลจาก Firebase
+            </button>
+            <div id="display-data" class="bg-gray-800 text-green-400 p-4 rounded h-64 overflow-y-auto font-mono text-sm">
+                (ข้อมูลจะแสดงที่นี่...)
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // 🚨 นำค่า Config ของคุณหมอมาวางทับตรงนี้ครับ 🚨
+const firebaseConfig = {
+  apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
+  authDomain: "skinepa-a771f.firebaseapp.com",
+  projectId: "skinepa-a771f",
+  storageBucket: "skinepa-a771f.firebasestorage.app",
+  messagingSenderId: "597553303268",
+  appId: "1:597553303268:web:48ed982baec59d66c0e6f1",
+  measurementId: "G-HP5J8V22L9"
+};
+
+        // เริ่มต้นการเชื่อมต่อ
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ชื่อ Collection (เปรียบเสมือนชื่อ Sheet ใน Google Sheets)
+        const COLLECTION_NAME = "test_activity"; 
+
+        // -----------------------------------------------------
+        // 💾 ฟังก์ชันบันทึกข้อมูล (Write)
+        // -----------------------------------------------------
+        document.getElementById('btn-save').addEventListener('click', async () => {
+            const mdid = document.getElementById('input-mdid').value;
+            const name = document.getElementById('input-name').value;
+            const act = document.getElementById('input-act').value;
+
+            if(!mdid || !name) return Swal.fire('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ', 'warning');
+
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                // เขียนข้อมูลลง Firestore (addDoc จะสร้าง ID ให้เรคคอร์ดอัตโนมัติ)
+                const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+                    mdid: mdid,
+                    name: name,
+                    act_id: act,
+                    status: "PASS",
+                    timestamp: serverTimestamp() // ให้ Server บันทึกเวลาให้เป๊ะๆ
+                });
+                
+                Swal.fire('สำเร็จ!', 'รหัสอ้างอิง: ' + docRef.id, 'success');
+                
+                // ล้างค่าฟอร์ม
+                document.getElementById('input-mdid').value = '';
+                document.getElementById('input-name').value = '';
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้', 'error');
+            }
+        });
+
+        // -----------------------------------------------------
+        // 🔄 ฟังก์ชันดึงข้อมูล (Read)
+        // -----------------------------------------------------
+        document.getElementById('btn-load').addEventListener('click', async () => {
+            const display = document.getElementById('display-data');
+            display.innerHTML = "กำลังโหลดข้อมูล...";
+
+            try {
+                // ดึงข้อมูลทั้งหมดจาก Collection และจัดเรียงตามเวลา
+                const q = query(collection(db, COLLECTION_NAME), orderBy("timestamp", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                let html = "";
+                let count = 0;
+                
+                querySnapshot.forEach((doc) => {
+                    count++;
+                    const data = doc.data();
+                    let timeStr = data.timestamp ? data.timestamp.toDate().toLocaleString('th-TH') : "N/A";
+                    
+                    html += `[${timeStr}]<br>`;
+                    html += `MDID: ${data.mdid} | ชื่อ: ${data.name}<br>`;
+                    html += `กิจกรรม: ${data.act_id} | สถานะ: ${data.status}<br>`;
+                    html += `Doc ID: ${doc.id}<br>`;
+                    html += `-----------------------------------<br>`;
+                });
+
+                if (count === 0) {
+                    display.innerHTML = "ไม่มีข้อมูลในฐานข้อมูล";
+                } else {
+                    display.innerHTML = `พบ ${count} รายการ<br><br>` + html;
+                }
+            } catch (e) {
+                console.error("Error fetching documents: ", e);
+                display.innerHTML = `<span class="text-red-500">เกิดข้อผิดพลาด: ${e.message}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>
