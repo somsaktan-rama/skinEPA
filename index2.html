@@ -3,7 +3,7 @@ ase<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.5</title>
+    <title>EPA Skin App firebase 2.51</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@ ase<!DOCTYPE html>
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.5</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.51</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -2949,11 +2949,14 @@ app.showMiniRubric = async (actRefId, presenterMdid, isClosingAct = false) => {
 window.onload = () => app.init();
 </script>
 
+<!-- ============================================================== -->
+<!-- 🚀 FIREBASE INJECTION MODULE -->
+<!-- ============================================================== -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 🚨 ระวัง: อย่าลืมแก้ตรงนี้เป็น Config ของคุณหมอนะครับ ถ้าไม่แก้ โค้ดจะพังตั้งแต่บรรทัดนี้เลยครับ
+    // 🚨 ระวัง: อย่าลืมแก้ตรงนี้เป็น Config ของคุณหมอนะครับ
 const firebaseConfig = {
   apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
   authDomain: "skinepa-a771f.firebaseapp.com",
@@ -2968,9 +2971,9 @@ const firebaseConfig = {
     const db = getFirestore(appFirebase);
 
     // ---------------------------------------------------------
-    // 📝 ใช้ window.app เพื่อบังคับเขียนทับแบบ 100%
+    // 📝 เอาคำว่า window. ออก ใช้แค่ app. นำหน้า
     // ---------------------------------------------------------
-    window.app.saveEpa = async () => {
+    app.saveEpa = async () => {
         const epa = document.getElementById('sel-epaid').value;
         const inst = document.getElementById('sel-instructor').value;
         const note = document.getElementById('txt-epanote').value.trim();
@@ -3020,9 +3023,9 @@ const firebaseConfig = {
     };
 
     // ---------------------------------------------------------
-    // 📍 2. Check-in Firebase
+    // 📍 2. Check-in Firebase (เอาคำว่า window. ออกเช่นกัน)
     // ---------------------------------------------------------
-    window.app.executeCheckinRequest = async (actRefId, pinCode) => {
+    app.executeCheckinRequest = async (actRefId, pinCode) => {
         Swal.fire({ title: 'กำลังดึงพิกัดและบันทึก Firebase...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -3079,6 +3082,5 @@ const firebaseConfig = {
         }, { enableHighAccuracy: true, timeout: 10000 });
     };
 </script>
-
 </body>
 </html>
