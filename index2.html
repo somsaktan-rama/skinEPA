@@ -2955,7 +2955,8 @@ window.onload = () => app.init();
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+	import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+	
     // 🚨 ระวัง: อย่าลืมแก้ตรงนี้เป็น Config ของคุณหมอนะครับ
 const firebaseConfig = {
   apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
@@ -3084,7 +3085,7 @@ const firebaseConfig = {
         }, { enableHighAccuracy: true, timeout: 10000 });
     };
 
-// ---------------------------------------------------------
+	// ---------------------------------------------------------
     // 🔄 3. อัปเกรดฟังก์ชันโหลดหน้ากิจกรรม (ดึงข้อมูลสถานะจาก Firebase)
     // ---------------------------------------------------------
     app.loadCheckin = async () => {
@@ -3175,6 +3176,131 @@ const firebaseConfig = {
                 }).join('');
             }
             app.showView('view-checkin');
+        }
+    };
+
+	// ---------------------------------------------------------
+    // 👥 4. อัปเกรดหน้าดูรายชื่อผู้เข้าร่วม (ดึงจาก Firebase)
+    // ---------------------------------------------------------
+    app.viewAttendees = async (actRefId) => {
+        if (!actRefId) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสอ้างอิงกิจกรรม', 'error');
+        const act = app.cachedManageActs[actRefId];
+        if (!act) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลกิจกรรมในระบบ', 'error');
+
+        app.currentManageAct = act;
+        Swal.fire({ title: 'กำลังดึงรายชื่อ (Firebase)...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            // 1. ดึงข้อมูลจาก Firestore
+            const actCollection = collection(db, "activity_records");
+            const q = query(actCollection, where("act_ref_id", "==", actRefId));
+            const querySnapshot = await getDocs(q);
+
+            let fbData = [];
+            querySnapshot.forEach(docSnap => {
+                let d = docSnap.data();
+                fbData.push({
+                    record_id: docSnap.id,
+                    mdid: d.mdid,
+                    lat_long: d.lat_long || "",
+                    time: d.time ? d.time.toDate().toISOString() : new Date().toISOString(),
+                    status: d.status
+                });
+            });
+
+            // 2. ส่งให้ GAS จับคู่ชื่อและคำนวณพิกัด GPS
+            const data = await app.api({
+                action: 'enrich_firebase_attendees',
+                payload: { act_ref_id: actRefId, attendees: fbData }
+            });
+
+            if(data && data.success) {
+                Swal.close();
+                const list = document.getElementById('attendees-container');
+                let countRes = 0; let countInst = 0;
+
+                data.attendees.forEach(u => {
+                    let r = u.role ? u.role.toLowerCase() : '';
+                    if (r.includes('resident') || r.includes('fellow')) countRes++;
+                    if (r.includes('instructor')) countInst++;
+                });
+
+                document.getElementById('attendee-topic').innerHTML = `
+                    <div class="mb-1">กิจกรรม: ${act.topic}</div>
+                    <div class="text-purple-700 text-sm font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${act.instructor_name || 'ไม่พบข้อมูลอาจารย์'}</div>
+                    <div class="mt-2 text-blue-700 text-sm font-bold bg-blue-50 px-3 py-1.5 rounded-lg inline-block border border-blue-200">
+                        👥 จำนวนผู้เข้าร่วม: แพทย์ ${countRes} | อาจารย์ ${countInst}
+                    </div>
+                `;
+
+                // ฟอร์แมตเวลา
+                let finishDate = new Date(act.act_finish);
+                if (isNaN(finishDate.getTime())) finishDate = new Date(act.act_finish.toString().replace(/-/g, '/'));
+                document.getElementById('attendee-time-info').innerText = `สิ้นสุด: ${finishDate.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`;
+
+                if(data.attendees.length === 0) {
+                    list.innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
+                } else {
+                    list.innerHTML = data.attendees.map(u => {
+                        let statusBadge = '';
+                        if (u.gpsStatus === 'Instructor') statusBadge = `<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-bold border border-purple-300 shadow-sm">👨‍🏫 อาจารย์ผู้คุม</span>`;
+                        else if (u.gpsStatus === 'In Range') statusBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-400 shadow-sm">✔️ ในพื้นที่ (${u.distance} Km)</span>`;
+                        else if (u.gpsStatus === 'Out of Range') statusBadge = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold border border-red-400 shadow-sm">❌ นอกรัศมี (${u.distance} Km)</span>`;
+                        else if (u.gpsStatus === 'Wait Instructor') statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-300 shadow-sm">⏳ รอเทียบพิกัดอาจารย์</span>`;
+                        else statusBadge = `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-bold border border-gray-300 shadow-sm">⚠️ ไม่ระบุพิกัด</span>`;
+
+                        let timeStr = new Date(u.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+
+                        return `<div class="flex justify-between items-center p-3 border-b bg-white mb-2 rounded-lg shadow-sm border-l-4
+                            ${u.gpsStatus === 'In Range' ? 'border-l-green-500' :
+                             (u.gpsStatus === 'Out of Range' ? 'border-l-red-500' :
+                             (u.gpsStatus === 'Instructor' ? 'border-l-purple-500' : 'border-l-gray-300'))}">
+                            <div>
+                                <div class="font-bold text-gray-800 text-sm">${u.name}</div>
+                                <div class="mt-2 flex items-center gap-2">
+                                    ${statusBadge}
+                                    <span class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">⏱️ ${timeStr}</span>
+                                </div>
+                            </div>
+                            <button onclick="app.removeAttendee('${u.record_id}')" class="text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition">นำออก</button>
+                        </div>`;
+                    }).join('');
+                }
+
+                let showEditBtn = act.status === 'OPEN';
+                let showDeleteBtn = data.attendees.length === 0;
+                let nowTime = new Date().getTime();
+                let showCloseBtn = nowTime >= finishDate.getTime();
+
+                let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
+                btnContainer.innerHTML = `
+                    ${showCloseBtn ? \`<button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow transition">ปิดกิจกรรม</button>\` : ''}
+                    ${showEditBtn ? \`<button onclick="app.editActivityForm()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded font-bold shadow transition">✏️ แก้ไข</button>\` : ''}
+                    ${showDeleteBtn ? \`<button onclick="app.deleteActivity('\${actRefId}')" class="bg-gray-200 hover:bg-red-100 text-red-600 px-4 py-2 rounded font-bold shadow transition">🗑️ ลบ</button>\` : ''}
+                    <button onclick="app.showView('view-manage-activities')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold shadow transition">กลับ</button>
+                `;
+                app.showView('view-activity-attendees');
+
+            } else {
+                Swal.fire('เกิดข้อผิดพลาด', data ? data.message : 'เชื่อมต่อล้มเหลว', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('ข้อผิดพลาด', '[Firebase] Error: ' + e.message, 'error');
+        }
+    };
+
+    // ---------------------------------------------------------
+    // 🗑️ 5. เปลี่ยนการลบผู้เข้าร่วมให้ลบใน Firebase โดยตรง
+    // ---------------------------------------------------------
+    app.removeAttendee = async (recordId) => {
+        if(!confirm('ยืนยันการนำรายชื่อนี้ออก?')) return;
+        try {
+            await deleteDoc(doc(db, "activity_records", recordId));
+            Swal.fire('สำเร็จ', 'นำรายชื่อออกเรียบร้อย', 'success');
+            app.viewAttendees(app.currentManageAct.act_ref_id); // รีเฟรชหน้า
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', e.message, 'error');
         }
     };
 	
