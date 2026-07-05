@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase  2.57</title>
+    <title>EPA Skin App firebase  2.58</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.57</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.58</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -2953,11 +2953,11 @@ window.onload = () => app.init();
 <!-- 🚀 FIREBASE INJECTION MODULE -->
 <!-- ============================================================== -->
 <script type="module">
+    // 🔴 นำเข้าคำสั่งทั้งหมดแค่รอบเดียว (ห้ามซ้ำ)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-	import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-	
-    // 🚨 ระวัง: อย่าลืมแก้ตรงนี้เป็น Config ของคุณหมอนะครับ
+    import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // 🚨 อย่าลืมแก้ Config ให้เป็นของคุณหมอนะครับ
 const firebaseConfig = {
   apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
   authDomain: "skinepa-a771f.firebaseapp.com",
@@ -2972,7 +2972,7 @@ const firebaseConfig = {
     const db = getFirestore(appFirebase);
 
     // ---------------------------------------------------------
-    // 📝 อัปเกรดฟังก์ชัน saveEpa
+    // 📝 1. ส่งประเมิน EPA
     // ---------------------------------------------------------
     app.saveEpa = async () => {
         const epa = document.getElementById('sel-epaid').value;
@@ -3022,7 +3022,7 @@ const firebaseConfig = {
     };
 
     // ---------------------------------------------------------
-    // 📍 2. Check-in Firebase
+    // 📍 2. ลงชื่อเข้ากิจกรรม (Check-in)
     // ---------------------------------------------------------
     app.executeCheckinRequest = async (actRefId, pinCode) => {
         Swal.fire({ title: 'กำลังดึงพิกัดและบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -3033,7 +3033,6 @@ const firebaseConfig = {
             const latLongStr = lat + "," + lng;
 
             try {
-                // เช็ค PIN จาก GAS
                 const verifyRes = await app.api({
                     action: 'verify_join_activity',
                     payload: { act_ref_id: actRefId, pin: pinCode, mdid: app.user.mdid }
@@ -3043,10 +3042,7 @@ const firebaseConfig = {
                     return Swal.fire('ไม่สำเร็จ', verifyRes ? verifyRes.message : 'ตรวจสอบกิจกรรมล้มเหลว', 'error');
                 }
 
-                // เช็คว่าเคยลงใน Firebase หรือยัง
                 const actCollection = collection(db, "activity_records");
-                
-                // ค้นหาเผื่อไว้ทั้งแบบ String และ Number (กันเหนียวตอนข้อมูลเก่า Migrate มา)
                 const qString = query(actCollection, where("act_ref_id", "==", actRefId), where("mdid", "==", String(app.user.mdid)));
                 const querySnapshot = await getDocs(qString);
 
@@ -3064,7 +3060,7 @@ const firebaseConfig = {
                 await addDoc(actCollection, {
                     record_id: new Date().getTime().toString(),
                     act_ref_id: actRefId,
-                    mdid: String(app.user.mdid), // บันทึกเป็น String เสมอเพื่อความเป็นระเบียบ
+                    mdid: String(app.user.mdid), 
                     time: serverTimestamp(),
                     status: finalStatus,
                     lat_long: latLongStr,
@@ -3079,51 +3075,40 @@ const firebaseConfig = {
                 console.error("Firebase Error:", e);
                 Swal.fire('ข้อผิดพลาด', '[Firebase] Error: ' + e.message, 'error');
             }
-
         }, (err) => {
             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเข้าถึงตำแหน่งพิกัด GPS ได้', 'warning');
         }, { enableHighAccuracy: true, timeout: 10000 });
     };
 
-	// ---------------------------------------------------------
-    // 🔄 3. อัปเกรดฟังก์ชันโหลดหน้ากิจกรรม (ดึงข้อมูลสถานะจาก Firebase)
+    // ---------------------------------------------------------
+    // 🔄 3. โหลดหน้ากิจกรรม (ดึงสถานะจาก Firebase)
     // ---------------------------------------------------------
     app.loadCheckin = async () => {
-        // 1. ไปดึงรายชื่อกิจกรรมที่เปิดอยู่จาก Google Sheets (Master Data)
         const data = await app.api({ action: 'get_open_checkins', user: app.user }, 'กำลังค้นหากิจกรรม...');
-        
         if (data) {
-            // 2. 🚀 [Firebase] ดึงประวัติการลงชื่อของตัวเองมาเทียบ
             const actCollection = collection(db, "activity_records");
             const q = query(actCollection, where("mdid", "==", String(app.user.mdid)));
             const querySnapshot = await getDocs(q);
             
-            // สร้าง Map เก็บสถานะการ Check-in ของแต่ละกิจกรรม
             const joinedMap = {};
             querySnapshot.forEach((doc) => {
                 const actData = doc.data();
-                joinedMap[actData.act_ref_id] = actData.status; // เก็บสถานะ เช่น 'Check-in' หรือ 'PENDING'
+                joinedMap[actData.act_ref_id] = actData.status; 
             });
 
             const list = document.getElementById('checkin-list');
             if (data.activities.length === 0) {
                 list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมที่เปิดให้ลงชื่อในขณะนี้</p>';
             } else {
-                
-                // เรียงลำดับเวลา
                 data.activities.sort((a, b) => new Date(a.act_begin).getTime() - new Date(b.act_begin).getTime());
-
-                // 3. วาดหน้าจอใหม่
                 list.innerHTML = data.activities.map(a => {
                     let btnHtml = '';
                     let linkHtml = '';
                     const hasLink = (a.act_link && a.act_link.trim() !== "");
 
-                    // เช็คสถานะจาก Firebase (ถ้าเจอใน Firebase แปลว่าลงชื่อแล้ว)
                     let fbStatus = joinedMap[a.act_ref_id];
                     let isAlreadyJoined = (fbStatus !== undefined);
 
-                    // วาดปุ่มลิงก์ออนไลน์
                     if (hasLink) {
                         let platformName = "ออนไลน์";
                         let colorTheme = "bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-300"; 
@@ -3133,9 +3118,7 @@ const firebaseConfig = {
                         linkHtml = `<a href="${a.act_link}" target="_blank" class="mt-2 block w-full text-center ${colorTheme} font-bold py-1.5 rounded text-sm shadow-sm border">📹 เข้าร่วมผ่าน ${platformName}</a>`;
                     }
                      
-                    // ลอจิกการแสดงปุ่ม Check-in 
                     if (isAlreadyJoined) {
-                        // 🟢 ลูกเล่นเสริม: ถ้าติด PENDING (รอใส่รหัส) จะเปลี่ยนสีปุ่มให้รู้ว่ายังไม่สมบูรณ์
                         if (fbStatus === 'PENDING') {
                             btnHtml = `<button onclick="app.promptJoinHybrid('${a.act_ref_id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-4 py-2 rounded shadow transition w-full animate-pulse">⏳ รอใส่ PIN ออนไลน์</button>`;
                         } else {
@@ -3147,7 +3130,7 @@ const firebaseConfig = {
                         if (hasLink) {
                             btnHtml = `
                             <div class="flex flex-col space-y-2 w-full">
-                                <button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2 rounded shadow transition w-full">📍 ลงชื่อ On-site (ห้อง)</button>
+                                <button onclick="app.doCheckinOnsite('${a.act_ref_id}')" class="bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2 rounded shadow transition w-full">📍 ลงชื่อ On-site</button>
                                 <button onclick="app.promptJoinHybrid('${a.act_ref_id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded shadow transition w-full">💻 ลงชื่อ Online (PIN)</button>
                             </div>`;
                         } else {
@@ -3179,8 +3162,8 @@ const firebaseConfig = {
         }
     };
 
-	// ---------------------------------------------------------
-    // 👥 4. อัปเกรดหน้าดูรายชื่อ (รวมร่างข้อมูล mdid ระบบใหม่ และ attendee_mdid ระบบเก่า)
+    // ---------------------------------------------------------
+    // 👥 4. ดูรายชื่อผู้เข้าร่วม (รวมร่างข้อมูลเก่า+ใหม่)
     // ---------------------------------------------------------
     app.viewAttendees = async (actRefId) => {
         if (!actRefId) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสอ้างอิงกิจกรรม', 'error');
@@ -3206,13 +3189,10 @@ const firebaseConfig = {
                     if (!fbData.find(x => x.record_id === docSnap.id)) {
                         let d = docSnap.data();
                         
-                        // 🟢 จุดสำคัญ: รวมร่างฟิลด์ระบบเก่าและระบบใหม่เข้าด้วยกัน
                         let actualMdid = d.mdid;
                         if (actualMdid === undefined || actualMdid === null) {
-                            actualMdid = d.attendee_mdid; // ดึงจากข้อมูลที่ Migrate มา
+                            actualMdid = d.attendee_mdid; 
                         }
-
-                        // ถ้าไม่มีรหัสเลย ให้ข้ามไป
                         if (!actualMdid) return;
 
                         let timeISO = new Date().toISOString();
@@ -3223,7 +3203,7 @@ const firebaseConfig = {
 
                         fbData.push({
                             record_id: docSnap.id,
-                            mdid: String(actualMdid).trim(), // บังคับแปลงเป็น String ตามแบบฉบับ Firebase
+                            mdid: String(actualMdid).trim(),
                             lat_long: d.lat_long || "",
                             time: timeISO,
                             status: d.status
@@ -3239,7 +3219,6 @@ const firebaseConfig = {
                 return;
             }
 
-            // ส่งข้อมูลที่จัดระเบียบแล้ว (มีฟิลด์ mdid แน่นอน) ไปให้ GAS จับคู่ชื่อ
             const data = await app.api({
                 action: 'enrich_firebase_attendees',
                 payload: { act_ref_id: cleanActRef, attendees: fbData }
@@ -3310,8 +3289,8 @@ const firebaseConfig = {
 
                 let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
                 btnContainer.innerHTML = `
-                    ${showCloseBtn ? `<button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow transition">ปิดกิจกรรม</button>` : ''}
-                    ${showEditBtn ? `<button onclick="app.editActivityForm()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded font-bold shadow transition">✏️ แก้ไข</button>` : ''}
+                    ${showCloseBtn ? \`<button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow transition">ปิดกิจกรรม</button>\` : ''}
+                    ${showEditBtn ? \`<button onclick="app.editActivityForm()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded font-bold shadow transition">✏️ แก้ไข</button>\` : ''}
                     <button onclick="app.showView('view-manage-activities')" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white py-2 rounded font-bold shadow transition">กลับ</button>
                 `;
                 app.showView('view-activity-attendees');
@@ -3324,5 +3303,18 @@ const firebaseConfig = {
             Swal.fire('ข้อผิดพลาด', '[Firebase] Error: ' + e.message, 'error');
         }
     };
-	
+
+    // ---------------------------------------------------------
+    // 🗑️ 5. นำผู้เข้าร่วมออก (ลบใน Firebase)
+    // ---------------------------------------------------------
+    app.removeAttendee = async (recordId) => {
+        if(!confirm('ยืนยันการนำรายชื่อนี้ออก?')) return;
+        try {
+            await deleteDoc(doc(db, "activity_records", recordId));
+            Swal.fire('สำเร็จ', 'นำรายชื่อออกเรียบร้อย', 'success');
+            app.viewAttendees(app.currentManageAct.act_ref_id);
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', e.message, 'error');
+        }
+    };
 </script>
