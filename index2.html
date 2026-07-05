@@ -3,7 +3,7 @@ ase<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.51</title>
+    <title>EPA Skin App firebase 2.52</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@ ase<!DOCTYPE html>
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.51</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.52</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -539,7 +539,7 @@ const formatThaiDateTime = (isoStr) => {
            ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2) + ':' + ('0'+d.getSeconds()).slice(-2);
 };
 
-const app = {
+var app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
     cachedTasks: {}, 
     
@@ -2971,7 +2971,7 @@ const firebaseConfig = {
     const db = getFirestore(appFirebase);
 
     // ---------------------------------------------------------
-    // 📝 เอาคำว่า window. ออก ใช้แค่ app. นำหน้า
+    // 📝 อัปเกรดฟังก์ชัน saveEpa
     // ---------------------------------------------------------
     app.saveEpa = async () => {
         const epa = document.getElementById('sel-epaid').value;
@@ -2990,7 +2990,6 @@ const firebaseConfig = {
             const epaDescObj = document.getElementById('sel-epaid');
             const epaDescText = epaDescObj.options[epaDescObj.selectedIndex].text;
 
-            // ⚡ เขียนข้อมูลลง Firestore
             await addDoc(collection(db, "epa_records"), {
                 record_id: new Date().getTime().toString(),
                 time_create: serverTimestamp(),
@@ -3007,26 +3006,25 @@ const firebaseConfig = {
                 reason: ""
             });
 
-            // 📣 สะกิด GAS ให้ยิง LINE (เบื้องหลัง)
             app.api({
                 action: 'notify_epa_line',
                 payload: { instructor_mdid: inst, resident_name: app.user.name, epaid: epa }
             });
 
             document.getElementById('txt-epanote').value = '';
-            Swal.fire('สำเร็จ', 'ส่งรายการประเมินลง Firebase เรียบร้อย', 'success').then(() => app.showView('view-menu'));
+            Swal.fire('สำเร็จ', '[Firebase] ส่งรายการประเมินเรียบร้อย', 'success').then(() => app.showView('view-menu'));
 
         } catch (e) {
-            console.error(e);
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกลง Firebase ได้: ' + e.message, 'error');
+            console.error("Firebase Error:", e);
+            Swal.fire('ข้อผิดพลาด', '[Firebase] ไม่สามารถบันทึกได้: ' + e.message, 'error');
         }
     };
 
     // ---------------------------------------------------------
-    // 📍 2. Check-in Firebase (เอาคำว่า window. ออกเช่นกัน)
+    // 📍 2. Check-in Firebase
     // ---------------------------------------------------------
     app.executeCheckinRequest = async (actRefId, pinCode) => {
-        Swal.fire({ title: 'กำลังดึงพิกัดและบันทึก Firebase...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังดึงพิกัดและบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
@@ -3034,6 +3032,7 @@ const firebaseConfig = {
             const latLongStr = lat + "," + lng;
 
             try {
+                // เช็ค PIN จาก GAS
                 const verifyRes = await app.api({
                     action: 'verify_join_activity',
                     payload: { act_ref_id: actRefId, pin: pinCode, mdid: app.user.mdid }
@@ -3043,17 +3042,20 @@ const firebaseConfig = {
                     return Swal.fire('ไม่สำเร็จ', verifyRes ? verifyRes.message : 'ตรวจสอบกิจกรรมล้มเหลว', 'error');
                 }
 
+                // เช็คว่าเคยลงใน Firebase หรือยัง
                 const actCollection = collection(db, "activity_records");
-                const q = query(actCollection, where("act_ref_id", "==", actRefId), where("mdid", "==", String(app.user.mdid)));
-                const querySnapshot = await getDocs(q);
+                
+                // ค้นหาเผื่อไว้ทั้งแบบ String และ Number (กันเหนียวตอนข้อมูลเก่า Migrate มา)
+                const qString = query(actCollection, where("act_ref_id", "==", actRefId), where("mdid", "==", String(app.user.mdid)));
+                const querySnapshot = await getDocs(qString);
 
                 if (!querySnapshot.empty) {
                     const existingDoc = querySnapshot.docs[0];
                     if (existingDoc.data().status === 'PENDING' && pinCode !== "") {
                         await updateDoc(doc(db, "activity_records", existingDoc.id), { status: 'Check-in' });
-                        return Swal.fire('สำเร็จ', 'ยืนยัน PIN สำเร็จแล้ว (Firebase)', 'success').then(() => app.loadCheckin());
+                        return Swal.fire('สำเร็จ', '[Firebase] ยืนยัน PIN สำเร็จแล้ว', 'success').then(() => app.loadCheckin());
                     }
-                    return Swal.fire('แจ้งเตือน', 'ท่านได้ลงชื่อเข้าร่วมกิจกรรมนี้ไปแล้วครับ', 'warning');
+                    return Swal.fire('แจ้งเตือน', '[Firebase] ท่านได้ลงชื่อเข้าร่วมกิจกรรมนี้ไปแล้วครับ', 'warning');
                 }
 
                 let finalStatus = (pinCode === "" && verifyRes.require_pin) ? "PENDING" : "Check-in";
@@ -3061,7 +3063,7 @@ const firebaseConfig = {
                 await addDoc(actCollection, {
                     record_id: new Date().getTime().toString(),
                     act_ref_id: actRefId,
-                    mdid: String(app.user.mdid),
+                    mdid: String(app.user.mdid), // บันทึกเป็น String เสมอเพื่อความเป็นระเบียบ
                     time: serverTimestamp(),
                     status: finalStatus,
                     lat_long: latLongStr,
@@ -3069,12 +3071,12 @@ const firebaseConfig = {
                     result: "" 
                 });
 
-                let msg = (finalStatus === 'PENDING') ? 'ลงชื่อสำเร็จ (รอเติม PIN)' : 'ลงชื่อสำเร็จ (Firebase)';
+                let msg = (finalStatus === 'PENDING') ? '[Firebase] ลงชื่อสำเร็จ (รอเติม PIN)' : '[Firebase] ลงชื่อสำเร็จ';
                 Swal.fire('สำเร็จ', msg, 'success').then(() => app.loadCheckin());
 
             } catch (e) {
-                console.error(e);
-                Swal.fire('ข้อผิดพลาด', 'Firebase Error: ' + e.message, 'error');
+                console.error("Firebase Error:", e);
+                Swal.fire('ข้อผิดพลาด', '[Firebase] Error: ' + e.message, 'error');
             }
 
         }, (err) => {
@@ -3082,5 +3084,3 @@ const firebaseConfig = {
         }, { enableHighAccuracy: true, timeout: 10000 });
     };
 </script>
-</body>
-</html>
