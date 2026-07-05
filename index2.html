@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.61</title>
+    <title>EPA Skin App firebase 2.62</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.61</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.62</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -3408,5 +3408,83 @@ const firebaseConfig = {
             Swal.fire('ข้อผิดพลาด', '[Firebase] ไม่สามารถปิดกิจกรรมได้: ' + e.message, 'error');
         }
     };
+
+// ---------------------------------------------------------
+    // 📋 7. อัปเกรดหน้าการ์ด "จัดการกิจกรรม" (ดึงยอดสรุปจาก Firebase)
+    // ---------------------------------------------------------
+    app.loadManageActivities = async () => {
+        Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const data = await app.api({ action: 'get_manage_activities', mdid: app.user.mdid });
+        
+        if (data) {
+            app.cachedManageActs = {};
+            
+            // ค้นหากล่องสำหรับวาดหน้าจอ
+            const list = document.getElementById('manage-activity-list');
+            if (!list) {
+                 Swal.close();
+                 return console.error("หาจุดวาดหน้าจอ Manage Activities ไม่เจอ");
+            }
+
+            try {
+                // 🚀 [Firebase] ดึงข้อมูลการลงชื่อทั้งหมดมากองรวมกันเพื่อเตรียมนับยอด
+                const actCollection = collection(db, "activity_records");
+                const querySnapshot = await getDocs(actCollection);
+                let fbCounts = {};
+                
+                querySnapshot.forEach(docSnap => {
+                    let d = docSnap.data();
+                    let aId = String(d.act_ref_id).trim();
+                    if (!fbCounts[aId]) fbCounts[aId] = 0;
+                    fbCounts[aId]++; // นับเพิ่มทีละ 1
+                });
+
+                if (data.activities.length === 0) {
+                    list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมในความดูแลของท่าน</p>';
+                } else {
+                    // เรียงกิจกรรมล่าสุดขึ้นก่อน
+                    data.activities.sort((a, b) => new Date(b.act_begin).getTime() - new Date(a.act_begin).getTime());
+                    
+                    list.innerHTML = data.activities.map(a => {
+                        app.cachedManageActs[a.act_ref_id] = a;
+                        
+                        let actDate = new Date(a.act_begin);
+                        let dateDisplay = actDate.toLocaleDateString('th-TH', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+                        
+                        // 🎯 ดึงยอดจาก Firebase มาใส่ ถ้าไม่มีให้เป็น 0
+                        let totalJoined = fbCounts[String(a.act_ref_id).trim()] || 0;
+
+                        let statusBadge = a.status === 'OPEN' 
+                            ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-300 shadow-sm">🟢 เปิดอยู่</span>`
+                            : `<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-300 shadow-sm">🔴 ปิดแล้ว</span>`;
+
+                        return `
+                        <div class="border p-4 rounded-xl bg-white mb-4 shadow-sm border-l-4 ${a.status === 'OPEN' ? 'border-l-green-500' : 'border-l-gray-400'} flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <div class="flex-1 pr-0 md:pr-4 mb-4 md:mb-0 w-full">
+                                <div class="font-bold text-gray-800 text-lg leading-tight mb-1">${a.act_id}: ${a.topic}</div>
+                                <div class="text-sm text-purple-700 font-bold mb-2">👨‍🏫 ${a.instructor_name}</div>
+                                <div class="flex flex-wrap gap-2 text-xs text-gray-600 mb-3">
+                                    <span class="bg-gray-50 px-2 py-1 rounded border border-gray-200">🗓️ ${dateDisplay}</span>
+                                    <span class="bg-gray-50 px-2 py-1 rounded border border-gray-200">⏱️ ${actDate.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})} น.</span>
+                                </div>
+                                <div class="text-sm text-blue-700 bg-blue-50 px-3 py-1.5 inline-block rounded-lg border border-blue-200 font-bold">
+                                    👥 ผู้เข้าร่วมรวม: ${totalJoined} คน
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end justify-between space-y-3 w-full md:w-auto h-full">
+                                <div class="w-full text-right">${statusBadge}</div>
+                                <button onclick="app.viewAttendees('${a.act_ref_id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition w-full whitespace-nowrap">👁️ ดูรายชื่อ</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+                Swal.close();
+                app.showView('view-manage-activities');
+            } catch (e) {
+                console.error(e);
+                Swal.fire('ข้อผิดพลาด', '[Firebase] ' + e.message, 'error');
+            }
+        }
+    };	
 	
 </script>
