@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.59</title>
+    <title>EPA Skin App firebase 2.60</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.59</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.60</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -3241,18 +3241,33 @@ const firebaseConfig = {
                     }));
                 }
 
+               // 📊 ระบบนับจำนวนแบบใหม่ (ครอบคลุมทุกคำศัพท์)
                 let countRes = 0; let countInst = 0;
                 finalAttendees.forEach(u => {
                     let r = u.role ? u.role.toLowerCase() : '';
-                    if (r.includes('resident') || r.includes('fellow')) countRes++;
-                    if (r.includes('instructor')) countInst++;
+                    
+                    // กลุ่มอาจารย์ (Staff / Instructor / อาจารย์)
+                    if (r.includes('instructor') || r.includes('staff') || r.includes('อาจารย์')) {
+                        countInst++;
+                    } 
+                    // กลุ่มแพทย์ (Resident / Fellow / แพทย์)
+                    else if (r.includes('resident') || r.includes('fellow') || r.includes('แพทย์')) {
+                        countRes++;
+                    } 
+                    // กลุ่มไม่มีข้อมูล Role (กันเหนียว)
+                    else {
+                        // ถ้าไม่มี Role ให้ดูจากสถานะ GPS ว่าเป็นอาจารย์ผู้คุมไหม ถ้าไม่ใช่ให้ตีเป็นแพทย์ไปก่อน
+                        if (u.gpsStatus === 'Instructor') countInst++;
+                        else countRes++;
+                    }
                 });
 
+                // วาดหน้าจอแสดงสรุป
                 document.getElementById('attendee-topic').innerHTML = `
                     <div class="mb-1">กิจกรรม: ${act.topic}</div>
                     <div class="text-purple-700 text-sm font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${act.instructor_name || 'ไม่พบข้อมูลอาจารย์'}</div>
                     <div class="mt-2 text-blue-700 text-sm font-bold bg-blue-50 px-3 py-1.5 rounded-lg inline-block border border-blue-200">
-                        👥 จำนวนผู้เข้าร่วม: ${finalAttendees.length} คน
+                        👥 ผู้เข้าร่วม: แพทย์ ${countRes} | อาจารย์ ${countInst} | รวม ${finalAttendees.length} คน
                     </div>
                 `;
 
