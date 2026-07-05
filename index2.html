@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase  2.56</title>
+    <title>EPA Skin App firebase  2.57</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.56</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.57</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -3180,7 +3180,7 @@ const firebaseConfig = {
     };
 
 	// ---------------------------------------------------------
-    // 👥 4. อัปเกรดหน้าดูรายชื่อ (มีระบบ Fallback ป้องกันรายชื่อหาย)
+    // 👥 4. อัปเกรดหน้าดูรายชื่อ (รวมร่างข้อมูล mdid ระบบใหม่ และ attendee_mdid ระบบเก่า)
     // ---------------------------------------------------------
     app.viewAttendees = async (actRefId) => {
         if (!actRefId) return Swal.fire('ข้อผิดพลาด', 'ไม่พบรหัสอ้างอิงกิจกรรม', 'error');
@@ -3191,14 +3191,11 @@ const firebaseConfig = {
         Swal.fire({ title: 'กำลังดึงรายชื่อ (Firebase)...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            // 1. จัดการเรื่องช่องว่างและชนิดข้อมูลก่อนค้นหา
             const cleanActRef = String(actRefId).trim();
             const actCollection = collection(db, "activity_records");
             
-            // ค้นหาทั้งแบบ String และ Number
             let querySnapshots = [];
             querySnapshots.push(await getDocs(query(actCollection, where("act_ref_id", "==", cleanActRef))));
-            
             if (!isNaN(cleanActRef)) {
                 querySnapshots.push(await getDocs(query(actCollection, where("act_ref_id", "==", Number(cleanActRef)))));
             }
@@ -3206,10 +3203,18 @@ const firebaseConfig = {
             let fbData = [];
             querySnapshots.forEach(snap => {
                 snap.forEach(docSnap => {
-                    // ป้องกันข้อมูลซ้ำ
                     if (!fbData.find(x => x.record_id === docSnap.id)) {
                         let d = docSnap.data();
                         
+                        // 🟢 จุดสำคัญ: รวมร่างฟิลด์ระบบเก่าและระบบใหม่เข้าด้วยกัน
+                        let actualMdid = d.mdid;
+                        if (actualMdid === undefined || actualMdid === null) {
+                            actualMdid = d.attendee_mdid; // ดึงจากข้อมูลที่ Migrate มา
+                        }
+
+                        // ถ้าไม่มีรหัสเลย ให้ข้ามไป
+                        if (!actualMdid) return;
+
                         let timeISO = new Date().toISOString();
                         if (d.time) {
                             if (typeof d.time.toDate === 'function') timeISO = d.time.toDate().toISOString();
@@ -3218,7 +3223,7 @@ const firebaseConfig = {
 
                         fbData.push({
                             record_id: docSnap.id,
-                            mdid: String(d.mdid).trim(), // บังคับแปลง mdid เป็น String และตัดช่องว่าง
+                            mdid: String(actualMdid).trim(), // บังคับแปลงเป็น String ตามแบบฉบับ Firebase
                             lat_long: d.lat_long || "",
                             time: timeISO,
                             status: d.status
@@ -3227,15 +3232,14 @@ const firebaseConfig = {
                 });
             });
 
-            // 🛑 เช็คด่านแรก: ถ้า Firebase ว่างเปล่า แสดงว่าหาไม่เจอจริงๆ
             if (fbData.length === 0) {
                 Swal.close();
-                document.getElementById('attendees-container').innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม (ไม่พบใน Firebase)</p>';
+                document.getElementById('attendees-container').innerHTML = '<p class="text-center py-4 text-gray-500">ยังไม่มีผู้เข้าร่วม</p>';
                 app.showView('view-activity-attendees');
                 return;
             }
 
-            // 2. ส่งให้ GAS จับคู่ชื่อและคำนวณพิกัด GPS
+            // ส่งข้อมูลที่จัดระเบียบแล้ว (มีฟิลด์ mdid แน่นอน) ไปให้ GAS จับคู่ชื่อ
             const data = await app.api({
                 action: 'enrich_firebase_attendees',
                 payload: { act_ref_id: cleanActRef, attendees: fbData }
@@ -3246,9 +3250,7 @@ const firebaseConfig = {
                 const list = document.getElementById('attendees-container');
                 let finalAttendees = data.attendees || [];
 
-                // 🚨 ระบบสำรอง: ถ้า GAS หาชื่อไม่เจอ ให้เอาข้อมูลดิบจาก Firebase มาโชว์เลย
                 if (finalAttendees.length === 0 && fbData.length > 0) {
-                    console.warn("GAS คืนค่า 0 แต่มีข้อมูลใน Firebase! เปิดใช้งาน Fallback");
                     finalAttendees = fbData.map(d => ({
                         record_id: d.record_id,
                         mdid: d.mdid,
@@ -3322,5 +3324,5 @@ const firebaseConfig = {
             Swal.fire('ข้อผิดพลาด', '[Firebase] Error: ' + e.message, 'error');
         }
     };
-					  
+	
 </script>
