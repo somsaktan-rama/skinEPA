@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.60</title>
+    <title>EPA Skin App firebase 2.61</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.60</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.61</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -2956,7 +2956,8 @@ window.onload = () => app.init();
     // 🔴 นำเข้าคำสั่งทั้งหมดแค่รอบเดียว (ห้ามซ้ำ)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+	import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+	
     // 🚨 อย่าลืมแก้ Config ให้เป็นของคุณหมอนะครับ
 const firebaseConfig = {
   apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
@@ -3332,4 +3333,80 @@ const firebaseConfig = {
             Swal.fire('ข้อผิดพลาด', e.message, 'error');
         }
     };
+
+	// ---------------------------------------------------------
+    // 🔒 6. อัปเกรดการปิดกิจกรรม (เปลี่ยน Check-in เป็น PASS ใน Firebase รวดเดียว)
+    // ---------------------------------------------------------
+    app.closeActivitySession = async () => {
+        const act = app.currentManageAct;
+        if (!act) return;
+
+        // ถามยืนยันก่อนปิด
+        const confirmRes = await Swal.fire({
+            title: 'ยืนยันการปิดกิจกรรม?',
+            text: `เมื่อปิดแล้ว ระบบจะปรับสถานะผู้ที่ "Check-in" ให้ผ่านกิจกรรม (PASS) และจะไม่สามารถลงชื่อเพิ่มได้อีก`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'ใช่, ปิดกิจกรรมและให้ PASS',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!confirmRes.isConfirmed) return;
+
+        Swal.fire({ title: 'กำลังปิดกิจกรรมและประเมินผล (Firebase)...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const cleanActRef = String(act.act_ref_id).trim();
+            const actCollection = collection(db, "activity_records");
+            
+            // 1. ค้นหาผู้เข้าร่วมทั้งหมดในกิจกรรมนี้
+            let querySnapshots = [];
+            querySnapshots.push(await getDocs(query(actCollection, where("act_ref_id", "==", cleanActRef))));
+            if (!isNaN(cleanActRef)) {
+                querySnapshots.push(await getDocs(query(actCollection, where("act_ref_id", "==", Number(cleanActRef)))));
+            }
+
+            // 2. ใช้ writeBatch เพื่ออัปเดตข้อมูลหลายร้อยคนพร้อมกันในคำสั่งเดียว (เร็วมาก)
+            const batch = writeBatch(db);
+            let updateCount = 0;
+
+            querySnapshots.forEach(snap => {
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    // ถ้าสถานะเป็น Check-in ให้เปลี่ยนเป็น PASS
+                    if (d.status === 'Check-in') {
+                        const docRef = doc(db, "activity_records", docSnap.id);
+                        batch.update(docRef, { 
+                            status: 'PASS',
+                            result: 'PASS' // บันทึกผลลัพธ์ลงช่อง result กันเหนียวด้วยครับ
+                        });
+                        updateCount++;
+                    }
+                });
+            });
+
+            // ทำการบันทึกลง Firebase พร้อมกันทั้งหมด
+            if (updateCount > 0) {
+                await batch.commit();
+            }
+
+            // 3. ส่งคำสั่งไปแจ้ง Google Sheets ว่ากิจกรรมนี้ปิดรับลงทะเบียนแล้ว (status = CLOSED)
+            await app.api({
+                action: 'close_activity_session',
+                payload: { act_ref_id: cleanActRef }
+            });
+
+            Swal.fire('สำเร็จ!', `ปิดกิจกรรมและปรับสถานะเป็น PASS เรียบร้อยแล้ว (อัปเดต ${updateCount} รายการ)`, 'success');
+            
+            // รีเฟรชหน้าดูรายชื่อใหม่ เพื่อโชว์สถานะล่าสุด
+            app.viewAttendees(cleanActRef);
+
+        } catch (e) {
+            console.error("Error closing session:", e);
+            Swal.fire('ข้อผิดพลาด', '[Firebase] ไม่สามารถปิดกิจกรรมได้: ' + e.message, 'error');
+        }
+    };
+	
 </script>
