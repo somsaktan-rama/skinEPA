@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 265 firebase-1</title>
+    <title>EPA Skin App 265 firebase-2/title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3668,6 +3668,273 @@ window.onload = () => app.init();
             console.error(error);
             Swal.fire('ข้อผิดพลาด', '[Firebase] ' + error.message, 'error');
         }
+    };
+
+// ---------------------------------------------------------
+    // 📊 1. Dashboard ภาพรวม (Staff / Instructor)
+    // ---------------------------------------------------------
+    app.loadDashboard = async () => { 
+        const exportBtns = document.getElementById('export-buttons');
+        if (exportBtns && window.liff) {
+            if (liff.isInClient() && (liff.getOS() === 'ios' || liff.getOS() === 'android')) {
+                exportBtns.style.display = 'none';
+            } else {
+                exportBtns.style.display = 'flex';
+            }
+        }
+
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user }, 'กำลังประมวลผลข้อมูลความก้าวหน้า...');
+        if(res && res.success) { 
+            
+            // ==========================================
+            // 🚀 FIREBASE OVERRIDE (เขียนทับคะแนน EPA ด้วยข้อมูลจริง)
+            // ==========================================
+            try {
+                // 1. ดึงประวัติ EPA เฉพาะที่ผ่าน (PASS) ทั้งหมดมากองรวมกัน
+                const epaSnap = await getDocs(query(collection(db, "epa_records"), where("result", "==", "PASS")));
+                let epaCounts = {}; 
+                
+                epaSnap.forEach(doc => {
+                    let d = doc.data();
+                    let mId = String(d.resident_mdid).trim();
+                    let eId = String(d.epaid).trim();
+                    if (!epaCounts[mId]) epaCounts[mId] = {};
+                    if (!epaCounts[mId][eId]) epaCounts[mId][eId] = 0;
+                    epaCounts[mId][eId]++; // นับยอดสะสม
+                });
+
+                // 2. นำยอดสะสมไปหยอดใส่พิมพ์เขียวของรายบุคคล
+                res.data.forEach(r => {
+                    let mdid = String(r.mdid).trim();
+                    let myEpa = epaCounts[mdid] || {};
+                    let totalPass = 0;
+
+                    r.items.forEach(item => {
+                        // อัปเดตเฉพาะรายการ EPA (ข้าม Activity)
+                        if (!item.id.toLowerCase().startsWith('act')) {
+                            item.pass = myEpa[item.id] || 0;
+                            item.is_completed = item.pass >= item.target;
+                        }
+                        totalPass += item.pass;
+                    });
+                    
+                    // คำนวณเปอร์เซ็นต์รวมใหม่
+                    r.total_pass = totalPass;
+                    r.completion_pct = r.total_target > 0 ? Math.min(100, (r.total_pass / r.total_target) * 100) : 100;
+                    r.is_at_risk = r.completion_pct < res.time_elapsed_pct;
+                });
+            } catch (e) {
+                console.error("Firebase Dashboard Error:", e);
+            }
+            // ==========================================
+
+            app.dashboardData = res.data; 
+            app.showView('view-staff-dashboard');
+            document.getElementById('time-elapsed-info').innerText = `⏳ เวลาผ่านไปแล้ว ${res.time_elapsed_pct.toFixed(0)}% (นับจาก 1 ก.ค.)`; 
+            const container = document.getElementById('dashboard-content');
+            if(res.data.length === 0) return container.innerHTML = '<p class="text-center py-4 text-gray-500">ไม่มีข้อมูลความก้าวหน้า</p>'; 
+            
+            let currentRoleGroup = '';
+            let html = '';
+            res.data.forEach(r => {
+                if (r.roleGroup !== currentRoleGroup) {
+                    let roleTitle = r.roleGroup === 'RES' ? '👨‍⚕️ กลุ่มแพทย์ประจำบ้าน (Resident)' : '👨‍⚕️ กลุ่มแพทย์ต่อยอด (Fellow DermSurg)';
+                    html += `<h3 class="text-base font-bold text-teal-800 mt-6 mb-3 border-b-2 border-teal-200 pb-1">${roleTitle}</h3>`;
+                    currentRoleGroup = r.roleGroup;
+                }
+                
+                let statusBadge = '';
+                if (r.total_target === 0) {
+                    statusBadge = `<div class="mt-2 text-xs text-gray-600 bg-gray-100 border border-gray-300 px-2 py-1 rounded inline-block self-start shadow-sm">⚠️ ยังไม่มีเป้าหมาย (0 เคส)</div>`;
+                } else if (r.is_at_risk) {
+                    statusBadge = `<div class="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded inline-block self-start shadow">🚩 เสี่ยงล่าช้า (${r.completion_pct.toFixed(0)}%)</div>`;
+                } else {
+                    statusBadge = `<div class="mt-2 text-xs text-green-700 bg-green-50 border border-green-300 px-2 py-1 rounded inline-block self-start shadow-sm">✔️ ปกติ (${r.completion_pct.toFixed(0)}%)</div>`;
+                }
+
+                html += `
+                <div class="border rounded-lg shadow-sm bg-white overflow-hidden mb-3 ${r.is_at_risk ? 'border-red-400' : 'border-gray-200'}">
+                    <div class="${r.is_at_risk ? 'bg-red-50' : 'bg-blue-50'} p-4 font-bold cursor-pointer flex flex-col transition" onclick="app.toggleRes('${r.mdid}')">
+                        <div class="flex justify-between w-full">
+                            <span class="text-blue-900">${r.name} <span class="bg-blue-200 text-xs px-2 py-1 rounded">${r.level}</span></span>
+                            <span id="icon-${r.mdid}">▼</span>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <div id="det-${r.mdid}" class="hidden p-3 text-xs bg-white border-t">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="p-2 border-b w-[60%]">รายละเอียดประเมิน</th>
+                                    <th class="p-2 border-b text-center">เป้า</th>
+                                    <th class="p-2 border-b text-center">ผ่าน</th>
+                                    <th class="p-2 border-b text-center">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${r.items.map(item => `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-2 text-gray-700 text-sm break-words">${item.desc}</td>
+                                    <td class="p-2 text-center font-bold">${item.target}</td>
+                                    <td class="p-2 text-center text-green-600 font-bold">${item.pass}</td>
+                                    <td class="p-2 text-center">${item.is_completed ? '✅' : '⏳'}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        } 
+    };
+
+// ---------------------------------------------------------
+    // 📈 2. Dashboard ความก้าวหน้าส่วนตัว (Resident)
+    // ---------------------------------------------------------
+    app.loadMyProgress = async () => {
+        const data = await app.api({ action: 'get_my_progress', user: app.user }, 'ประมวลผลความก้าวหน้า...');
+        if(data && data.success) {
+            const r = data.my_data;
+            const timePct = data.time_elapsed_pct; 
+            
+            // ==========================================
+            // 🚀 FIREBASE OVERRIDE (เฉพาะของตัวเอง)
+            // ==========================================
+            try {
+                const epaSnap = await getDocs(query(collection(db, "epa_records"), where("resident_mdid", "==", String(app.user.mdid)), where("result", "==", "PASS")));
+                let myEpa = {};
+                epaSnap.forEach(doc => {
+                    let epaid = String(doc.data().epaid).trim();
+                    myEpa[epaid] = (myEpa[epaid] || 0) + 1;
+                });
+
+                let totalPass = 0;
+                r.items.forEach(item => {
+                    if (!item.id.toLowerCase().startsWith('act')) {
+                        item.pass = myEpa[item.id] || 0;
+                        item.pass_count = item.pass; // อัปเดตเผื่อไว้
+                        item.is_completed = item.pass >= item.target;
+                    }
+                    totalPass += item.pass;
+                });
+                r.total_pass = totalPass;
+                r.completion_pct = r.total_target > 0 ? Math.min(100, (r.total_pass / r.total_target) * 100) : 100;
+                r.is_at_risk = r.completion_pct < timePct;
+            } catch (e) {
+                console.error("Firebase MyProgress Error:", e);
+            }
+            // ==========================================
+
+            app.showView('view-my-progress');
+            
+            let riskAlert = r.is_at_risk ? `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm font-bold">⚠️ แจ้งเตือน: อัตราสะสมล่าช้ากว่าเวลาของปีการศึกษา (${timePct.toFixed(0)}%)</div>` : '';
+            let totalPassHrs = r.total_pass_hours !== undefined ? r.total_pass_hours : r.total_pass;
+            
+            document.getElementById('my-progress-summary').innerHTML = `${riskAlert}<div class="bg-blue-50 border p-4 rounded-lg shadow-sm"><p class="text-sm text-blue-800 font-bold mb-2">ความสำเร็จรวมทั้งหมด (EPA & Activity)</p><div class="w-full bg-gray-200 rounded-full h-4 mb-1"><div class="bg-blue-600 h-4 rounded-full progress-bar-fill" style="width: ${r.completion_pct}%"></div></div><p class="text-xs text-right text-gray-600 font-semibold">${r.completion_pct.toFixed(1)}% (สะสมแล้ว ${totalPassHrs} หน่วย จากเป้า ${r.total_target})</p></div>`;
+            
+            document.getElementById('my-progress-details').innerHTML = r.items.map(item => {
+                let passHrs = item.pass_hours !== undefined ? item.pass_hours : item.pass;
+                let passCount = item.pass_count !== undefined ? item.pass_count : item.pass;
+                
+                let pct = item.target > 0 ? Math.min(100, (passHrs / item.target) * 100) : 100;
+                let colorClass = pct >= 100 ? 'bg-green-500' : (pct >= 50 ? 'bg-orange-400' : 'bg-red-500');
+                
+                let statText = '';
+                if (item.id.toLowerCase().startsWith('act')) {
+                    statText = `${passHrs} ชม. (${passCount} ครั้ง) / เป้า ${item.target} ชม.`;
+                } else {
+                    statText = `${item.pass} / เป้า ${item.target} เคส`;
+                }
+
+                return `<div class="border p-3 rounded bg-white shadow-sm"><div class="flex justify-between items-center mb-1"><span class="font-bold text-gray-800 text-sm">${item.id}: ${item.desc}</span><span class="text-xs font-bold ${pct >= 100 ? 'text-green-600' : 'text-gray-500'}">${statText}</span></div><div class="w-full bg-gray-100 rounded-full h-2.5"><div class="${colorClass} h-2.5 rounded-full progress-bar-fill" style="width: ${pct}%"></div></div></div>`;
+            }).join('');
+        }
+    };
+	
+// ---------------------------------------------------------
+    // 📥 3. ฟังก์ชัน Export Pivot Excel (ดึงยอดจริงจาก Firebase)
+    // ---------------------------------------------------------
+    app.exportEpaPivotExcel = async () => {
+        Swal.fire({ title: 'กำลังประมวลผลข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const res = await app.api({ action: 'get_dashboard_data', user: app.user });
+        if (!res || !res.success) return Swal.fire('ผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้', 'error');
+
+        // ==========================================
+        // 🚀 FIREBASE OVERRIDE (อัปเดตยอดก่อน Export)
+        // ==========================================
+        try {
+            const epaSnap = await getDocs(query(collection(db, "epa_records"), where("result", "==", "PASS")));
+            let epaCounts = {}; 
+            epaSnap.forEach(doc => {
+                let d = doc.data();
+                let mId = String(d.resident_mdid).trim();
+                let eId = String(d.epaid).trim();
+                if (!epaCounts[mId]) epaCounts[mId] = {};
+                if (!epaCounts[mId][eId]) epaCounts[mId][eId] = 0;
+                epaCounts[mId][eId]++;
+            });
+            res.data.forEach(r => {
+                let myEpa = epaCounts[String(r.mdid).trim()] || {};
+                r.items.forEach(item => {
+                    if (!item.id.toLowerCase().startsWith('act')) {
+                        item.pass = myEpa[item.id] || 0;
+                    }
+                });
+            });
+        } catch (e) {
+            console.error("Firebase Pivot Error:", e);
+        }
+        // ==========================================
+
+        const allData = res.data;
+        const availableGroups = [...new Set(allData.map(r => r.level))];
+        if (availableGroups.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับดาวน์โหลด', 'warning');
+
+        let groupOptions = {};
+        availableGroups.forEach(g => groupOptions[g] = `กลุ่ม ${g}`);
+
+        const { value: selectedGroup } = await Swal.fire({
+            title: '📥 เลือกกลุ่มที่ต้องการ Export',
+            input: 'radio',
+            inputOptions: groupOptions,
+            inputValidator: (value) => { if (!value) return 'กรุณาเลือกกลุ่มครับ!' },
+            showCancelButton: true,
+            confirmButtonText: 'ดาวน์โหลด Excel',
+            cancelButtonText: 'ยกเลิก'
+        });
+        
+        if (!selectedGroup) return; 
+
+        const groupData = allData.filter(r => r.level === selectedGroup);
+        if (groupData.length === 0) return Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลของกลุ่มนี้', 'warning');
+
+        let csvContent = "\uFEFF"; // BOM ภาษาไทย
+        let headers = ["รายละเอียดประเมิน", "เป้า"];
+        groupData.forEach(r => headers.push(`${r.name} ${r.level}`));
+        csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
+        
+        const templateItems = groupData[0].items;
+        templateItems.forEach(item => {
+            let row = [`"${item.desc}"`, item.target];
+            groupData.forEach(r => {
+                let resItem = r.items.find(i => i.id === item.id);
+                row.push(resItem ? resItem.pass : 0);
+            });
+            csvContent += row.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `EPA_Dashboard_${selectedGroup.replace(/\s/g, '')}_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 	
 </script>	
