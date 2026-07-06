@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard-firebase 1.03</title>
+    <title>skinEPA-firebase 1.04</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1075,43 +1075,90 @@
     const db = getFirestore(appFirebase);
 
     // ---------------------------------------------------------
-    // 📊 1. อัปเกรดหน้าภาพรวม (Overview)
+    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 แก้ปัญหาแถบกราฟเป็น 0
     // ---------------------------------------------------------
     window.dash.fetchOverviewData = async (institute) => {
         Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
         try {
-            const res = await fetch(GAS_WEBAPP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute })
-            }).then(r => r.json());
+            // 1. 🚀 ยิงคำสั่งดึงโครงสร้าง (Blueprint) 4 ตัวพร้อมกันเพื่อให้โหลดเร็วที่สุด
+            const [res, epaRes, actRes, actMasterRes] = await Promise.all([
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user }) }).then(r => r.json())
+            ]);
 
             if (res && res.success) {
-                // 🚀 กวาด EPA ทั้งหมด
-                const epaSnap = await getDocs(collection(db, "epa_records"));
-                let epaTotalCounts = {};
+                // 2. 🎯 สร้างแผนที่เป้าหมาย (Target Map) ให้แพทย์แต่ละคน
+                let targetMap = {};
                 
+                // ดึงเป้าหมายจากหมวด EPA
+                if (epaRes && epaRes.data) {
+                    epaRes.data.forEach(r => {
+                        let mId = String(r.mdid).trim();
+                        let t = 0;
+                        if (r.items) r.items.forEach(i => t += (Number(i.target) || 0));
+                        targetMap[mId] = (targetMap[mId] || 0) + t;
+                    });
+                }
+                // ดึงเป้าหมายจากหมวด Activity (ชั่วโมง)
+                if (actRes && actRes.data) {
+                    actRes.data.forEach(r => {
+                        let mId = String(r.mdid).trim();
+                        targetMap[mId] = (targetMap[mId] || 0) + (Number(r.target) || 0);
+                    });
+                }
+
+                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase ทั้งระบบ
+                let totalPassMap = {};
+
+                // --- นับคะแนนฝั่ง EPA ---
+                const epaSnap = await getDocs(collection(db, "epa_records"));
                 epaSnap.forEach(doc => {
                     let d = doc.data();
                     let st1 = String(d.result || "").toUpperCase().trim();
                     let st2 = String(d.status || "").toUpperCase().trim();
                     let isPass = false;
                     
-                    // 🟢 โลจิกใหม่: ตรวจสอบว่าเป็น PASS ไหม (รองรับทั้งแบบตัวอักษรและตัวเลข)
                     if (st1 === "PASS" || st2 === "PASS") {
-                        isPass = true; // ข้อมูลระบบใหม่
+                        isPass = true;
                     } else if (d.time_app != null || (typeof d.result === 'number' && d.result > 0)) {
-                        // ข้อมูลระบบเก่า (Migrate): ถ้าประเมินแล้ว และไม่มีเหตุผลว่า Fail (reason = ว่าง) ให้ถือว่า Pass
-                        let reason = String(d.reason || "").trim();
-                        if (reason === "") isPass = true;
+                        if (String(d.reason || "").trim() === "") isPass = true; // ดักจับข้อมูล Migrate
                     }
 
                     if (isPass) {
-                        // ดักจับชื่อฟิลด์ รหัสแพทย์ ทุกรูปแบบ
                         let mId = String(d.resident_mdid || d.mdid || d.attendee_mdid || "").trim();
-                        if (mId) epaTotalCounts[mId] = (epaTotalCounts[mId] || 0) + 1; 
+                        if (mId) totalPassMap[mId] = (totalPassMap[mId] || 0) + 1; 
                     }
                 });
 
+                // --- นับคะแนนฝั่ง Activity (คิดตามจำนวนชั่วโมง) ---
+                let hoursMap = {};
+                if (actMasterRes && actMasterRes.activities) {
+                    actMasterRes.activities.forEach(a => {
+                        let start = new Date(a.act_begin).getTime();
+                        let end = new Date(a.act_finish).getTime();
+                        let hrs = (end - start) / (1000 * 60 * 60);
+                        hoursMap[String(a.act_ref_id).trim()] = hrs > 0 ? hrs : 1; 
+                    });
+                }
+
+                const actSnap = await getDocs(collection(db, "activity_records"));
+                actSnap.forEach(doc => {
+                    let d = doc.data();
+                    let st1 = String(d.status || "").toUpperCase().trim();
+                    let st2 = String(d.result || "").toUpperCase().trim();
+                    
+                    if (st1 === "PASS" || st2 === "PASS") { 
+                        let mId = String(d.attendee_mdid || d.mdid || d.resident_mdid || "").trim();
+                        let aId = String(d.act_ref_id || d.act_id || "").trim();
+                        let hrs = hoursMap[aId] || 1; 
+                        
+                        if (mId) totalPassMap[mId] = (totalPassMap[mId] || 0) + hrs;
+                    }
+                });
+
+                // 4. 🧮 นำ เป้าหมายรวม และ คะแนนรวม มาวาดเป็นเปอร์เซ็นต์กราฟ
                 let riskCount = 0;
                 const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
                 
@@ -1119,25 +1166,18 @@
                     if (res.data[g]) {
                         res.data[g].forEach(person => {
                             let mId = String(person.mdid).trim();
-                            let fbPass = epaTotalCounts[mId] || 0; 
                             
-                            // 🟢 ถอดรหัสหา Target ที่แท้จริง (แก้บั๊ก 100%)
-                            let originalPass = person.pass || 0;
-                            let originalProgress = person.progress || 0;
-                            let deducedTarget = person.target || person.total_target || 0;
+                            // ดึงเป้าหมายรวมและคะแนนรวมที่หามาได้
+                            let target = targetMap[mId] || 0;
+                            let pass = totalPassMap[mId] || 0;
                             
-                            if (deducedTarget === 0 && originalProgress > 0 && originalPass > 0) {
-                                deducedTarget = Math.round((originalPass / originalProgress) * 100);
-                            }
+                            person.pass = pass;
+                            person.target = target;
 
-                            // โยนยอดเดิมทิ้ง ใช้ยอดจาก Firebase
-                            person.pass = fbPass;
-                            
-                            if (deducedTarget > 0) {
-                                person.progress = Math.min(100, Math.round((person.pass / deducedTarget) * 100));
+                            if (target > 0) {
+                                person.progress = Math.min(100, Math.round((pass / target) * 100));
                             } else {
-                                // ถ้าหาเป้าไม่เจอจริงๆ ให้แสดง 0 ไปก่อน จะได้ไม่หลอกตา
-                                person.progress = 0;
+                                person.progress = 0; // กันกราฟพุ่งเป็น 100% มั่วๆ
                             }
 
                             if (person.progress < res.time_elapsed_pct) riskCount++;
@@ -1199,7 +1239,6 @@
                     let st2 = String(d.result || "").toUpperCase().trim();
                     
                     if (st1 === "PASS" || st2 === "PASS") { 
-                        // ดักจับชื่อฟิลด์ รหัสแพทย์ ทุกรูปแบบ
                         let mId = String(d.attendee_mdid || d.mdid || d.resident_mdid || "").trim();
                         let aId = String(d.act_ref_id || d.act_id || "").trim();
                         let hrs = hoursMap[aId] || 1; 
@@ -1268,7 +1307,6 @@
                             if (!epaCounts[mId]) epaCounts[mId] = {};
                             epaCounts[mId][eId] = (epaCounts[mId][eId] || 0) + 1;
                             
-                            // 🟢 ดักจับชื่อ EPA ให้ยืดหยุ่นขึ้น (กรณีมีขีดต่อท้าย เช่น EPA5-R4 ให้มันนับรวมเป็น EPA5 ด้วย)
                             let baseEpa = eId.split('-')[0]; 
                             if (baseEpa !== eId) {
                                 epaCounts[mId][baseEpa] = (epaCounts[mId][baseEpa] || 0) + 1;
