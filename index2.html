@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.64</title>
+    <title>EPA Skin App firebase 2.65</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.64</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.65</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -3402,24 +3402,25 @@ window.onload = () => app.init();
         }
     };
 
-    // ---------------------------------------------------------
-    // 📋 7. อัปเกรดหน้าการ์ด "จัดการกิจกรรม" (ดึงยอดสรุปจาก Firebase)
+	// ---------------------------------------------------------
+    // 📋 7. อัปเกรดหน้าการ์ด "จัดการกิจกรรม" (เพิ่มระบบดัก Error Undefined)
     // ---------------------------------------------------------
     app.loadManageActivities = async () => {
         Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-        const data = await app.api({ action: 'get_manage_activities', mdid: app.user.mdid });
         
-        if (data) {
-            app.cachedManageActs = {};
-            // 🔴 แก้ไขชื่อ ID ให้ตรงกับโครงสร้าง HTML (แก้จาก manage-activity-list เป็น manage-act-list)
-            const list = document.getElementById('manage-act-list');
+        try {
+            const data = await app.api({ action: 'get_manage_activities', mdid: app.user.mdid });
             
-            if (!list) {
-                 Swal.close();
-                 return console.error("หาจุดวาดหน้าจอ Manage Activities ไม่เจอ");
-            }
+            if (data) {
+                app.cachedManageActs = {};
+                const list = document.getElementById('manage-act-list');
+                
+                if (!list) {
+                     Swal.close();
+                     return console.error("หาจุดวาดหน้าจอ Manage Activities ไม่เจอ");
+                }
 
-            try {
+                // ดึงข้อมูลยอดนับจาก Firebase
                 const actCollection = collection(db, "activity_records");
                 const querySnapshot = await getDocs(actCollection);
                 let fbCounts = {};
@@ -3431,11 +3432,21 @@ window.onload = () => app.init();
                     fbCounts[aId]++; 
                 });
 
-                if (data.activities.length === 0) {
+                // 🟢 ระบบตาข่ายดัก Error ป้องกันพังเวลา GAS ส่งข้อมูลมาแปลกๆ
+                let activitiesList = [];
+                if (data.activities && Array.isArray(data.activities)) {
+                    activitiesList = data.activities;
+                } else if (Array.isArray(data)) {
+                    activitiesList = data; // เผื่อกรณี GAS ส่ง Array มาตรงๆ
+                }
+
+                // ใชั activitiesList แทนข้อมูลดิบ
+                if (activitiesList.length === 0) {
                     list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมในความดูแลของท่าน</p>';
                 } else {
-                    data.activities.sort((a, b) => new Date(b.act_begin).getTime() - new Date(a.act_begin).getTime());
-                    list.innerHTML = data.activities.map(a => {
+                    activitiesList.sort((a, b) => new Date(b.act_begin).getTime() - new Date(a.act_begin).getTime());
+                    
+                    list.innerHTML = activitiesList.map(a => {
                         app.cachedManageActs[a.act_ref_id] = a;
                         
                         let actDate = new Date(a.act_begin);
@@ -3470,10 +3481,11 @@ window.onload = () => app.init();
                 }
                 Swal.close();
                 app.showView('view-manage-activities');
-            } catch (e) {
-                console.error(e);
-                Swal.fire('ข้อผิดพลาด', '[Firebase] ' + e.message, 'error');
             }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('ข้อผิดพลาด', '[Firebase] ' + e.message, 'error');
         }
     };
+	
 </script>	
