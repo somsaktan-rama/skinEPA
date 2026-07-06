@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA-firebase 1.05A</title>
+    <title>skinEPA-firebase 1.06</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1075,29 +1075,46 @@
     const db = getFirestore(appFirebase);
 
   // ---------------------------------------------------------
-    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 อัปเดตแก้กราฟเป็น 0
+    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 อัปเดตสมการคำนวณเป้าหมายใหม่ (Robust 100%)
     // ---------------------------------------------------------
     window.dash.fetchOverviewData = async (institute) => {
         Swal.fire({ title: 'กำลังคำนวณภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
         try {
-            // 1. 🚀 ยิงคำสั่งดึงข้อมูล 3 ส่วนพร้อมกัน เพื่อหา "เป้าหมาย" ที่แท้จริง
-            const [resOverview, resFullData, actMasterRes] = await Promise.all([
+            // 1. 🚀 ยิงคำสั่งดึงโครงสร้างจาก API ที่เรามั่นใจว่าทำงานได้แน่นอน 4 ตัวพร้อมกัน
+            const [resOverview, resEpa, resAct, actMasterRes] = await Promise.all([
                 fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_data', user: window.dash.user }) }).then(r => r.json()),
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user }) }).then(r => r.json())
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user }) }).then(r => r.json()).catch(() => null)
             ]);
 
             if (resOverview && resOverview.success) {
                 
-                // 2. 🎯 สร้างแผนที่เป้าหมายรวม (ดึงมาจาก Dashboard Data)
+                // 2. 🎯 สร้างแผนที่เป้าหมาย (Target Map) จากหน้า EPA และ Activity 
                 let targetMap = {};
-                if (resFullData && resFullData.success && resFullData.data) {
-                    resFullData.data.forEach(r => {
-                        targetMap[String(r.mdid).trim()] = r.total_target || 0;
+                
+                // 2.1 ดึงเป้าจาก EPA
+                if (resEpa && resEpa.success && resEpa.data) {
+                    resEpa.data.forEach(r => {
+                        let mId = String(r.mdid).trim();
+                        let epaTarget = 0;
+                        let items = r.items || r.epas || [];
+                        items.forEach(item => {
+                            epaTarget += (Number(item.target) || 0); // รวมเป้าหมาย EPA ทุกหัวข้อ
+                        });
+                        targetMap[mId] = (targetMap[mId] || 0) + epaTarget;
+                    });
+                }
+                
+                // 2.2 ดึงเป้าจาก Activity (ชั่วโมง)
+                if (resAct && resAct.success && resAct.data) {
+                    resAct.data.forEach(r => {
+                        let mId = String(r.mdid).trim();
+                        targetMap[mId] = (targetMap[mId] || 0) + (Number(r.target) || 0); // รวมเป้าชั่วโมงกิจกรรม
                     });
                 }
 
-                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase
+                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase ทั้งระบบ
                 let totalPassMap = {};
 
                 // --- นับคะแนนฝั่ง EPA ---
@@ -1120,7 +1137,7 @@
                     }
                 });
 
-                // --- นับคะแนนฝั่ง Activity (ชั่วโมง) ---
+                // --- นับคะแนนฝั่ง Activity (คิดตามจำนวนชั่วโมง) ---
                 let hoursMap = {};
                 if (actMasterRes && actMasterRes.activities) {
                     actMasterRes.activities.forEach(a => {
@@ -1146,7 +1163,7 @@
                     }
                 });
 
-                // 4. 🧮 นำ "เป้าหมายรวม" และ "คะแนนรวม" มาวาดเป็นกราฟ
+                // 4. 🧮 นำ เป้าหมายรวม และ คะแนนรวม มาวาดเป็นเปอร์เซ็นต์กราฟ
                 let riskCount = 0;
                 const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
                 
@@ -1155,14 +1172,14 @@
                         resOverview.data[g].forEach(person => {
                             let mId = String(person.mdid).trim();
                             
-                            // ดึงตัวเลขมาคำนวณเปอร์เซ็นต์ใหม่ 100%
+                            // ดึงตัวเลขมาคำนวณ
                             let target = targetMap[mId] || 0; 
                             let pass = totalPassMap[mId] || 0; 
                             
                             if (target > 0) {
                                 person.progress = Math.min(100, Math.round((pass / target) * 100));
                             } else {
-                                person.progress = 0;
+                                person.progress = 0; // ถ้าไม่พบเป้าหมายจริงๆ ให้เป็น 0% แทน
                             }
 
                             if (person.progress < (resOverview.time_elapsed_pct || 0)) riskCount++;
@@ -1170,12 +1187,12 @@
                     }
                 });
 
-                // อัปเดตตัวเลข 3 กล่องด้านบน
+                // อัปเดตตัวเลข KPI ด้านบน
                 document.getElementById('kpi-res').innerText = resOverview.kpi.total_res;
                 document.getElementById('kpi-act').innerText = resOverview.kpi.total_act;
                 document.getElementById('kpi-risk').innerText = riskCount; 
 
-                // วาดกราฟ
+                // สั่งวาดกราฟแท่ง
                 window.dash.renderProgressBars(resOverview.data);
                 Swal.close();
             }
