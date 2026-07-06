@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA-firebase 1.04</title>
+    <title>skinEPA-firebase 1.05</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1074,42 +1074,30 @@
     const appFirebase = initializeApp(firebaseConfig);
     const db = getFirestore(appFirebase);
 
-    // ---------------------------------------------------------
-    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 แก้ปัญหาแถบกราฟเป็น 0
+  // ---------------------------------------------------------
+    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 อัปเดตแก้กราฟเป็น 0
     // ---------------------------------------------------------
     window.dash.fetchOverviewData = async (institute) => {
-        Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังคำนวณภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
         try {
-            // 1. 🚀 ยิงคำสั่งดึงโครงสร้าง (Blueprint) 4 ตัวพร้อมกันเพื่อให้โหลดเร็วที่สุด
-            const [res, epaRes, actRes, actMasterRes] = await Promise.all([
+            // 1. 🚀 ยิงคำสั่งดึงข้อมูล 3 ส่วนพร้อมกัน เพื่อหา "เป้าหมาย" ที่แท้จริง
+            const [resOverview, resFullData, actMasterRes] = await Promise.all([
                 fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_data', user: window.dash.user }) }).then(r => r.json()),
                 fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user }) }).then(r => r.json())
             ]);
 
-            if (res && res.success) {
-                // 2. 🎯 สร้างแผนที่เป้าหมาย (Target Map) ให้แพทย์แต่ละคน
-                let targetMap = {};
+            if (resOverview && resOverview.success) {
                 
-                // ดึงเป้าหมายจากหมวด EPA
-                if (epaRes && epaRes.data) {
-                    epaRes.data.forEach(r => {
-                        let mId = String(r.mdid).trim();
-                        let t = 0;
-                        if (r.items) r.items.forEach(i => t += (Number(i.target) || 0));
-                        targetMap[mId] = (targetMap[mId] || 0) + t;
-                    });
-                }
-                // ดึงเป้าหมายจากหมวด Activity (ชั่วโมง)
-                if (actRes && actRes.data) {
-                    actRes.data.forEach(r => {
-                        let mId = String(r.mdid).trim();
-                        targetMap[mId] = (targetMap[mId] || 0) + (Number(r.target) || 0);
+                // 2. 🎯 สร้างแผนที่เป้าหมายรวม (ดึงมาจาก Dashboard Data)
+                let targetMap = {};
+                if (resFullData && resFullData.success && resFullData.data) {
+                    resFullData.data.forEach(r => {
+                        targetMap[String(r.mdid).trim()] = r.total_target || 0;
                     });
                 }
 
-                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase ทั้งระบบ
+                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase
                 let totalPassMap = {};
 
                 // --- นับคะแนนฝั่ง EPA ---
@@ -1123,7 +1111,7 @@
                     if (st1 === "PASS" || st2 === "PASS") {
                         isPass = true;
                     } else if (d.time_app != null || (typeof d.result === 'number' && d.result > 0)) {
-                        if (String(d.reason || "").trim() === "") isPass = true; // ดักจับข้อมูล Migrate
+                        if (String(d.reason || "").trim() === "") isPass = true;
                     }
 
                     if (isPass) {
@@ -1132,7 +1120,7 @@
                     }
                 });
 
-                // --- นับคะแนนฝั่ง Activity (คิดตามจำนวนชั่วโมง) ---
+                // --- นับคะแนนฝั่ง Activity (ชั่วโมง) ---
                 let hoursMap = {};
                 if (actMasterRes && actMasterRes.activities) {
                     actMasterRes.activities.forEach(a => {
@@ -1158,38 +1146,37 @@
                     }
                 });
 
-                // 4. 🧮 นำ เป้าหมายรวม และ คะแนนรวม มาวาดเป็นเปอร์เซ็นต์กราฟ
+                // 4. 🧮 นำ "เป้าหมายรวม" และ "คะแนนรวม" มาวาดเป็นกราฟ
                 let riskCount = 0;
                 const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
                 
                 groups.forEach(g => {
-                    if (res.data[g]) {
-                        res.data[g].forEach(person => {
+                    if (resOverview.data[g]) {
+                        resOverview.data[g].forEach(person => {
                             let mId = String(person.mdid).trim();
                             
-                            // ดึงเป้าหมายรวมและคะแนนรวมที่หามาได้
-                            let target = targetMap[mId] || 0;
-                            let pass = totalPassMap[mId] || 0;
+                            // ดึงตัวเลขมาคำนวณเปอร์เซ็นต์ใหม่ 100%
+                            let target = targetMap[mId] || 0; 
+                            let pass = totalPassMap[mId] || 0; 
                             
-                            person.pass = pass;
-                            person.target = target;
-
                             if (target > 0) {
                                 person.progress = Math.min(100, Math.round((pass / target) * 100));
                             } else {
-                                person.progress = 0; // กันกราฟพุ่งเป็น 100% มั่วๆ
+                                person.progress = 0;
                             }
 
-                            if (person.progress < res.time_elapsed_pct) riskCount++;
+                            if (person.progress < (resOverview.time_elapsed_pct || 0)) riskCount++;
                         });
                     }
                 });
 
-                document.getElementById('kpi-res').innerText = res.kpi.total_res;
-                document.getElementById('kpi-act').innerText = res.kpi.total_act;
+                // อัปเดตตัวเลข 3 กล่องด้านบน
+                document.getElementById('kpi-res').innerText = resOverview.kpi.total_res;
+                document.getElementById('kpi-act').innerText = resOverview.kpi.total_act;
                 document.getElementById('kpi-risk').innerText = riskCount; 
 
-                window.dash.renderProgressBars(res.data);
+                // วาดกราฟ
+                window.dash.renderProgressBars(resOverview.data);
                 Swal.close();
             }
         } catch (e) {
