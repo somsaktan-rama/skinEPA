@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard-firebase 1.00</title>
+    <title>skinEPA Dashboard-firebase 1.01</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -807,7 +807,7 @@
                 document.body.removeChild(link);
             },
 
-// ==========================================
+            // ==========================================
             // 📥 ฟังก์ชัน Export ข้อมูลดิบ (Raw Data) สำหรับ dashboard.html
             // ==========================================
             exportRawDataCSV: async () => { 
@@ -1074,17 +1074,17 @@
     // ---------------------------------------------------------
     // 📊 1. อัปเกรดหน้าภาพรวม (Overview)
     // ---------------------------------------------------------
-    dash.fetchOverviewData = async (institute) => {
-        Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
+    window.dash.fetchOverviewData = async (institute) => {
+        Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม (Google+Firebase)...', didOpen: () => Swal.showLoading() });
         try {
-            // ดึงโครงสร้างจากส่วนกลาง
+            // ดึงโครงสร้างและข้อมูลเก่าจาก GAS
             const res = await fetch(GAS_WEBAPP_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute })
             }).then(r => r.json());
 
             if (res && res.success) {
-                // 🚀 กวาดคะแนน EPA จาก Firebase
+                // 🚀 กวาดคะแนน EPA ล่าสุดจาก Firebase
                 const epaSnap = await getDocs(query(collection(db, "epa_records"), where("result", "==", "PASS")));
                 let epaCounts = {};
                 epaSnap.forEach(doc => {
@@ -1095,13 +1095,17 @@
                 let riskCount = 0;
                 const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
                 
-                // คำนวณและเขียนทับเปอร์เซ็นต์ใหม่
+                // 🟢 นำคะแนนใหม่ (Firebase) มาบวกเพิ่มกับคะแนนเก่า (GAS)
                 groups.forEach(g => {
                     if (res.data[g]) {
                         res.data[g].forEach(person => {
                             let mId = String(person.mdid).trim();
-                            person.pass = epaCounts[mId] || 0;
+                            let fbPass = epaCounts[mId] || 0; // ยอดใหม่
+                            
+                            // person.pass = (person.pass || 0) + fbPass; // <--- ไฮไลท์การแก้: บวกเพิ่ม
+                            person.pass = fbPass; // <--- สั่งให้ใช้ยอดจาก Firebase ล้วนๆ
                             person.progress = person.target > 0 ? Math.min(100, (person.pass / person.target) * 100) : 100;
+                            
                             if (person.progress < res.time_elapsed_pct) riskCount++;
                         });
                     }
@@ -1111,7 +1115,7 @@
                 document.getElementById('kpi-act').innerText = res.kpi.total_act;
                 document.getElementById('kpi-risk').innerText = riskCount; 
 
-                dash.renderProgressBars(res.data);
+                window.dash.renderProgressBars(res.data);
                 Swal.close();
             }
         } catch (e) {
@@ -1123,9 +1127,9 @@
     // ---------------------------------------------------------
     // 📅 2. อัปเกรดหน้าสถิติเข้ากิจกรรม (Activity)
     // ---------------------------------------------------------
-    dash.fetchActivityData = async (institute) => {
+    window.dash.fetchActivityData = async (institute) => {
         const tbody = document.getElementById('table-activity');
-        if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">กำลังประมวลผลข้อมูล (Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+        if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">กำลังประมวลผลข้อมูล (Google+Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
 
         try {
             const res = await fetch(GAS_WEBAPP_URL, {
@@ -1136,10 +1140,10 @@
             if (res && res.success) {
                 let dataArr = res.data;
 
-                // 🚀 ดึงชั่วโมงกิจกรรมจาก Master เพื่อมาคำนวณ
+                // ดึงชั่วโมงกิจกรรมจาก Master 
                 const actMasterRes = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'get_manage_activities', user: dash.user })
+                    body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user })
                 }).then(r => r.json());
                 
                 let hoursMap = {};
@@ -1152,7 +1156,7 @@
                     });
                 }
 
-                // 🚀 กวาดประวัติการลงชื่อจาก Firebase
+                // 🚀 กวาดประวัติการลงชื่อใหม่จาก Firebase
                 const actSnap = await getDocs(query(collection(db, "activity_records"), where("status", "==", "PASS")));
                 let actHours = {};
                 actSnap.forEach(doc => {
@@ -1163,30 +1167,33 @@
                     actHours[mId] = (actHours[mId] || 0) + hrs;
                 });
 
-                // เขียนทับชั่วโมงและเปอร์เซ็นต์
+                // 🟢 นำชั่วโมงใหม่ (Firebase) มาบวกเพิ่มกับชั่วโมงเก่า (GAS)
                 dataArr.forEach(r => {
                     let mId = String(r.mdid).trim();
-                    r.hours = actHours[mId] || 0;
+                    let fbHours = actHours[mId] || 0; // ชั่วโมงที่เพิ่งเข้ากิจกรรมใหม่
+                    
+                    // r.hours = (parseFloat(r.hours) || 0) + fbHours; // <--- ไฮไลท์การแก้: บวกเพิ่ม
+                    r.hours = fbHours; // <--- สั่งให้ใช้ยอดจาก Firebase ล้วนๆ
                     r.pct = r.target > 0 ? Math.min(100, (r.hours / r.target) * 100) : 100;
                 });
 
-                dash.currentActivityData = dataArr;
-                dash.renderActivityUI(dataArr);
+                window.dash.currentActivityData = dataArr;
+                window.dash.renderActivityUI(dataArr);
             }
         } catch (error) {
             console.error("Firebase Activity Error:", error);
-            if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">❌ เชื่อมต่อ Firebase ล้มเหลว</td></tr>';
+            if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">❌ เชื่อมต่อระบบล้มเหลว</td></tr>';
         }
     };
 
     // ---------------------------------------------------------
     // 📈 3. อัปเกรดหน้าตาราง EPA (Pivot)
     // ---------------------------------------------------------
-    dash.fetchEpaData = async (institute) => {
+    window.dash.fetchEpaData = async (institute) => {
         const tbody = document.getElementById('table-epa-body');
         const thead = document.getElementById('table-epa-head');
         if (thead) thead.innerHTML = '';
-        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot (Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot (Google+Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
 
         try {
             const response = await fetch(GAS_WEBAPP_URL, {
@@ -1197,7 +1204,7 @@
             let dataArr = res.data || [];
 
             if (dataArr.length > 0) {
-                // 🚀 กวาดคะแนน EPA จาก Firebase
+                // 🚀 กวาดคะแนน EPA ใหม่จาก Firebase
                 const epaSnap = await getDocs(query(collection(db, "epa_records"), where("result", "==", "PASS")));
                 let epaCounts = {};
                 epaSnap.forEach(doc => {
@@ -1208,28 +1215,31 @@
                     epaCounts[mId][eId] = (epaCounts[mId][eId] || 0) + 1;
                 });
 
-                // เขียนทับตารางคะแนน
+                // 🟢 นำยอดใหม่มาบวกทบยอดเก่าในตาราง
                 dataArr.forEach(r => {
                     let mId = String(r.mdid).trim();
                     let myEpa = epaCounts[mId] || {};
                     let itemsArray = r.items || r.epas || [];
+                    
                     itemsArray.forEach(item => {
-                        let targetId = item.id || item.desc;
-                        item.pass = myEpa[targetId] || 0;
+                        let targetId = String(item.id || item.desc).trim();
+                        let fbPass = myEpa[targetId] || 0; // ยอดใหม่
+                        
+                        // item.pass = (parseFloat(item.pass) || 0) + fbPass; // <--- ไฮไลท์การแก้: บวกเพิ่ม
+                        item.pass = fbPass; // <--- สั่งให้ใช้ยอดจาก Firebase ล้วนๆ
                     });
                 });
 
-                dash.currentEpaData = dataArr;
-                if (dash.renderEpaUI) dash.renderEpaUI(dash.currentEpaData);
+                window.dash.currentEpaData = dataArr;
+                if (window.dash.renderEpaUI) window.dash.renderEpaUI(window.dash.currentEpaData);
             } else {
                 if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50">ไม่พบข้อมูลความก้าวหน้า EPA</td></tr>';
             }
         } catch (error) {
             console.error("Firebase EPA Error:", error);
-            if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50">❌ เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50">❌ เกิดข้อผิดพลาดในการเชื่อมต่อระบบ</td></tr>';
         }
     };
-</script>
-  
+</script>  
 </body>
 </html>
