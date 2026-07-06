@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase  2.65</title>
+    <title>EPA Skin App firebase 2.65A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3409,8 +3409,8 @@ window.onload = () => app.init();
         Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
         try {
-            const data = await app.api({ action: 'get_manage_activities', mdid: app.user.mdid });
-            
+            const data = await app.api({ action: 'get_manage_activities', user: app.user });
+			
             if (data) {
                 app.cachedManageActs = {};
                 const list = document.getElementById('manage-act-list');
