@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA-firebase 1.06</title>
+    <title>skinEPA-firebase 1.07</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1075,12 +1075,12 @@
     const db = getFirestore(appFirebase);
 
   // ---------------------------------------------------------
-    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 อัปเดตสมการคำนวณเป้าหมายใหม่ (Robust 100%)
+    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 อัปเดตแก้กราฟ 0% (เพิ่มระบบ Map ชื่อ)
     // ---------------------------------------------------------
     window.dash.fetchOverviewData = async (institute) => {
         Swal.fire({ title: 'กำลังคำนวณภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
         try {
-            // 1. 🚀 ยิงคำสั่งดึงโครงสร้างจาก API ที่เรามั่นใจว่าทำงานได้แน่นอน 4 ตัวพร้อมกัน
+            // 1. 🚀 ยิงคำสั่งดึงข้อมูล 4 แหล่งพร้อมกัน
             const [resOverview, resEpa, resAct, actMasterRes] = await Promise.all([
                 fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
                 fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
@@ -1090,34 +1090,33 @@
 
             if (resOverview && resOverview.success) {
                 
-                // 2. 🎯 สร้างแผนที่เป้าหมาย (Target Map) จากหน้า EPA และ Activity 
+                // 2. 🎯 สร้างสมุดหน้าเหลือง (nameToMdid) และ แผนที่เป้าหมาย (Target Map)
+                let nameToMdid = {};
                 let targetMap = {};
                 
-                // 2.1 ดึงเป้าจาก EPA
                 if (resEpa && resEpa.success && resEpa.data) {
                     resEpa.data.forEach(r => {
                         let mId = String(r.mdid).trim();
+                        if (r.name) nameToMdid[String(r.name).trim()] = mId; // บันทึกชื่อคู่กับ MDID
+
                         let epaTarget = 0;
                         let items = r.items || r.epas || [];
-                        items.forEach(item => {
-                            epaTarget += (Number(item.target) || 0); // รวมเป้าหมาย EPA ทุกหัวข้อ
-                        });
+                        items.forEach(item => { epaTarget += (Number(item.target) || 0); });
                         targetMap[mId] = (targetMap[mId] || 0) + epaTarget;
                     });
                 }
                 
-                // 2.2 ดึงเป้าจาก Activity (ชั่วโมง)
                 if (resAct && resAct.success && resAct.data) {
                     resAct.data.forEach(r => {
                         let mId = String(r.mdid).trim();
-                        targetMap[mId] = (targetMap[mId] || 0) + (Number(r.target) || 0); // รวมเป้าชั่วโมงกิจกรรม
+                        if (r.name) nameToMdid[String(r.name).trim()] = mId; // เผื่อไว้กรณีไม่มีใน EPA
+                        targetMap[mId] = (targetMap[mId] || 0) + (Number(r.target) || 0); 
                     });
                 }
 
-                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase ทั้งระบบ
+                // 3. 📈 กวาดคะแนนที่ผ่านจริง (Pass) จาก Firebase
                 let totalPassMap = {};
 
-                // --- นับคะแนนฝั่ง EPA ---
                 const epaSnap = await getDocs(collection(db, "epa_records"));
                 epaSnap.forEach(doc => {
                     let d = doc.data();
@@ -1137,7 +1136,6 @@
                     }
                 });
 
-                // --- นับคะแนนฝั่ง Activity (คิดตามจำนวนชั่วโมง) ---
                 let hoursMap = {};
                 if (actMasterRes && actMasterRes.activities) {
                     actMasterRes.activities.forEach(a => {
@@ -1163,23 +1161,24 @@
                     }
                 });
 
-                // 4. 🧮 นำ เป้าหมายรวม และ คะแนนรวม มาวาดเป็นเปอร์เซ็นต์กราฟ
+                // 4. 🧮 นำมาคำนวณกราฟ
                 let riskCount = 0;
                 const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
                 
                 groups.forEach(g => {
                     if (resOverview.data[g]) {
                         resOverview.data[g].forEach(person => {
-                            let mId = String(person.mdid).trim();
+                            let name = String(person.name || "").trim();
+                            // 🟢 พระเอกของเรา: ถ้าไม่มี mdid ให้ดึงจากสมุดหน้าเหลือง nameToMdid แทน
+                            let mId = String(person.mdid || nameToMdid[name] || "").trim(); 
                             
-                            // ดึงตัวเลขมาคำนวณ
                             let target = targetMap[mId] || 0; 
                             let pass = totalPassMap[mId] || 0; 
                             
                             if (target > 0) {
                                 person.progress = Math.min(100, Math.round((pass / target) * 100));
                             } else {
-                                person.progress = 0; // ถ้าไม่พบเป้าหมายจริงๆ ให้เป็น 0% แทน
+                                person.progress = 0; 
                             }
 
                             if (person.progress < (resOverview.time_elapsed_pct || 0)) riskCount++;
@@ -1187,12 +1186,10 @@
                     }
                 });
 
-                // อัปเดตตัวเลข KPI ด้านบน
                 document.getElementById('kpi-res').innerText = resOverview.kpi.total_res;
                 document.getElementById('kpi-act').innerText = resOverview.kpi.total_act;
                 document.getElementById('kpi-risk').innerText = riskCount; 
 
-                // สั่งวาดกราฟแท่ง
                 window.dash.renderProgressBars(resOverview.data);
                 Swal.close();
             }
@@ -1201,7 +1198,7 @@
             Swal.fire('ข้อผิดพลาด', '[Firebase] ' + e.message, 'error');
         }
     };
-
+    
     // ---------------------------------------------------------
     // 📅 2. อัปเกรดหน้าสถิติเข้ากิจกรรม (Activity)
     // ---------------------------------------------------------
