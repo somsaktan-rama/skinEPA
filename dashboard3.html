@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>skinEPA-Aggregation firebase 1.00</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- ติดตั้ง Chart.js สำหรับวาดกราฟ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 font-sans h-screen flex overflow-hidden">
+
+    <aside id="sidebar" class="w-64 bg-indigo-900 text-white flex flex-col shadow-xl hidden md:flex opacity-0 transition-opacity duration-500">
+        <div class="p-6 border-b border-indigo-800">
+            <h1 class="text-xl font-bold tracking-wider">skinEPA Firebase</h1>
+            <p id="display-institute" class="text-indigo-300 text-sm mt-1">...</p>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="#" onclick="dash.loadView('overview')" class="block px-4 py-3 rounded-lg bg-indigo-800 text-white font-medium">📊 ภาพรวมความก้าวหน้า</a>
+            <a href="#" onclick="dash.loadView('activity')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📅 สถิติการเข้ากิจกรรม</a>
+            <a href="#" onclick="dash.loadView('eval')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📝 ผลประเมินกิจกรรม</a>
+            <a href="#" onclick="dash.loadView('epa')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">📈 ความก้าวหน้า EPA</a>
+            <a href="#" onclick="dash.loadView('feedback')" class="block px-4 py-3 rounded-lg text-indigo-100 hover:bg-indigo-800">🔁 360° Feedback</a>
+        </nav>
+        <div class="p-4 border-t border-indigo-800">
+            <div id="display-name" class="text-sm font-medium mb-3 px-2"></div>
+            <button onclick="location.reload()" class="w-full bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-bold transition">🚪 ออกจากระบบ</button>
+        </div>
+    </aside>
+
+    <main id="main-content" class="flex-1 flex flex-col h-full overflow-y-auto hidden opacity-0 transition-opacity duration-500">
+        <header class="bg-white dark:bg-gray-800 shadow-sm p-4 flex justify-between items-center transition-colors">
+            <h2 id="page-title" class="text-2xl font-bold text-gray-800 dark:text-white">ภาพรวมระบบ (Overview)</h2>
+            
+            <div class="flex items-center space-x-4">
+               <div id="group-filters" class="hidden flex space-x-2">
+                <button onclick="dash.applyFilter('ALL')" class="filter-btn px-3 py-1 text-sm bg-gray-200 text-gray-800 rounded-full font-bold hover:bg-gray-300 shadow-sm" data-group="ALL">ทั้งหมด</button>
+                <button onclick="dash.applyFilter('R2')" class="filter-btn px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full font-bold hover:bg-blue-200 shadow-sm" data-group="R2">R2</button>
+                <button onclick="dash.applyFilter('R3')" class="filter-btn px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full font-bold hover:bg-green-200 shadow-sm" data-group="R3">R3</button>
+                <button onclick="dash.applyFilter('R4')" class="filter-btn px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full font-bold hover:bg-purple-200 shadow-sm" data-group="R4">R4</button>
+                <button onclick="dash.applyFilter('Fellow')" class="filter-btn px-3 py-1 text-sm bg-orange-100 text-orange-800 rounded-full font-bold hover:bg-orange-200 shadow-sm" data-group="Fellow">Fellow</button>
+            </div>
+                
+                <div class="flex items-center space-x-2 border-l border-gray-300 dark:border-gray-600 pl-4">
+                    <button onclick="dash.toggleDarkMode()" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm" title="เปลี่ยนโหมดสี"><span id="icon-dark">🌙</span></button>
+                    <button onclick="dash.toggleFullScreen()" class="p-2 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm" title="แสดงเต็มจอ"><span id="icon-fullscreen">🔲</span></button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <div id="view-overview" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-indigo-500">
+                        <div class="text-sm text-gray-500">จำนวนแพทย์ในสังกัด</div>
+                        <div class="text-3xl font-bold text-gray-800" id="kpi-res">0</div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+                        <div class="text-sm text-gray-500">กิจกรรมที่จัดแล้ว</div>
+                        <div class="text-3xl font-bold text-gray-800" id="kpi-act">0</div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
+                        <div class="text-sm text-gray-500">แจ้งเตือน / ความเสี่ยงสูง</div>
+                        <div class="text-3xl font-bold text-red-600" id="kpi-risk">0</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-6 border-b dark:border-gray-700 pb-2">ความก้าวหน้ารายบุคคล (แยกตามกลุ่ม)</h3>
+                    <div id="progress-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- วาดข้อมูลด้วย JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- View: 📅 สถิติการเข้ากิจกรรม (Activity) -->
+            <!-- ========================================== -->
+            <div id="view-activity" class="hidden space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">สรุปการเข้าร่วมกิจกรรม (Attendance)</h3>
+                        <button onclick="dash.exportActivityExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold flex items-center transition">
+                            📥 Export Excel
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-200 font-bold border-b dark:border-gray-600">
+                                <tr>
+                                    <th class="px-4 py-3">ชื่อ - นามสกุล</th>
+                                    <th class="px-4 py-3 text-center">ชั้นปี</th>
+                                    <th class="px-4 py-3 text-center">ชั่วโมงสะสม</th>
+                                    <th class="px-4 py-3 text-center">% การเข้าร่วม</th>
+                                    <th class="px-4 py-3 text-center">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-activity" class="divide-y dark:divide-gray-700 text-gray-700">
+                                <!-- วาดข้อมูลด้วย JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- View: 📝 การประเมินกิจกรรม (Activity Evaluation) -->
+            <!-- ========================================== -->
+            <div id="view-eval" class="hidden space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors border dark:border-gray-800">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">คะแนนการนำเสนอกิจกรรม (Presenter Scores)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="grid-eval">
+                        <!-- วาดข้อมูลด้วย JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- View: 📈 ความก้าวหน้า EPA (EPA Progress) -->
+            <!-- ========================================== -->
+            <div id="view-epa" class="hidden space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 dark:text-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">ตารางความก้าวหน้า EPA (Pivot View)</h3>
+                        
+                        <div class="flex space-x-2">
+                            <button onclick="dash.exportEpaPivotExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow text-sm font-bold transition">
+                                📥 Export สรุป EPA/Activity
+                            </button>
+                            <button onclick="dash.exportRawDataCSV()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow text-sm font-bold transition">
+                                📥 Export Raw Data
+                            </button>
+                        </div>
+
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left border dark:border-gray-700">
+                            <thead class="bg-indigo-50 text-indigo-800 font-bold border-b" id="table-epa-head">
+                                </thead>
+                            <tbody id="table-epa-body" class="divide-y text-gray-700">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- View: 🔁 360° Evaluation & Feedback -->
+            <!-- ========================================== -->
+            <div id="view-feedback" class="hidden space-y-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 transition-colors">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">ผลการประเมิน 360 องศา</h3>
+                        <select id="select-360-user" class="border dark:border-gray-600 p-2 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 mt-2 md:mt-0 transition-colors">
+                            <option value="">-- เลือกแพทย์ประจำบ้าน --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="border dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 flex flex-col items-center justify-center h-[350px] relative w-full shadow-inner transition-colors">
+                            <div id="placeholder-360-chart" class="text-center w-full px-4">
+                                <p class="text-gray-400 dark:text-gray-400 text-sm">กรุณาเลือกรายชื่อเพื่อดูกราฟ</p>
+                            </div>
+                            <div id="chart-container" class="hidden w-full h-full relative">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="border dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 transition-colors">
+                            <h4 class="font-bold text-gray-700 dark:text-gray-200 mb-3 border-b dark:border-gray-600 pb-2">💬 ข้อเสนอแนะเชิงคุณภาพ (Anonymous)</h4>
+                            <div id="feedback-comments" class="space-y-3 h-[250px] overflow-y-auto">
+                                <p class="text-gray-400 dark:text-gray-400 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
+        var dash = {
+            user: null,
+            // 🟢 1. เพิ่มตัวแปรความจำ ไว้ด้านบนสุดของ dash
+            currentFilter: 'ALL',
+            currentView: 'overview',
+            currentActivityData: null,
+            currentEvalData: null,
+            currentEpaData: null,
+            current360Data: null,
+
+            // 🟢 ฟังก์ชันควบคุม Dark Mode
+            toggleDarkMode: () => {
+                const htmlEl = document.documentElement;
+                htmlEl.classList.toggle('dark');
+                const isDark = htmlEl.classList.contains('dark');
+                const icon = document.getElementById('icon-dark');
+                if(icon) icon.innerText = isDark ? '☀️' : '🌙';
+            },
+
+            // 🟢 ฟังก์ชันควบคุม Full Screen (เต็มจอ)
+            toggleFullScreen: () => {
+                const icon = document.getElementById('icon-fullscreen');
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                    if(icon) icon.innerText = '🔳';
+                } else {
+                    document.exitFullscreen();
+                    if(icon) icon.innerText = '🔲';
+                }
+            },
+            
+            // 🟢 2. อัปเดต loadView (ต้องมี dash.currentView = viewId;)
+            loadView: (viewId) => {
+                dash.currentView = viewId; // ให้ระบบจำว่าอยู่หน้าไหน
+                
+                const views = ['overview', 'activity', 'eval', 'epa', 'feedback'];
+                views.forEach(v => {
+                    const el = document.getElementById(`view-${v}`);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const activeEl = document.getElementById(`view-${viewId}`);
+                if (activeEl) activeEl.classList.remove('hidden');
+                
+                const filterEl = document.getElementById('group-filters');
+                if (filterEl) {
+                    if(viewId === 'overview') filterEl.classList.add('hidden');
+                    else filterEl.classList.remove('hidden');
+                }
+
+                let inst = dash.user ? dash.user.institute : '';
+                if (viewId === 'overview') dash.fetchOverviewData(inst);
+                else if (viewId === 'activity') dash.fetchActivityData(inst);
+                else if (viewId === 'eval') dash.fetchEvalData(inst); 
+                else if (viewId === 'epa') dash.fetchEpaData(inst);
+                else if (viewId === 'feedback') dash.fetch360Data(inst);
+            },
+
+            // ==========================================
+            // 🟢 3. ฟังก์ชันคุมปุ่ม Filter สำหรับทุกหน้า
+            // ==========================================
+            applyFilter: (group) => {
+                dash.currentFilter = group;
+                
+                // ไฮไลท์สีปุ่ม
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    if(btn.dataset.group === group) btn.classList.add('ring-2', 'ring-teal-500', 'ring-offset-1');
+                    else btn.classList.remove('ring-2', 'ring-teal-500', 'ring-offset-1');
+                });
+
+                // สั่งวาดข้อมูลใหม่ในหน้าปัจจุบัน
+                if (dash.currentView === 'activity' && dash.currentActivityData) {
+                    dash.renderActivityUI(dash.currentActivityData);
+                }
+                else if (dash.currentView === 'eval' && dash.currentEvalData) {
+                    dash.renderEvalUI(dash.currentEvalData);
+                }
+                else if (dash.currentView === 'epa' && dash.currentEpaData) {
+                    dash.renderEpaUI(dash.currentEpaData); 
+                }
+                else if (dash.currentView === 'feedback' && dash.current360Data) {
+                    if (dash.render360Dropdown) dash.render360Dropdown(dash.current360Data);
+                }
+            },
+
+            // ==========================================
+            // 📥 5. ฟังก์ชันดึงข้อมูล "ความก้าวหน้า EPA"
+            // ==========================================
+            fetchEpaData: async () => {
+                const tbody = document.getElementById('table-epa-body');
+                const thead = document.getElementById('table-epa-head');
+                
+                if (thead) thead.innerHTML = '';
+                if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+                
+                try {
+                    const response = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user ? dash.user.institute : '' })
+                    });
+                    
+                    const res = await response.json();
+
+                    let dataArr = [];
+                    if (res && res.data) dataArr = res.data;
+
+                    if (dataArr.length > 0) {
+                        // เซฟข้อมูลลง dash.currentEpaData ก่อนวาดตาราง
+                        dash.currentEpaData = dataArr; 
+                        
+                        // สั่งวาดตารางครั้งแรกตอนเปิดหน้าเว็บ
+                        if (dash.renderEpaUI) {
+                            dash.renderEpaUI(dash.currentEpaData);
+                        }
+                    } else {
+                        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA ของแพทย์ในสังกัด</td></tr>';
+                    }
+                } catch (error) {
+                    console.error("Fetch EPA Error:", error);
+                    if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50 dark:bg-gray-800">❌ เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>';
+                }
+            },
+            
+            // ==========================================
+            // 📈 2. วาดตารางแบบ Pivot Table (ความก้าวหน้า EPA)
+            // ==========================================
+            renderEpaUI: (data) => {
+                
+                // 🟢 1. ดักจับ Filter: กรองข้อมูลจากระบบส่วนกลาง
+                let groupData = data || [];
+                if (dash.currentFilter !== 'ALL') {
+                    groupData = groupData.filter(r => r.level && String(r.level).toUpperCase().includes(dash.currentFilter.toUpperCase()));
+                }
+
+                const thead = document.getElementById('table-epa-head');
+                const tbody = document.getElementById('table-epa-body');
+
+                // 🟢 2. กรณีไม่มีข้อมูล
+                if (!groupData || groupData.length === 0) {
+                    if (thead) thead.innerHTML = '';
+                    if (tbody) tbody.innerHTML = `<tr><td class="text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลความก้าวหน้า EPA สำหรับชั้นปี ${dash.currentFilter}</td></tr>`;
+                    return;
+                }
+
+                // 🟢 3. สร้างหัวตาราง (แกน X) - รองรับ Dark Mode
+                let headHtml = `
+                    <tr class="bg-indigo-50 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200">
+                        <th class="px-4 py-3 min-w-[250px] bg-white dark:bg-gray-800 sticky left-0 z-10 border-r dark:border-gray-600 border-b dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">รายการประเมิน / กิจกรรม</th>
+                        <th class="px-4 py-3 text-center min-w-[80px] border-b dark:border-gray-700 border-r dark:border-gray-600">เป้าหมาย</th>
+                `;
+                
+                groupData.forEach(r => {
+                    let displayLevel = String(r.level).includes('Fellow') ? 'Fellow' : r.level;
+                    headHtml += `<th class="px-4 py-3 text-center min-w-[120px] leading-tight border-b dark:border-gray-700">
+                        ${r.name} <br>
+                        <span class="text-[9px] bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full mt-1 inline-block border border-indigo-200 dark:border-indigo-600">${displayLevel}</span>
+                    </th>`;
+                });
+                headHtml += `</tr>`;
+                
+                if (thead) thead.innerHTML = headHtml;
+
+                // 🟢 4. สร้างเนื้อหาตาราง (แกน Y) - รองรับ Dark Mode
+                let itemsArray = groupData[0].items || groupData[0].epas || [];
+                let bodyHtml = '';
+
+                itemsArray.forEach(item => {
+                    bodyHtml += `<tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition border-b dark:border-gray-700">`;
+                    
+                    // คอลัมน์ชื่อ EPA (ล็อคไว้ด้านซ้าย)
+                    bodyHtml += `<td class="px-4 py-3 font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 sticky left-0 z-10 border-r dark:border-gray-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${item.desc || item.name || 'ไม่ระบุชื่อ EPA'}</td>`;
+                    
+                    // คอลัมน์เป้าหมาย
+                    bodyHtml += `<td class="px-4 py-3 text-center font-bold bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 border-r dark:border-gray-700">${item.target || item.req || 0}</td>`;
+                    
+                    // วนลูปคะแนนรายบุคคล
+                    groupData.forEach(r => {
+                        let rItems = r.items || r.epas || [];
+                        let resItem = rItems.find(i => (i.id === item.id) || (i.desc === item.desc));
+                        let score = resItem ? (resItem.pass || resItem.count || 0) : 0;
+                        let target = item.target || item.req || 0;
+                        
+                        // คำนวณสี
+                        let scoreClass = 'text-gray-300 dark:text-gray-400 font-normal';
+                        if (score >= target && target > 0) {
+                            scoreClass = 'text-green-600 dark:text-green-400 font-bold bg-green-50 dark:bg-green-900/30';
+                        } else if (score > 0) {
+                            scoreClass = 'text-orange-500 dark:text-orange-400 font-bold';
+                        }
+
+                        bodyHtml += `<td class="px-4 py-3 text-center ${scoreClass}">${score}</td>`;
+                    });
+                    
+                    bodyHtml += `</tr>`;
+                });
+
+                if (tbody) tbody.innerHTML = bodyHtml;
+            }, // 🟢 อย่าลืมปีกกาและลูกน้ำตรงนี้นะครับ   
+            
+            // 🟢 ฟังก์ชันวาด Dropdown ของหน้า 360 (หลุดหายไปจากไฟล์เดิม)
+            render360Dropdown: (data) => {
+                const selectEl = document.getElementById('select-360-user');
+                if (!selectEl || !data || !data.residents) return;
+
+                let filteredResidents = data.residents;
+                if (dash.currentFilter !== 'ALL') {
+                    filteredResidents = data.residents.filter(r => r.level && r.level.toUpperCase().includes(dash.currentFilter.toUpperCase()));
+                }
+
+                if (filteredResidents.length === 0) {
+                    selectEl.innerHTML = `<option value="">-- ไม่มีรายชื่อแพทย์ชั้นปี ${dash.currentFilter} ในสังกัด --</option>`;
+                    document.getElementById('chart-container').classList.add('hidden');
+                    document.getElementById('placeholder-360-chart').classList.remove('hidden');
+                    return;
+                }
+
+                selectEl.innerHTML = '<option value="">-- เลือกแพทย์ประจำบ้าน / Fellow --</option>' +
+                    filteredResidents.map(r => `<option value="${r.mdid}">${r.name} (${r.level || '-'})</option>`).join('');
+                
+                selectEl.onchange = (e) => dash.render360UI(e.target.value);
+            },
+            
+            // -----------------------------------------
+            // 📅 1. ดึงข้อมูลสถิติการเข้ากิจกรรม
+            // -----------------------------------------
+            fetchActivityData: async () => {
+                const tbody = document.getElementById('table-activity');
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">กำลังประมวลผลข้อมูล... <div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+                
+                const res = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_dashboard_activity', institute: dash.user.institute })
+                }).then(r => r.json());
+
+                if (res && res.success) {
+                    dash.currentActivityData = res.data;
+                    dash.renderActivityUI(res.data);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">ไม่สามารถโหลดข้อมูลได้</td></tr>';
+                }
+            },
+
+            // ==========================================
+            // 📝 วาดตารางสถิติการเข้ากิจกรรม
+            // ==========================================
+            renderActivityUI: (data) => {
+                const tbody = document.getElementById('table-activity');
+                if (!tbody) return;
+
+                // 🟢 1. ดักจับ Filter: กรองข้อมูลตามชั้นปีที่เลือกไว้
+                let filteredData = data;
+                if (dash.currentFilter !== 'ALL') {
+                    // กรองเอาเฉพาะคนที่ level ตรงกับปุ่มที่กด
+                    filteredData = data.filter(r => r.level && r.level.toUpperCase().includes(dash.currentFilter.toUpperCase()));
+                }
+
+                // 🟢 2. กรณีไม่มีข้อมูลหลังกรอง
+                if (!filteredData || filteredData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800">ไม่พบข้อมูลสำหรับชั้นปี ${dash.currentFilter}</td></tr>`;
+                    return;
+                }
+
+                // 🟢 3. วาดตารางโดยใช้ filteredData แทน data
+                tbody.innerHTML = filteredData.map((r, index) => {
+                    
+                    // ⚠️ แก้ไขจุดที่ทำให้เกิด Error: เปลี่ยนชื่อตัวแปรให้ตรงกับที่ส่งมาจาก Code.gs (r.pct และ r.hours)
+                    // พร้อมใส่ fallback เป็น 0 ในกรณีที่ไม่มีข้อมูลส่งมา ป้องกัน .toFixed(1) พัง
+                    let pctValue = parseFloat(r.pct) || 0;
+                    let hoursValue = parseFloat(r.hours) || 0;
+
+                    // คำนวณสีของ % การเข้าร่วม
+                    let pctColor = 'text-gray-600 dark:text-gray-300';
+                    if (pctValue >= 80) pctColor = 'text-green-600 dark:text-green-400 font-bold';
+                    else if (pctValue >= 60) pctColor = 'text-orange-500 dark:text-orange-400 font-bold';
+                    else pctColor = 'text-red-500 dark:text-red-400 font-bold';
+
+                    return `
+                    <tr class="hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition border-b dark:border-gray-700">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-gray-800 dark:text-gray-200">${r.name}</div>
+                            <div class="text-[10px] text-gray-400 dark:text-gray-500">${r.mdid}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs font-bold">${r.level || '-'}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center font-bold text-gray-700 dark:text-gray-300">${hoursValue.toFixed(1)} <span class="text-xs font-normal text-gray-400">ชม.</span></td>
+                        <td class="px-4 py-3 text-center ${pctColor}">${pctValue.toFixed(1)}%</td>
+                        <td class="px-4 py-3 text-center">
+                            ${pctValue >= 80 
+                                ? '<span class="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-1 rounded-full text-xs font-bold">ผ่านเกณฑ์</span>' 
+                                : '<span class="bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 px-2 py-1 rounded-full text-xs font-bold">ต้องติดตาม</span>'}
+                        </td>
+                    </tr>
+                `}).join('');
+            },
+
+            // -----------------------------------------
+            // 📥 ฟังก์ชัน Export Excel (CSV UTF-8 รองรับภาษาไทย)
+            // -----------------------------------------
+            exportActivityExcel: () => {
+                // ตรวจสอบว่ามีข้อมูลให้ Export หรือไม่
+                if (!dash.currentActivityData || dash.currentActivityData.length === 0) {
+                    Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับ Export', 'warning');
+                    return;
+                }
+
+                // 1. เติมรหัส BOM (\uFEFF) ไว้หน้าสุด เพื่อให้ Excel อ่านภาษาไทยได้ 100%
+                let csvContent = "\uFEFF"; 
+                
+                // 2. สร้างหัวตาราง (Headers)
+                csvContent += "ชื่อ - นามสกุล,ชั้นปี,ชั่วโมงสะสม (หักเพดาน),เป้าหมาย (Maximum),% การเข้าร่วม,สถานะ\n";
+
+                // 3. วนลูปนำข้อมูลแต่ละคนมาต่อกันทีละบรรทัด
+                dash.currentActivityData.forEach(r => {
+                    // แปลงสถานะเป็นภาษาไทย
+                    let statusTh = r.status === 'PASS' ? 'ปกติ' : 'ติดตามพิเศษ';
+                    
+                    // ป้องกันปัญหาชื่อมีลูกน้ำ (,) โดยการครอบด้วยเครื่องหมายคำพูด ("")
+                    let row = `"${r.name}","${r.level}","${r.hours}","${r.target}","${r.pct}%","${statusTh}"`;
+                    csvContent += row + "\n";
+                });
+
+                // 4. สั่งให้เบราว์เซอร์ดาวน์โหลดเป็นไฟล์
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                
+                // ตั้งชื่อไฟล์พร้อมวันที่
+                let dateStr = new Date().toISOString().split('T')[0];
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Activity_Attendance_${dateStr}.csv`);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+            
+            // ==========================================
+            // 📥 4. ฟังก์ชันดึงข้อมูล "ผลประเมินการนำเสนอกิจกรรม"
+            // ==========================================
+            fetchEvalData: async (institute = '') => {
+                const container = document.getElementById('grid-eval');
+                if (container) container.innerHTML = '<div class="col-span-full text-center py-8 text-gray-400 animate-pulse font-bold">กำลังโหลดข้อมูลผลประเมิน...</div>';
+
+                try {
+                    let safeInstitute = typeof institute === 'string' ? institute : '';
+                    
+                    const scriptUrl = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
+                    
+                    const response = await fetch(scriptUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute })
+                    });
+                    
+                    const res = await response.json();
+
+                    if (res && res.success) {
+                        // 🟢 เติมบรรทัดนี้: เซฟข้อมูลลงใน dash.currentEvalData ก่อนวาดหน้าจอ
+                        dash.currentEvalData = res.data; 
+                        
+                        if (dash.renderEvalUI) dash.renderEvalUI(res.data);
+                    } else {
+                        if (container) container.innerHTML = `<div class="col-span-full text-center py-8 text-red-500">❌ โหลดข้อมูลไม่สำเร็จ: ${res ? res.message : 'ไม่มีข้อมูล'}</div>`;
+                    }
+                } catch (error) {
+                    console.error("Fetch Eval Error:", error);
+                    if (container) container.innerHTML = '<div class="col-span-full text-center py-8 text-red-500">❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล</div>';
+                }
+            },
+
+            // ==========================================
+            // 📝 วาดรายการผลประเมินการนำเสนอกิจกรรม (พร้อม Dark Mode & Group Comments)
+            // ==========================================
+            renderEvalUI: (data) => {
+                // 🟢 1. กรองข้อมูลก่อนวาด
+                let filteredData = data;
+                if (dash.currentFilter !== 'ALL') {
+                    filteredData = data.filter(r => r.level && String(r.level).toUpperCase().includes(dash.currentFilter.toUpperCase()));
+                }
+
+                const container = document.getElementById('grid-eval'); 
+                if (!container) return; 
+                
+                if (!filteredData || filteredData.length === 0) {
+                    container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500 font-bold bg-gray-50 dark:bg-gray-800 rounded-xl border dark:border-gray-700">ไม่พบประวัติการประเมินของชั้นปี ${dash.currentFilter}</div>`;
+                    return;
+                }
+                
+                container.innerHTML = filteredData.map(r => `
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+                        <div class="flex justify-between items-start mb-3 border-b dark:border-gray-700 pb-2">
+                            <div class="flex-1 pr-2">
+                                <h4 class="font-bold text-teal-800 dark:text-teal-400 text-sm line-clamp-1" title="${r.topic}">${r.topic}</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ผู้นำเสนอ: <span class="font-bold text-gray-800 dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">${r.name}</span></p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-1 rounded-full font-bold whitespace-nowrap block mb-1">${r.date}</span>
+                                <span class="text-[9px] bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold border border-teal-200 dark:border-teal-700 shadow-sm">ผู้ประเมิน ${r.eval_count} ท่าน</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="bg-teal-50 dark:bg-teal-900/30 px-3 py-2 rounded-lg text-center border border-teal-100 dark:border-teal-800 shadow-inner">
+                                <p class="text-[10px] text-teal-700 dark:text-teal-400 font-bold">เฉลี่ยรวม</p>
+                                <p class="text-lg font-black text-teal-600 dark:text-teal-300">${r.score}</p>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 flex-1 text-center text-[10px] text-gray-600 dark:text-gray-300">
+                                <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">นำเสนอ<br><span class="font-bold text-teal-600 dark:text-teal-400">${r.details.pres}</span></div>
+                                <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">เนื้อหา<br><span class="font-bold text-teal-600 dark:text-teal-400">${r.details.cont}</span></div>
+                                <div class="bg-gray-50 dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">เวลา<br><span class="font-bold text-teal-600 dark:text-teal-400">${r.details.time}</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-amber-50/70 dark:bg-amber-900/20 p-3 rounded-lg text-xs text-gray-700 dark:text-gray-300 border border-amber-100 dark:border-amber-800 min-h-[70px]">
+                            <p class="font-bold text-amber-800 dark:text-amber-400 mb-1">💬 รวบรวมข้อคิดเห็น:</p>
+                            ${(r.comments && r.comments.length > 0) 
+                                ? `<ul class="list-disc pl-4 space-y-1">${r.comments.map(c => `<li><span class="italic text-gray-700 dark:text-gray-300">"${c.text}"</span> <span class="text-[9px] text-gray-400 dark:text-gray-500">(${c.reviewer})</span></li>`).join('')}</ul>` 
+                                : `<p class="italic text-gray-500 dark:text-gray-400 text-center mt-2">- ไม่มีผู้ประเมินท่านใดให้ข้อเสนอแนะ -</p>`}
+                        </div>
+                        
+                        <p class="text-[9px] text-right text-gray-400 mt-2 line-clamp-1" title="${r.reviewer}">คณะกรรมการ: ${r.reviewer}</p>
+                    </div>
+                `).join('');
+            },
+            
+            // ==========================================
+            // 📥 6. ฟังก์ชันดึงข้อมูล "360 องศา"
+            // ==========================================
+            fetch360Data: async () => {
+                const selectEl = document.getElementById('select-360-user');
+                const placeholder = document.getElementById('placeholder-360-chart');
+                const chartCont = document.getElementById('chart-container');
+                const commentsDiv = document.getElementById('feedback-comments');
+
+                // 🟢 1. ระบบควบคุมการเปิด-ปิดหน้า 360 องศา
+                // วิธีที่ 1: สับสวิตช์ด้วยตัวเอง (true = เปิดให้ดูผล, false = ล็อกหน้าจอ)
+                const IS_360_OPEN = true; // <--- ตอนนี้ตั้งเป็น false เพื่อล็อกไว้ก่อนครับ
+
+                // วิธีที่ 2: ถ้าอยากตั้งเวลาอัตโนมัติ (ลบเครื่องหมาย // ข้างหน้าออกเพื่อใช้งาน)
+                // const currentMonth = new Date().getMonth() + 1; // ดึงเดือนปัจจุบัน (1-12)
+                // const IS_360_OPEN = [5, 6, 11, 12].includes(currentMonth); // เปิดอัตโนมัติเดือน พ.ค.-มิ.ย. และ พ.ย.-ธ.ค.
+
+                if (!IS_360_OPEN) {
+                    if (selectEl) {
+                        selectEl.innerHTML = '<option value="">-- นอกรอบเวลาประเมิน --</option>';
+                        selectEl.disabled = true; // ล็อกปุ่มกด
+                    }
+                    if (placeholder) {
+                        placeholder.classList.remove('hidden');
+                        placeholder.innerHTML = `
+                            <div class="flex flex-col items-center justify-center py-10 text-center">
+                                <span class="text-5xl mb-4">🔒</span>
+                                <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300">ปิดระบบประเมิน 360 องศาชั่วคราว</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">เปิดให้ดูผลเฉพาะรอบ กลางปี (พ.ย.) และ ปลายปี (พ.ค.)</p>
+                            </div>`;
+                    }
+                    if (chartCont) chartCont.classList.add('hidden');
+                    if (commentsDiv) commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">- ปิดการแสดงข้อเสนอแนะชั่วคราว -</p>';
+                    return; // 🛑 หยุดการทำงานตรงนี้เลย ไม่ดึงข้อมูลหลังบ้านให้โหลดหนัก
+                }
+
+                // 🟢 2. กรณีเปิดระบบ (IS_360_OPEN = true) ให้โหลดข้อมูลตามปกติ
+                if (selectEl) {
+                    selectEl.disabled = false;
+                    selectEl.innerHTML = '<option value="">กำลังโหลดรายชื่อและข้อมูล...</option>';
+                }
+                
+                if (placeholder) placeholder.classList.remove('hidden');
+                if (chartCont) chartCont.classList.add('hidden');
+                if (commentsDiv) commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">กรุณาเลือกรายชื่อเพื่อดู Feedback</p>';
+
+                try {
+                    const res = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user ? dash.user.institute : '' })
+                    }).then(r => r.json());
+
+                    if (res && res.success && res.residents && res.residents.length > 0) {
+                        dash.current360Data = res; 
+                        if (dash.render360Dropdown) dash.render360Dropdown(dash.current360Data); 
+                    } else {
+                        if (selectEl) selectEl.innerHTML = '<option value="">ไม่พบข้อมูล หรือยังไม่มีการประเมินในระบบ</option>';
+                    }
+                } catch (error) {
+                    console.error("Fetch 360 Error:", error);
+                    if (selectEl) selectEl.innerHTML = '<option value="">เกิดข้อผิดพลาดในการโหลดข้อมูล</option>';
+                }
+            },
+            // ==========================================
+            // 📝 วาด Dropdown เลือกรายชื่อหน้า 360 (พร้อมระบบ Filter)
+            // ==========================================
+            render360UI: (mdid) => {
+                const chartContainer = document.getElementById('chart-container');
+                const placeholder = document.getElementById('placeholder-360-chart');
+                const commentsDiv = document.getElementById('feedback-comments');
+
+                if (!mdid) {
+                    chartContainer.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                    placeholder.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm">กรุณาเลือกรายชื่อเพื่อดูกราฟ</p>';
+                    return;
+                }
+
+                if (!dash.current360Data.evaluations || !dash.current360Data.evaluations[mdid]) {
+                    chartContainer.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                    placeholder.innerHTML = `<span class="text-red-500 font-bold text-lg">ไม่มีประวัติการประเมิน 360 องศา</span>`;
+                    commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">- ไม่พบข้อเสนอแนะ -</p>';
+                    return;
+                }
+
+                const data = dash.current360Data.evaluations[mdid];
+                const labels = dash.current360Data.labels || ['Teamwork', 'Communication', 'Punctuality', 'EQ & Stress', 'Leadership', 'Respect'];
+
+                // 1. สั่งเปิดกล่องคอนเทนเนอร์
+                placeholder.classList.add('hidden');
+                chartContainer.classList.remove('hidden');
+
+                // 2. ทุบ Canvas เก่าและสร้างใหม่
+                chartContainer.innerHTML = '<canvas id="radarChart"></canvas>';
+                
+                // 3. วาดกราฟ
+                try {
+                    const ctx = document.getElementById('radarChart').getContext('2d');
+                    dash.radarChartInstance = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: `คะแนนเฉลี่ย 360° (ผู้ประเมิน ${data.evalCount} ท่าน)`,
+                                data: data.scores,
+                                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                                pointBorderColor: '#fff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { 
+                                r: { 
+                                    suggestedMin: 0, 
+                                    suggestedMax: 5, 
+                                    ticks: { 
+                                        stepSize: 1,
+                                        backdropColor: 'transparent' // 🟢 เติมตรงนี้ เพื่อลบกรอบสี่เหลี่ยมสีขาวหลังตัวเลขเวลาเปิดโหมดกลางคืน
+                                    },
+                                    grid: { color: 'rgba(156, 163, 175, 0.3)' }, // 🟢 ทำให้เส้นตารางมองเห็นได้ดีขึ้นทั้งสองโหมด
+                                    angleLines: { color: 'rgba(156, 163, 175, 0.3)' }
+                                } 
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("Chart Error:", error);
+                    chartContainer.innerHTML = `<div class="flex items-center justify-center h-full text-red-500 text-sm font-bold text-center px-4">ระบบไม่สามารถวาดกราฟได้<br>โปรดตรวจสอบการติดตั้ง Chart.js ในแท็ก Head</div>`;
+                }
+
+                // 4. แสดงผลข้อเสนอแนะ (🟢 ปรับสีให้รองรับ Dark Mode)
+                if (data.comments && data.comments.length > 0) {
+                    commentsDiv.innerHTML = data.comments.map(c => `
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border-l-4 border-indigo-400 dark:border-indigo-500 text-sm text-gray-700 dark:text-gray-300 flex gap-2">
+                            <span class="text-indigo-400 font-bold">💬</span> <span>${c}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    commentsDiv.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-sm text-center mt-10">- ไม่มีผู้ประเมินระบุข้อเสนอแนะเพิ่มเติม -</p>';
+                }
+            },
+            
+            // -----------------------------------------
+            // 📥 ฟังก์ชัน Export Excel (Pivot EPA)
+            // -----------------------------------------
+            exportEpaPivotExcel: () => {
+                // ดึงข้อมูลแถวหัวตารางและเนื้อหาจากหน้าจอ
+                const headRow = document.querySelector('#table-epa-head tr');
+                const bodyRows = document.querySelectorAll('#table-epa-body tr');
+
+                // เช็คว่ามีข้อมูลให้ Export ไหม (ถ้าหน้าจอว่างเปล่า หรือขึ้น Error ให้หยุดทำงาน)
+                if (!headRow || bodyRows.length === 0 || bodyRows[0].innerText.includes('ไม่พบข้อมูล')) {
+                    Swal.fire('แจ้งเตือน', 'ไม่มีข้อมูลสำหรับ Export', 'warning');
+                    return;
+                }
+
+                // เติมรหัส BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยได้สมบูรณ์
+                let csvContent = "\uFEFF"; 
+
+                // 1. ดึงชื่อคอลัมน์จากหัวตาราง (Headers)
+                let headers = [];
+                headRow.querySelectorAll('th').forEach(th => {
+                    // ใช้ innerText จะช่วยตัดแท็ก HTML (เช่น <br>) ออกให้เหลือแต่ข้อความล้วนๆ 
+                    let text = th.innerText.replace(/\r?\n|\r/g, ' ').trim();
+                    headers.push(`"${text}"`);
+                });
+                csvContent += headers.join(',') + "\n";
+
+                // 2. ดึงข้อมูลคะแนนแต่ละแถว (Rows)
+                bodyRows.forEach(tr => {
+                    let rowData = [];
+                    tr.querySelectorAll('td').forEach(td => {
+                        let text = td.innerText.replace(/\r?\n|\r/g, ' ').trim();
+                        rowData.push(`"${text}"`);
+                    });
+                    csvContent += rowData.join(',') + "\n";
+                });
+
+                // 3. สร้างไฟล์และสั่งดาวน์โหลด
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                
+                let dateStr = new Date().toISOString().split('T')[0];
+                link.setAttribute("href", url);
+                link.setAttribute("download", `EPA_Progress_Pivot_${dateStr}.csv`);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+
+            // ==========================================
+            // 📥 ฟังก์ชัน Export ข้อมูลดิบ (Raw Data) สำหรับ dashboard.html
+            // ==========================================
+            exportRawDataCSV: async () => { 
+                
+                // 🟢 1. สร้างตัวเลือกเดือนพร้อมระบุ "ปี" เพื่อป้องกันข้อมูลข้ามปีปะปนกัน
+                const monthNames = [
+                    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
+                    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+                ];
+                let monthOptionsHtml = '<option value="ALL">ดึงข้อมูลทั้งหมด ทุกเดือน</option>';
+                
+                let currentDate = new Date();
+                for (let i = 0; i < 12; i++) {
+                    // ใช้ Date Object ถอยหลังไปทีละเดือน (ระบบจะจัดการเรื่องข้ามปีให้อัตโนมัติ)
+                    let targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                    let mIndex = targetDate.getMonth();
+                    let yyyy = targetDate.getFullYear();
+                    let thYear = yyyy + 543; // แปลงเป็น พ.ศ.
+                    
+                    let valueKey = `${yyyy}-${mIndex}`; // คีย์จะเป็นรูปแบบ "2026-6"
+                    let labelSuffix = (i === 0) ? ' 📌 (เดือนปัจจุบัน)' : '';
+                    
+                    monthOptionsHtml += `<option value="${valueKey}">${monthNames[mIndex]} ${thYear}${labelSuffix}</option>`;
+                }
+
+                // 2. สร้าง Pop-up เลือกเงื่อนไข
+                const { value: formValues } = await Swal.fire({
+                    title: '📥 ดาวน์โหลด Raw Data',
+                    html: `
+                        <div class="text-left text-sm space-y-4 mt-3">
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">หมวดหมู่ข้อมูล</label>
+                                <select id="export-type" class="w-full border p-2 rounded bg-gray-50 focus:ring-indigo-500">
+                                    <option value="ALL">ทั้งหมด (EPA + Activity)</option>
+                                    <option value="EPA">เฉพาะความก้าวหน้า (EPA)</option>
+                                    <option value="ACTIVITY">เฉพาะการเข้ากิจกรรม (Activity)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-gray-700 mb-1">ช่วงเวลา (เดือน)</label>
+                                <select id="export-month" class="w-full border p-2 rounded bg-gray-50 focus:ring-indigo-500">
+                                    ${monthOptionsHtml} </select>
+                            </div>
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'สร้างไฟล์ CSV',
+                    cancelButtonText: 'ยกเลิก',
+                    preConfirm: () => {
+                        return {
+                            type: document.getElementById('export-type').value,
+                            month: document.getElementById('export-month').value
+                        }
+                    }
+                });
+
+                if (!formValues) return;
+
+                Swal.fire({ title: 'กำลังดึงข้อมูลจากฐานข้อมูล...', text: 'อาจใช้เวลาสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                try {
+                    // 3. ส่งคำสั่งไปขอดึงข้อมูลดิบจากหลังบ้าน
+                    const response = await fetch(GAS_WEBAPP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_raw_export', user: dash.user })
+                    });
+                    
+                    const res = await response.json();
+                    
+                    if (!res || !res.success) {
+                        return Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลได้', 'error');
+                    }
+
+                    // 4. นำข้อมูลมากรอง (Filter) ให้ตรงทั้ง "เดือน" และ "ปี"
+                    let filteredData = res.data.filter(row => {
+                        if (formValues.type !== 'ALL' && row.type !== formValues.type) return false;
+                        
+                        if (formValues.month !== 'ALL') {
+                            let rowDate = new Date(row.timestamp);
+                            let rowKey = `${rowDate.getFullYear()}-${rowDate.getMonth()}`; 
+                            if (rowKey !== formValues.month) return false; // ถ้าปีหรือเดือนไม่ตรง ให้คัดทิ้ง
+                        }
+                        return true;
+                    });
+
+                    if (filteredData.length === 0) {
+                        return Swal.fire('แจ้งเตือน', 'ไม่พบประวัติข้อมูลในเดือนและปีที่เลือกครับ', 'warning');
+                    }
+
+                    // 5. ประกอบร่างไฟล์ CSV
+                    let csv = "\uFEFFวัน-เวลา,ประเภท,สถาบัน,MDID,ชื่อ-สกุล,ชั้นปี,Item ID,CCME,รายละเอียด/หัวข้อ,ผลประเมิน/ชั่วโมง\n";
+                    
+                    filteredData.forEach(r => {
+                        let cleanDesc = r.desc ? String(r.desc).replace(/"/g, '""').replace(/\n/g, ' ') : "";
+                        csv += `"${r.date_str}","${r.type}","${r.institute || '-'}","${r.mdid}","${r.name}","${r.role}","${r.item_id}","${r.ccme}","${cleanDesc}","${r.result_value}"\n`;
+                    });
+
+                    Swal.close();
+
+                    // 6. สั่งดาวน์โหลด
+                    const link = document.createElement("a"); 
+                    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
+                    
+                    let monthSuffix = formValues.month === 'ALL' ? 'AllMonths' : formValues.month;
+                    link.download = `RawData_${formValues.type}_${monthSuffix}_${new Date().getTime()}.csv`; 
+                    
+                    document.body.appendChild(link); 
+                    link.click(); 
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error(error);
+                    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+                }
+            },
+            
+            // 1. ระบบ Login ด้วย SweetAlert2 (ด่านแรกก่อนเข้าใช้งาน)
+                requireLogin: async () => {
+                const { value: mdid } = await Swal.fire({
+                    title: '🔑 เข้าสู่ระบบ',
+                    text: 'กรอก MdID เพื่อเข้าถึงข้อมูล skinEPA',
+                    input: 'password', // 🟢 เปลี่ยนจาก 'text' เป็น 'password' เพื่อซ่อนเป็น ********
+                    inputPlaceholder: 'ตัวเลข 4-10 หลัก',
+                    inputAttributes: {
+                        maxlength: 10,
+                        autocapitalize: 'off',
+                        autocorrect: 'off',
+                        inputmode: 'numeric' // 🟢 เด้งแป้นพิมพ์ตัวเลขบนมือถือ
+                    },
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    confirmButtonText: 'เข้าสู่ระบบ',
+                    showLoaderOnConfirm: true,
+                    // 🟢 เพิ่มระบบดักจับ บังคับกรอกเฉพาะตัวเลข 4-10 ตัว
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'กรุณากรอก MdID เพื่อเข้าสู่ระบบ!';
+                        }
+                        // ใช้ Regex เช็คว่าเป็นตัวเลข 0-9 จำนวน 4-10 ตัว
+                        if (!/^\d{4,10}$/.test(value)) {
+                            return 'กรุณากรอกเฉพาะตัวเลข 4 - 10 หลักเท่านั้น!';
+                        }
+                    },
+                    preConfirm: async (loginId) => {
+                        try {
+                            const response = await fetch(GAS_WEBAPP_URL, {
+                                method: 'POST',
+                                body: JSON.stringify({ action: 'login_dashboard', mdid: loginId })
+                            });
+                            return await response.json();
+                        } catch (error) {
+                            Swal.showValidationMessage(`การเชื่อมต่อล้มเหลว`);
+                        }
+                    }
+                });
+
+                if (mdid && mdid.success) {
+                    dash.user = mdid.user;
+                    // แสดงข้อมูล User บน Sidebar
+                    document.getElementById('display-institute').innerText = 'Institute: ' + dash.user.institute;
+                    document.getElementById('display-name').innerText = 'อ. ' + dash.user.name;
+                    
+                    // แสดงหน้าต่าง Dashboard
+                    document.getElementById('sidebar').classList.remove('hidden');
+                    document.getElementById('main-content').classList.remove('hidden');
+                    setTimeout(() => {
+                        document.getElementById('sidebar').classList.remove('opacity-0');
+                        document.getElementById('main-content').classList.remove('opacity-0');
+                    }, 100);
+
+                    dash.loadView('overview');
+                } else if (mdid) { 
+                    Swal.fire('ข้อผิดพลาด', mdid.message || 'รหัสไม่ถูกต้อง', 'error').then(() => dash.requireLogin());
+                }
+            },
+
+            // 3. โหลดข้อมูลและวาด Progress Bar
+            fetchOverviewData: async () => {
+                Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม...', didOpen: () => Swal.showLoading() });
+                const res = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_dashboard_overview', institute: dash.user.institute })
+                }).then(r => r.json());
+                Swal.close();
+
+                if (res && res.success) {
+                    document.getElementById('kpi-res').innerText = res.kpi.total_res;
+                    document.getElementById('kpi-act').innerText = res.kpi.total_act;
+                    document.getElementById('kpi-risk').innerText = res.kpi.at_risk;
+
+                    dash.renderProgressBars(res.data);
+                }
+            },
+
+            // 4. วาด HTML ของ Progress Bar แยกตามชั้นปี
+            renderProgressBars: (data) => {
+                const container = document.getElementById('progress-container');
+                let html = '';
+                
+                const groups = [
+                    { key: 'R2', title: 'ชั้นปีที่ 2 (R2)', color: 'blue' },
+                    { key: 'R3', title: 'ชั้นปีที่ 3 (R3)', color: 'green' },
+                    { key: 'R4', title: 'ชั้นปีที่ 4 (R4)', color: 'purple' },
+                    { key: 'FellowDermsurg', title: 'Fellow Dermsurg', color: 'orange' }
+                ];
+
+                groups.forEach(g => {
+                    if (data[g.key] && data[g.key].length > 0) {
+                        html += `
+                        <div class="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700 transition-colors">
+                            <h4 class="font-bold text-${g.color}-800 dark:text-${g.color}-400 mb-4 flex items-center">
+                                <span class="bg-${g.color}-200 dark:bg-${g.color}-900/50 px-2 py-1 rounded text-xs mr-2">${g.key}</span> ${g.title}
+                            </h4>
+                            <div class="space-y-4">
+                        `;
+                        
+                        data[g.key].forEach(person => {
+                            let barColor = person.progress < 50 ? 'bg-red-500' : `bg-${g.color}-500`;
+                            
+                            html += `
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="font-medium text-gray-700 dark:text-gray-200">${person.name}</span>
+                                        <span class="font-bold text-gray-600 dark:text-gray-300">${person.progress}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                                        <div class="${barColor} h-2.5 rounded-full transition-all duration-1000" style="width: ${person.progress}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div></div>`;
+                    }
+                });
+                container.innerHTML = html;
+            } // 🟢 เช็คลูกน้ำ/ปีกกา ตามตำแหน่งเดิมของคุณหมอนะครับ
+        };
+
+        // เริ่มการทำงานโดยบังคับให้ Login ทันที
+        window.onload = () => {
+            dash.requireLogin();
+        };
+    </script>
+
+<!-- ============================================================== -->
+<!-- 🚀 FIREBASE "Aggregation Pattern (ระบบสมุดจดสรุปยอด)" -->
+<!-- ============================================================== -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
+      authDomain: "skinepa-a771f.firebaseapp.com",
+      projectId: "skinepa-a771f",
+      storageBucket: "skinepa-a771f.firebasestorage.app",
+      messagingSenderId: "597553303268",
+      appId: "1:597553303268:web:48ed982baec59d66c0e6f1",
+      measurementId: "G-HP5J8V22L9"
+    };
+
+    const appFirebase = initializeApp(firebaseConfig);
+    const db = getFirestore(appFirebase);
+
+    // ---------------------------------------------------------
+    // 🛠️ ฟังก์ชันพิเศษ: สร้างสมุดสรุปยอด (รันครั้งเดียวจบ)
+    // ---------------------------------------------------------
+    window.dash.syncSummary = async () => {
+        Swal.fire({ title: 'กำลังรวบรวมข้อมูล 30,000+ รายการ...', text: 'กรุณารอสักครู่ (ทำแค่ครั้งเดียว)', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            let epaCounts = {}; let actHours = {};
+            
+            // กวาด EPA ทั้งหมด
+            const epaSnap = await getDocs(collection(db, "epa_records"));
+            epaSnap.forEach(doc => {
+                let d = doc.data();
+                let st1 = String(d.result || "").toUpperCase().trim(); let st2 = String(d.status || "").toUpperCase().trim();
+                let isPass = (st1 === "PASS" || st2 === "PASS") || (d.time_app != null && String(d.reason || "").trim() === "") || (typeof d.result === 'number' && d.result > 0);
+
+                if (isPass) {
+                    let mId = String(d.resident_mdid || d.mdid || d.attendee_mdid || "").trim();
+                    let eId = String(d.epaid || d.epa_id || d.id || "").trim();
+                    if (mId) {
+                        epaCounts[`${mId}_TOTAL`] = (epaCounts[`${mId}_TOTAL`] || 0) + 1; // ยอดรวม
+                        if (eId) {
+                            epaCounts[`${mId}_${eId}`] = (epaCounts[`${mId}_${eId}`] || 0) + 1; // ยอดรายตัว
+                            let baseEpa = eId.split('-')[0];
+                            if (baseEpa !== eId) epaCounts[`${mId}_${baseEpa}`] = (epaCounts[`${mId}_${baseEpa}`] || 0) + 1;
+                        }
+                    }
+                }
+            });
+
+            // กวาด Activity ทั้งหมด
+            const actMasterRes = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user }) }).then(r => r.json()).catch(()=>null);
+            let hoursMap = {};
+            if (actMasterRes && actMasterRes.activities) {
+                actMasterRes.activities.forEach(a => {
+                    let start = new Date(a.act_begin).getTime(); let end = new Date(a.act_finish).getTime();
+                    hoursMap[String(a.act_ref_id).trim()] = ((end - start) / (1000 * 60 * 60)) > 0 ? ((end - start) / (1000 * 60 * 60)) : 1;
+                });
+            }
+
+            const actSnap = await getDocs(collection(db, "activity_records"));
+            actSnap.forEach(doc => {
+                let d = doc.data();
+                let st1 = String(d.status || "").toUpperCase().trim(); let st2 = String(d.result || "").toUpperCase().trim();
+                if (st1 === "PASS" || st2 === "PASS") {
+                    let mId = String(d.attendee_mdid || d.mdid || d.resident_mdid || "").trim();
+                    let aId = String(d.act_ref_id || d.act_id || "").trim();
+                    if (mId) actHours[mId] = (actHours[mId] || 0) + (hoursMap[aId] || 1);
+                }
+            });
+
+            // บันทึกลงกระดาษแผ่นเดียว
+            await setDoc(doc(db, "dashboard_summary", "all_stats"), { epa: epaCounts, act: actHours, last_updated: new Date().toISOString() });
+            Swal.fire('สำเร็จ!', 'สร้างสมุดสรุปยอดเรียบร้อย โควตาถูกลดเหลือ 1 Read แล้วครับ', 'success').then(() => window.location.reload());
+        } catch (e) { console.error(e); Swal.fire('ผิดพลาด', e.message, 'error'); }
+    };
+
+    // ---------------------------------------------------------
+    // 📊 1. อัปเกรดหน้าภาพรวม (Overview) - 🟢 อ่าน 1 Document
+    // ---------------------------------------------------------
+    window.dash.fetchOverviewData = async (institute) => {
+        Swal.fire({ title: 'กำลังโหลด (ระบบประหยัดโควตา)...', didOpen: () => Swal.showLoading() });
+        try {
+            const [resOverview, resEpa, resAct] = await Promise.all([
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json())
+            ]);
+
+            if (resOverview && resOverview.success) {
+                let nameToMdid = {}; let targetMap = {};
+                if (resEpa && resEpa.data) resEpa.data.forEach(r => {
+                    let mId = String(r.mdid).trim();
+                    if (r.name) nameToMdid[String(r.name).trim()] = mId;
+                    let epaTarget = 0; (r.items || r.epas || []).forEach(item => epaTarget += (Number(item.target) || 0));
+                    targetMap[mId] = (targetMap[mId] || 0) + epaTarget;
+                });
+                if (resAct && resAct.data) resAct.data.forEach(r => {
+                    let mId = String(r.mdid).trim();
+                    if (r.name) nameToMdid[String(r.name).trim()] = mId;
+                    targetMap[mId] = (targetMap[mId] || 0) + (Number(r.target) || 0); 
+                });
+
+                // 🚀 อ่านสรุปยอดมาใช้ (1 Read)
+                const sumSnap = await getDoc(doc(db, "dashboard_summary", "all_stats"));
+                const summary = sumSnap.exists() ? sumSnap.data() : { epa: {}, act: {} };
+                const epaDb = summary.epa || {}; const actDb = summary.act || {};
+
+                let riskCount = 0;
+                const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
+                groups.forEach(g => {
+                    if (resOverview.data[g]) {
+                        resOverview.data[g].forEach(person => {
+                            let name = String(person.name || "").trim();
+                            let mId = String(person.mdid || nameToMdid[name] || "").trim(); 
+                            
+                            let target = targetMap[mId] || 0; 
+                            let pass = (epaDb[`${mId}_TOTAL`] || 0) + (actDb[mId] || 0); 
+                            
+                            person.progress = target > 0 ? Math.min(100, Math.round((pass / target) * 100)) : 0;
+                            if (person.progress < (resOverview.time_elapsed_pct || 0)) riskCount++;
+                        });
+                    }
+                });
+
+                document.getElementById('kpi-res').innerText = resOverview.kpi.total_res;
+                document.getElementById('kpi-act').innerText = resOverview.kpi.total_act;
+                document.getElementById('kpi-risk').innerText = riskCount; 
+                window.dash.renderProgressBars(resOverview.data);
+                Swal.close();
+            }
+        } catch (e) { console.error(e); Swal.fire('ผิดพลาด', e.message, 'error'); }
+    };
+
+    // ---------------------------------------------------------
+    // 📅 2. อัปเกรดหน้าสถิติเข้ากิจกรรม (Activity)
+    // ---------------------------------------------------------
+    window.dash.fetchActivityData = async (institute) => {
+        const tbody = document.getElementById('table-activity');
+        if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8">กำลังโหลดข้อมูล...</td></tr>';
+        try {
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json());
+            if (res && res.success) {
+                
+                // 🚀 อ่านสรุปยอดมาใช้ (1 Read)
+                const sumSnap = await getDoc(doc(db, "dashboard_summary", "all_stats"));
+                const actDb = sumSnap.exists() ? (sumSnap.data().act || {}) : {};
+
+                res.data.forEach(r => {
+                    r.hours = actDb[String(r.mdid).trim()] || 0; 
+                    r.pct = r.target > 0 ? Math.min(100, (r.hours / r.target) * 100) : (r.hours > 0 ? 100 : 0);
+                });
+                window.dash.currentActivityData = res.data;
+                window.dash.renderActivityUI(res.data);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    // ---------------------------------------------------------
+    // 📈 3. อัปเกรดหน้าตาราง EPA (Pivot)
+    // ---------------------------------------------------------
+    window.dash.fetchEpaData = async (institute) => {
+        const tbody = document.getElementById('table-epa-body');
+        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8">กำลังดึงตาราง Pivot...</td></tr>';
+        try {
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json());
+            if (res.data && res.data.length > 0) {
+                
+                // 🚀 อ่านสรุปยอดมาใช้ (1 Read)
+                const sumSnap = await getDoc(doc(db, "dashboard_summary", "all_stats"));
+                const epaDb = sumSnap.exists() ? (sumSnap.data().epa || {}) : {};
+
+                res.data.forEach(r => {
+                    let mId = String(r.mdid).trim();
+                    (r.items || r.epas || []).forEach(item => {
+                        item.pass = epaDb[`${mId}_${String(item.id || item.desc).trim()}`] || 0; 
+                    });
+                });
+                window.dash.currentEpaData = res.data;
+                if (window.dash.renderEpaUI) window.dash.renderEpaUI(window.dash.currentEpaData);
+            }
+        } catch (e) { console.error(e); }
+    };
+</script>
+    
+</body>
+</html>
