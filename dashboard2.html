@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard-firebase 1.01</title>
+    <title>skinEPA Dashboard-firebase 1.02</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1053,9 +1053,12 @@
         };
     </script>
 
+<!-- ============================================================== -->
+<!-- 🚀 FIREBASE INJECTION MODULE (เวอร์ชันดักจับข้อมูล Migrate 100%) -->
+<!-- ============================================================== -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // 🚨 เชื่อมต่อฐานข้อมูล
     const firebaseConfig = {
@@ -1075,37 +1078,49 @@
     // 📊 1. อัปเกรดหน้าภาพรวม (Overview)
     // ---------------------------------------------------------
     window.dash.fetchOverviewData = async (institute) => {
-        Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม (Google+Firebase)...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม (Firebase)...', didOpen: () => Swal.showLoading() });
         try {
-            // ดึงโครงสร้างและข้อมูลเก่าจาก GAS
             const res = await fetch(GAS_WEBAPP_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute })
             }).then(r => r.json());
 
             if (res && res.success) {
-                // 🚀 กวาดคะแนน EPA ล่าสุดจาก Firebase
-                const epaSnap = await getDocs(query(collection(db, "epa_records"), where("result", "==", "PASS")));
-                let epaCounts = {};
+                // 🚀 กวาด EPA ทั้งหมด (เผื่อข้อมูลที่ Migrate มาไม่มีฟิลด์ result)
+                const epaSnap = await getDocs(collection(db, "epa_records"));
+                let epaTotalCounts = {};
+                
                 epaSnap.forEach(doc => {
-                    let mId = String(doc.data().resident_mdid).trim();
-                    epaCounts[mId] = (epaCounts[mId] || 0) + 1; 
+                    let d = doc.data();
+                    let resStatus = String(d.result || d.status || "").toUpperCase().trim();
+                    if (resStatus === "PASS") {
+                        // 🟢 ดักจับชื่อฟิลด์เก่าทุกรูปแบบ
+                        let mId = String(d.resident_mdid || d.mdid || d.attendee_mdid || "").trim();
+                        if (mId) epaTotalCounts[mId] = (epaTotalCounts[mId] || 0) + 1; 
+                    }
                 });
 
                 let riskCount = 0;
                 const groups = ['R2', 'R3', 'R4', 'FellowDermsurg'];
                 
-                // 🟢 นำคะแนนใหม่ (Firebase) มาบวกเพิ่มกับคะแนนเก่า (GAS)
                 groups.forEach(g => {
                     if (res.data[g]) {
                         res.data[g].forEach(person => {
                             let mId = String(person.mdid).trim();
-                            let fbPass = epaCounts[mId] || 0; // ยอดใหม่
+                            let fbPass = epaTotalCounts[mId] || 0; 
                             
-                            // person.pass = (person.pass || 0) + fbPass; // <--- ไฮไลท์การแก้: บวกเพิ่ม
-                            person.pass = fbPass; // <--- สั่งให้ใช้ยอดจาก Firebase ล้วนๆ
-                            person.progress = person.target > 0 ? Math.min(100, (person.pass / person.target) * 100) : 100;
+                            // ใช้ยอดจาก Firebase 100%
+                            person.pass = fbPass;
+
+                            // 🟢 แก้บั๊ก 100%: พยายามหาเป้าหมาย (Target) ถ้าไม่รู้เป้าให้เป็น 0 ไว้ก่อน
+                            let target = person.target || person.total_target || person.total || person.req || 0;
                             
+                            if (target > 0) {
+                                person.progress = Math.min(100, Math.round((person.pass / target) * 100));
+                            } else {
+                                person.progress = 0; // ป้องกันการโชว์ 100% มั่วๆ
+                            }
+
                             if (person.progress < res.time_elapsed_pct) riskCount++;
                         });
                     }
@@ -1129,7 +1144,7 @@
     // ---------------------------------------------------------
     window.dash.fetchActivityData = async (institute) => {
         const tbody = document.getElementById('table-activity');
-        if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">กำลังประมวลผลข้อมูล (Google+Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+        if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">กำลังประมวลผลข้อมูล (Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
 
         try {
             const res = await fetch(GAS_WEBAPP_URL, {
@@ -1140,7 +1155,6 @@
             if (res && res.success) {
                 let dataArr = res.data;
 
-                // ดึงชั่วโมงกิจกรรมจาก Master 
                 const actMasterRes = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user })
@@ -1156,25 +1170,30 @@
                     });
                 }
 
-                // 🚀 กวาดประวัติการลงชื่อใหม่จาก Firebase
-                const actSnap = await getDocs(query(collection(db, "activity_records"), where("status", "==", "PASS")));
+                // 🚀 กวาดประวัติกิจกรรมทั้งหมด (เลิกใช้ where เพื่อป้องกันหาข้อมูลเก่าไม่เจอ)
+                const actSnap = await getDocs(collection(db, "activity_records"));
                 let actHours = {};
+                
                 actSnap.forEach(doc => {
                     let d = doc.data();
-                    let mId = String(d.mdid).trim();
-                    let aId = String(d.act_ref_id).trim();
-                    let hrs = hoursMap[aId] || 1; 
-                    actHours[mId] = (actHours[mId] || 0) + hrs;
+                    let st = String(d.status || d.result || "").toUpperCase().trim();
+                    if (st === "PASS") { 
+                        // 🟢 ดักจับชื่อฟิลด์เก่า
+                        let mId = String(d.mdid || d.attendee_mdid || d.resident_mdid || "").trim();
+                        let aId = String(d.act_ref_id || d.act_id || "").trim();
+                        let hrs = hoursMap[aId] || 1; 
+                        
+                        if (mId) actHours[mId] = (actHours[mId] || 0) + hrs;
+                    }
                 });
 
-                // 🟢 นำชั่วโมงใหม่ (Firebase) มาบวกเพิ่มกับชั่วโมงเก่า (GAS)
                 dataArr.forEach(r => {
                     let mId = String(r.mdid).trim();
-                    let fbHours = actHours[mId] || 0; // ชั่วโมงที่เพิ่งเข้ากิจกรรมใหม่
+                    let fbHours = actHours[mId] || 0; 
                     
-                    // r.hours = (parseFloat(r.hours) || 0) + fbHours; // <--- ไฮไลท์การแก้: บวกเพิ่ม
-                    r.hours = fbHours; // <--- สั่งให้ใช้ยอดจาก Firebase ล้วนๆ
-                    r.pct = r.target > 0 ? Math.min(100, (r.hours / r.target) * 100) : 100;
+                    // ใช้ยอดจาก Firebase 100%
+                    r.hours = fbHours; 
+                    r.pct = r.target > 0 ? Math.min(100, (r.hours / r.target) * 100) : 0; // แก้เป็น 0 หากไม่มีเป้า
                 });
 
                 window.dash.currentActivityData = dataArr;
@@ -1193,7 +1212,7 @@
         const tbody = document.getElementById('table-epa-body');
         const thead = document.getElementById('table-epa-head');
         if (thead) thead.innerHTML = '';
-        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot (Google+Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot (Firebase)... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
 
         try {
             const response = await fetch(GAS_WEBAPP_URL, {
@@ -1204,18 +1223,25 @@
             let dataArr = res.data || [];
 
             if (dataArr.length > 0) {
-                // 🚀 กวาดคะแนน EPA ใหม่จาก Firebase
-                const epaSnap = await getDocs(query(collection(db, "epa_records"), where("result", "==", "PASS")));
+                // 🚀 กวาดคะแนน EPA ทั้งหมดมาหาเอง
+                const epaSnap = await getDocs(collection(db, "epa_records"));
                 let epaCounts = {};
+                
                 epaSnap.forEach(doc => {
                     let d = doc.data();
-                    let mId = String(d.resident_mdid).trim();
-                    let eId = String(d.epaid).trim();
-                    if (!epaCounts[mId]) epaCounts[mId] = {};
-                    epaCounts[mId][eId] = (epaCounts[mId][eId] || 0) + 1;
+                    let resStatus = String(d.result || d.status || "").toUpperCase().trim();
+                    if (resStatus === "PASS") {
+                        // 🟢 ดักจับชื่อฟิลด์เก่าทุกแบบ
+                        let mId = String(d.resident_mdid || d.mdid || d.attendee_mdid || "").trim();
+                        let eId = String(d.epaid || d.epa_id || d.id || "").trim();
+                        
+                        if (mId && eId) {
+                            if (!epaCounts[mId]) epaCounts[mId] = {};
+                            epaCounts[mId][eId] = (epaCounts[mId][eId] || 0) + 1;
+                        }
+                    }
                 });
 
-                // 🟢 นำยอดใหม่มาบวกทบยอดเก่าในตาราง
                 dataArr.forEach(r => {
                     let mId = String(r.mdid).trim();
                     let myEpa = epaCounts[mId] || {};
@@ -1223,10 +1249,10 @@
                     
                     itemsArray.forEach(item => {
                         let targetId = String(item.id || item.desc).trim();
-                        let fbPass = myEpa[targetId] || 0; // ยอดใหม่
+                        let fbPass = myEpa[targetId] || 0; 
                         
-                        // item.pass = (parseFloat(item.pass) || 0) + fbPass; // <--- ไฮไลท์การแก้: บวกเพิ่ม
-                        item.pass = fbPass; // <--- สั่งให้ใช้ยอดจาก Firebase ล้วนๆ
+                        // ใช้ยอดจาก Firebase 100%
+                        item.pass = fbPass; 
                     });
                 });
 
@@ -1240,6 +1266,7 @@
             if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-red-500 font-bold bg-gray-50">❌ เกิดข้อผิดพลาดในการเชื่อมต่อระบบ</td></tr>';
         }
     };
-</script>  
+</script>
+    
 </body>
 </html>
