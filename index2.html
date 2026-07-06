@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App firebase 2.63</title>
+    <title>EPA Skin App firebase 2.64</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.63</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker firebase 2.64</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -2949,25 +2949,21 @@ app.showMiniRubric = async (actRefId, presenterMdid, isClosingAct = false) => {
 window.onload = () => app.init();
 </script>
 
-<!-- ============================================================== -->
-<!-- 🚀 FIREBASE INJECTION MODULE -->
-<!-- ============================================================== -->
 <script type="module">
-    // 🔴 นำเข้าคำสั่งทั้งหมดแค่รอบเดียว (ห้ามซ้ำ)
+    // 🔴 1. นำเข้าคำสั่งที่ถูกต้องแค่บรรทัดเดียว (ป้องกัน Error ซ้ำซ้อน)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-	import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 	
-    // 🚨 อย่าลืมแก้ Config ให้เป็นของคุณหมอนะครับ
-const firebaseConfig = {
-  apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
-  authDomain: "skinepa-a771f.firebaseapp.com",
-  projectId: "skinepa-a771f",
-  storageBucket: "skinepa-a771f.firebasestorage.app",
-  messagingSenderId: "597553303268",
-  appId: "1:597553303268:web:48ed982baec59d66c0e6f1",
-  measurementId: "G-HP5J8V22L9"
-};
+    // 🚨 2. ตั้งค่า Config ให้เป็นของคุณหมอ
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgrnv4j9eMgosSJITQOf8DO0tTRJufgjM",
+      authDomain: "skinepa-a771f.firebaseapp.com",
+      projectId: "skinepa-a771f",
+      storageBucket: "skinepa-a771f.firebasestorage.app",
+      messagingSenderId: "597553303268",
+      appId: "1:597553303268:web:48ed982baec59d66c0e6f1",
+      measurementId: "G-HP5J8V22L9"
+    };
 
     const appFirebase = initializeApp(firebaseConfig);
     const db = getFirestore(appFirebase);
@@ -2981,14 +2977,12 @@ const firebaseConfig = {
         const note = document.getElementById('txt-epanote').value.trim();
 
         if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุ Note ก่อนส่งเสมอ', 'warning');
-
         Swal.fire({ title: 'กำลังบันทึกลง Firebase...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
             let userRoleRaw = app.user.role ? app.user.role.toLowerCase().replace(/[\s_]/g, '') : '';
             let recordLevel = app.user.level || "";
             if (userRoleRaw.includes('fellowdermsurg') || recordLevel.includes('Fellow')) recordLevel = 'F1';
-
             const epaDescObj = document.getElementById('sel-epaid');
             const epaDescText = epaDescObj.options[epaDescObj.selectedIndex].text;
 
@@ -3027,7 +3021,6 @@ const firebaseConfig = {
     // ---------------------------------------------------------
     app.executeCheckinRequest = async (actRefId, pinCode) => {
         Swal.fire({ title: 'กำลังดึงพิกัดและบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
@@ -3106,7 +3099,6 @@ const firebaseConfig = {
                     let btnHtml = '';
                     let linkHtml = '';
                     const hasLink = (a.act_link && a.act_link.trim() !== "");
-
                     let fbStatus = joinedMap[a.act_ref_id];
                     let isAlreadyJoined = (fbStatus !== undefined);
 
@@ -3189,7 +3181,6 @@ const firebaseConfig = {
                 snap.forEach(docSnap => {
                     if (!fbData.find(x => x.record_id === docSnap.id)) {
                         let d = docSnap.data();
-                        
                         let actualMdid = d.mdid;
                         if (actualMdid === undefined || actualMdid === null) {
                             actualMdid = d.attendee_mdid; 
@@ -3242,28 +3233,19 @@ const firebaseConfig = {
                     }));
                 }
 
-               // 📊 ระบบนับจำนวนแบบใหม่ (ครอบคลุมทุกคำศัพท์)
                 let countRes = 0; let countInst = 0;
                 finalAttendees.forEach(u => {
                     let r = u.role ? u.role.toLowerCase() : '';
-                    
-                    // กลุ่มอาจารย์ (Staff / Instructor / อาจารย์)
                     if (r.includes('instructor') || r.includes('staff') || r.includes('อาจารย์')) {
                         countInst++;
-                    } 
-                    // กลุ่มแพทย์ (Resident / Fellow / แพทย์)
-                    else if (r.includes('resident') || r.includes('fellow') || r.includes('แพทย์')) {
+                    } else if (r.includes('resident') || r.includes('fellow') || r.includes('แพทย์')) {
                         countRes++;
-                    } 
-                    // กลุ่มไม่มีข้อมูล Role (กันเหนียว)
-                    else {
-                        // ถ้าไม่มี Role ให้ดูจากสถานะ GPS ว่าเป็นอาจารย์ผู้คุมไหม ถ้าไม่ใช่ให้ตีเป็นแพทย์ไปก่อน
+                    } else {
                         if (u.gpsStatus === 'Instructor') countInst++;
                         else countRes++;
                     }
                 });
 
-                // วาดหน้าจอแสดงสรุป
                 document.getElementById('attendee-topic').innerHTML = `
                     <div class="mb-1">กิจกรรม: ${act.topic}</div>
                     <div class="text-purple-700 text-sm font-semibold">👨‍🏫 อาจารย์ผู้คุม: ${act.instructor_name || 'ไม่พบข้อมูลอาจารย์'}</div>
@@ -3303,7 +3285,7 @@ const firebaseConfig = {
                 let nowTime = new Date().getTime();
                 let showCloseBtn = nowTime >= finishDate.getTime();
 
-				let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
+                let btnContainer = document.querySelector('#view-activity-attendees .flex.space-x-2');
                 btnContainer.innerHTML = `
                     ${showCloseBtn ? `<button onclick="app.closeActivitySession()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-bold shadow transition">ปิดกิจกรรม</button>` : ''}
                     ${showEditBtn ? `<button onclick="app.editActivityForm()" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded font-bold shadow transition">✏️ แก้ไข</button>` : ''}
@@ -3334,82 +3316,93 @@ const firebaseConfig = {
         }
     };
 
-	// ---------------------------------------------------------
-    // 🔒 6. อัปเกรดการปิดกิจกรรม (เปลี่ยน Check-in เป็น PASS ใน Firebase รวดเดียว)
+    // ---------------------------------------------------------
+    // 🔒 6. อัปเกรดการปิดกิจกรรม (เปลี่ยน Check-in เป็น PASS และประเมิน Mini-rubric)
     // ---------------------------------------------------------
     app.closeActivitySession = async () => {
         const act = app.currentManageAct;
         if (!act) return;
 
-        // ถามยืนยันก่อนปิด
-        const confirmRes = await Swal.fire({
-            title: 'ยืนยันการปิดกิจกรรม?',
-            text: `เมื่อปิดแล้ว ระบบจะปรับสถานะผู้ที่ "Check-in" ให้ผ่านกิจกรรม (PASS) และจะไม่สามารถลงชื่อเพิ่มได้อีก`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'ใช่, ปิดกิจกรรมและให้ PASS',
-            cancelButtonText: 'ยกเลิก'
-        });
+        // 1. เช็คเวลาสิ้นสุดตามนโยบาย (เหมือนลอจิกเดิมเป๊ะ)
+        if(new Date().getTime() < new Date(act.act_finish).getTime()) {
+            return Swal.fire('ผิดพลาด', 'ยังไม่สามารถปิดได้ เนื่องจากยังไม่หมดเวลาตามนโยบายครับ', 'error'); 
+        }
 
-        if (!confirmRes.isConfirmed) return;
+        // 2. ตรวจสอบว่าต้องบังคับอาจารย์ประเมินคะแนนผู้นำเสนอ (Mini-Rubric) ก่อนปิดไหม
+        const actId = act.act_id ? String(act.act_id).toUpperCase().trim() : "";
+        const evalActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05', 'ACT12', 'ACT13'];
+        const presenterMdid = act.presenter_mdid;
+
+        if (evalActs.includes(actId) && presenterMdid) {
+            const isEvaluated = await app.showMiniRubric(act.act_ref_id, presenterMdid, true);
+            if (!isEvaluated) return; // ถ้ายกเลิกการประเมินให้หยุดการปิดกิจกรรม
+        } else {
+            const confirmRes = await Swal.fire({
+                title: 'ยืนยันการปิดกิจกรรม?',
+                text: `ระบบจะปรับสถานะผู้ที่ลงชื่อ (Check-in) ให้ผ่านกิจกรรม (PASS) ทั้งหมด`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ใช่, ปิดและให้ผ่าน',
+                cancelButtonText: 'ยกเลิก'
+            });
+            if (!confirmRes.isConfirmed) return;
+        }
 
         Swal.fire({ title: 'กำลังปิดกิจกรรมและประเมินผล (Firebase)...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+        
         try {
             const cleanActRef = String(act.act_ref_id).trim();
             const actCollection = collection(db, "activity_records");
             
-            // 1. ค้นหาผู้เข้าร่วมทั้งหมดในกิจกรรมนี้
+            // ค้นหาผู้เข้าร่วมทั้งหมดในกิจกรรมนี้
             let querySnapshots = [];
             querySnapshots.push(await getDocs(query(actCollection, where("act_ref_id", "==", cleanActRef))));
             if (!isNaN(cleanActRef)) {
                 querySnapshots.push(await getDocs(query(actCollection, where("act_ref_id", "==", Number(cleanActRef)))));
             }
 
-            // 2. ใช้ writeBatch เพื่ออัปเดตข้อมูลหลายร้อยคนพร้อมกันในคำสั่งเดียว (เร็วมาก)
             const batch = writeBatch(db);
             let updateCount = 0;
 
             querySnapshots.forEach(snap => {
                 snap.forEach(docSnap => {
                     const d = docSnap.data();
-                    // ถ้าสถานะเป็น Check-in ให้เปลี่ยนเป็น PASS
                     if (d.status === 'Check-in') {
                         const docRef = doc(db, "activity_records", docSnap.id);
-                        batch.update(docRef, { 
-                            status: 'PASS',
-                            result: 'PASS' // บันทึกผลลัพธ์ลงช่อง result กันเหนียวด้วยครับ
-                        });
+                        batch.update(docRef, { status: 'PASS', result: 'PASS' });
                         updateCount++;
                     }
                 });
             });
 
-            // ทำการบันทึกลง Firebase พร้อมกันทั้งหมด
+            // บันทึกลง Firebase พร้อมกัน
             if (updateCount > 0) {
                 await batch.commit();
             }
 
-            // 3. ส่งคำสั่งไปแจ้ง Google Sheets ว่ากิจกรรมนี้ปิดรับลงทะเบียนแล้ว (status = CLOSED)
-            await app.api({
-                action: 'close_activity_session',
-                payload: { act_ref_id: cleanActRef }
+            // 3. ส่งคำสั่งไปแจ้ง Google Sheets 
+            // 🔴 แก้ไข payload จาก { act_ref_id: xxx } เป็นยิงค่าตรงๆ ให้ตรงกับที่หลังบ้านคาดหวัง
+            const res = await app.api({
+                action: 'close_activity',
+                act_ref_id: cleanActRef
             });
 
-            Swal.fire('สำเร็จ!', `ปิดกิจกรรมและปรับสถานะเป็น PASS เรียบร้อยแล้ว (อัปเดต ${updateCount} รายการ)`, 'success');
-            
-            // รีเฟรชหน้าดูรายชื่อใหม่ เพื่อโชว์สถานะล่าสุด
-            app.viewAttendees(cleanActRef);
-
+            if(res && res.success) {
+                Swal.fire('สำเร็จ!', `ปิดกิจกรรมและปรับสถานะเป็น PASS เรียบร้อยแล้ว (อัปเดต ${updateCount} รายการ)`, 'success').then(() => {
+                    app.loadManageActivities();
+                });
+            } else {
+                Swal.fire('ผิดพลาด', res ? res.message : 'เกิดข้อผิดพลาดจากฝั่ง Google Sheets', 'error');
+            }
         } catch (e) {
             console.error("Error closing session:", e);
             Swal.fire('ข้อผิดพลาด', '[Firebase] ไม่สามารถปิดกิจกรรมได้: ' + e.message, 'error');
         }
     };
 
-	// ---------------------------------------------------------
+    // ---------------------------------------------------------
     // 📋 7. อัปเกรดหน้าการ์ด "จัดการกิจกรรม" (ดึงยอดสรุปจาก Firebase)
     // ---------------------------------------------------------
     app.loadManageActivities = async () => {
@@ -3418,16 +3411,15 @@ const firebaseConfig = {
         
         if (data) {
             app.cachedManageActs = {};
+            // 🔴 แก้ไขชื่อ ID ให้ตรงกับโครงสร้าง HTML (แก้จาก manage-activity-list เป็น manage-act-list)
+            const list = document.getElementById('manage-act-list');
             
-            // ค้นหากล่องสำหรับวาดหน้าจอ
-            const list = document.getElementById('manage-activity-list');
             if (!list) {
                  Swal.close();
                  return console.error("หาจุดวาดหน้าจอ Manage Activities ไม่เจอ");
             }
 
             try {
-                // 🚀 [Firebase] ดึงข้อมูลการลงชื่อทั้งหมดมากองรวมกันเพื่อเตรียมนับยอด
                 const actCollection = collection(db, "activity_records");
                 const querySnapshot = await getDocs(actCollection);
                 let fbCounts = {};
@@ -3436,32 +3428,30 @@ const firebaseConfig = {
                     let d = docSnap.data();
                     let aId = String(d.act_ref_id).trim();
                     if (!fbCounts[aId]) fbCounts[aId] = 0;
-                    fbCounts[aId]++; // นับเพิ่มทีละ 1
+                    fbCounts[aId]++; 
                 });
 
                 if (data.activities.length === 0) {
                     list.innerHTML = '<p class="text-center py-6 text-gray-500">ไม่มีกิจกรรมในความดูแลของท่าน</p>';
                 } else {
-                    // เรียงกิจกรรมล่าสุดขึ้นก่อน
                     data.activities.sort((a, b) => new Date(b.act_begin).getTime() - new Date(a.act_begin).getTime());
-                    
                     list.innerHTML = data.activities.map(a => {
                         app.cachedManageActs[a.act_ref_id] = a;
                         
                         let actDate = new Date(a.act_begin);
                         let dateDisplay = actDate.toLocaleDateString('th-TH', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
                         
-                        // 🎯 ดึงยอดจาก Firebase มาใส่ ถ้าไม่มีให้เป็น 0
                         let totalJoined = fbCounts[String(a.act_ref_id).trim()] || 0;
-
                         let statusBadge = a.status === 'OPEN' 
                             ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-300 shadow-sm">🟢 เปิดอยู่</span>`
                             : `<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-300 shadow-sm">🔴 ปิดแล้ว</span>`;
 
+                        let onlineBadge = a.act_link ? `<span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-md border border-blue-300 ml-2 shadow-sm animate-pulse">🌐 มี Online</span>` : '';
+
                         return `
                         <div class="border p-4 rounded-xl bg-white mb-4 shadow-sm border-l-4 ${a.status === 'OPEN' ? 'border-l-green-500' : 'border-l-gray-400'} flex flex-col md:flex-row justify-between items-start md:items-center">
                             <div class="flex-1 pr-0 md:pr-4 mb-4 md:mb-0 w-full">
-                                <div class="font-bold text-gray-800 text-lg leading-tight mb-1">${a.act_id}: ${a.topic}</div>
+                                <div class="font-bold text-gray-800 text-lg leading-tight mb-1">${a.act_id}: ${a.topic} ${onlineBadge}</div>
                                 <div class="text-sm text-purple-700 font-bold mb-2">👨‍🏫 ${a.instructor_name}</div>
                                 <div class="flex flex-wrap gap-2 text-xs text-gray-600 mb-3">
                                     <span class="bg-gray-50 px-2 py-1 rounded border border-gray-200">🗓️ ${dateDisplay}</span>
@@ -3485,6 +3475,5 @@ const firebaseConfig = {
                 Swal.fire('ข้อผิดพลาด', '[Firebase] ' + e.message, 'error');
             }
         }
-    };	
-	
-</script>
+    };
+</script>	
