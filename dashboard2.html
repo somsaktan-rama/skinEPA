@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard-firebase 1.02</title>
+    <title>skinEPA Dashboard-firebase 1.03</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1086,15 +1086,27 @@
             }).then(r => r.json());
 
             if (res && res.success) {
-                // 🚀 กวาด EPA ทั้งหมด (เผื่อข้อมูลที่ Migrate มาไม่มีฟิลด์ result)
+                // 🚀 กวาด EPA ทั้งหมด
                 const epaSnap = await getDocs(collection(db, "epa_records"));
                 let epaTotalCounts = {};
                 
                 epaSnap.forEach(doc => {
                     let d = doc.data();
-                    let resStatus = String(d.result || d.status || "").toUpperCase().trim();
-                    if (resStatus === "PASS") {
-                        // 🟢 ดักจับชื่อฟิลด์เก่าทุกรูปแบบ
+                    let st1 = String(d.result || "").toUpperCase().trim();
+                    let st2 = String(d.status || "").toUpperCase().trim();
+                    let isPass = false;
+                    
+                    // 🟢 โลจิกใหม่: ตรวจสอบว่าเป็น PASS ไหม (รองรับทั้งแบบตัวอักษรและตัวเลข)
+                    if (st1 === "PASS" || st2 === "PASS") {
+                        isPass = true; // ข้อมูลระบบใหม่
+                    } else if (d.time_app != null || (typeof d.result === 'number' && d.result > 0)) {
+                        // ข้อมูลระบบเก่า (Migrate): ถ้าประเมินแล้ว และไม่มีเหตุผลว่า Fail (reason = ว่าง) ให้ถือว่า Pass
+                        let reason = String(d.reason || "").trim();
+                        if (reason === "") isPass = true;
+                    }
+
+                    if (isPass) {
+                        // ดักจับชื่อฟิลด์ รหัสแพทย์ ทุกรูปแบบ
                         let mId = String(d.resident_mdid || d.mdid || d.attendee_mdid || "").trim();
                         if (mId) epaTotalCounts[mId] = (epaTotalCounts[mId] || 0) + 1; 
                     }
@@ -1109,16 +1121,23 @@
                             let mId = String(person.mdid).trim();
                             let fbPass = epaTotalCounts[mId] || 0; 
                             
-                            // ใช้ยอดจาก Firebase 100%
-                            person.pass = fbPass;
-
-                            // 🟢 แก้บั๊ก 100%: พยายามหาเป้าหมาย (Target) ถ้าไม่รู้เป้าให้เป็น 0 ไว้ก่อน
-                            let target = person.target || person.total_target || person.total || person.req || 0;
+                            // 🟢 ถอดรหัสหา Target ที่แท้จริง (แก้บั๊ก 100%)
+                            let originalPass = person.pass || 0;
+                            let originalProgress = person.progress || 0;
+                            let deducedTarget = person.target || person.total_target || 0;
                             
-                            if (target > 0) {
-                                person.progress = Math.min(100, Math.round((person.pass / target) * 100));
+                            if (deducedTarget === 0 && originalProgress > 0 && originalPass > 0) {
+                                deducedTarget = Math.round((originalPass / originalProgress) * 100);
+                            }
+
+                            // โยนยอดเดิมทิ้ง ใช้ยอดจาก Firebase
+                            person.pass = fbPass;
+                            
+                            if (deducedTarget > 0) {
+                                person.progress = Math.min(100, Math.round((person.pass / deducedTarget) * 100));
                             } else {
-                                person.progress = 0; // ป้องกันการโชว์ 100% มั่วๆ
+                                // ถ้าหาเป้าไม่เจอจริงๆ ให้แสดง 0 ไปก่อน จะได้ไม่หลอกตา
+                                person.progress = 0;
                             }
 
                             if (person.progress < res.time_elapsed_pct) riskCount++;
@@ -1170,16 +1189,18 @@
                     });
                 }
 
-                // 🚀 กวาดประวัติกิจกรรมทั้งหมด (เลิกใช้ where เพื่อป้องกันหาข้อมูลเก่าไม่เจอ)
+                // 🚀 กวาดประวัติกิจกรรมทั้งหมด
                 const actSnap = await getDocs(collection(db, "activity_records"));
                 let actHours = {};
                 
                 actSnap.forEach(doc => {
                     let d = doc.data();
-                    let st = String(d.status || d.result || "").toUpperCase().trim();
-                    if (st === "PASS") { 
-                        // 🟢 ดักจับชื่อฟิลด์เก่า
-                        let mId = String(d.mdid || d.attendee_mdid || d.resident_mdid || "").trim();
+                    let st1 = String(d.status || "").toUpperCase().trim();
+                    let st2 = String(d.result || "").toUpperCase().trim();
+                    
+                    if (st1 === "PASS" || st2 === "PASS") { 
+                        // ดักจับชื่อฟิลด์ รหัสแพทย์ ทุกรูปแบบ
+                        let mId = String(d.attendee_mdid || d.mdid || d.resident_mdid || "").trim();
                         let aId = String(d.act_ref_id || d.act_id || "").trim();
                         let hrs = hoursMap[aId] || 1; 
                         
@@ -1191,9 +1212,8 @@
                     let mId = String(r.mdid).trim();
                     let fbHours = actHours[mId] || 0; 
                     
-                    // ใช้ยอดจาก Firebase 100%
                     r.hours = fbHours; 
-                    r.pct = r.target > 0 ? Math.min(100, (r.hours / r.target) * 100) : 0; // แก้เป็น 0 หากไม่มีเป้า
+                    r.pct = r.target > 0 ? Math.min(100, (r.hours / r.target) * 100) : (r.hours > 0 ? 100 : 0);
                 });
 
                 window.dash.currentActivityData = dataArr;
@@ -1229,15 +1249,30 @@
                 
                 epaSnap.forEach(doc => {
                     let d = doc.data();
-                    let resStatus = String(d.result || d.status || "").toUpperCase().trim();
-                    if (resStatus === "PASS") {
-                        // 🟢 ดักจับชื่อฟิลด์เก่าทุกแบบ
+                    let st1 = String(d.result || "").toUpperCase().trim();
+                    let st2 = String(d.status || "").toUpperCase().trim();
+                    let isPass = false;
+                    
+                    if (st1 === "PASS" || st2 === "PASS") {
+                        isPass = true;
+                    } else if (d.time_app != null || (typeof d.result === 'number' && d.result > 0)) {
+                        let reason = String(d.reason || "").trim();
+                        if (reason === "") isPass = true;
+                    }
+
+                    if (isPass) {
                         let mId = String(d.resident_mdid || d.mdid || d.attendee_mdid || "").trim();
                         let eId = String(d.epaid || d.epa_id || d.id || "").trim();
                         
                         if (mId && eId) {
                             if (!epaCounts[mId]) epaCounts[mId] = {};
                             epaCounts[mId][eId] = (epaCounts[mId][eId] || 0) + 1;
+                            
+                            // 🟢 ดักจับชื่อ EPA ให้ยืดหยุ่นขึ้น (กรณีมีขีดต่อท้าย เช่น EPA5-R4 ให้มันนับรวมเป็น EPA5 ด้วย)
+                            let baseEpa = eId.split('-')[0]; 
+                            if (baseEpa !== eId) {
+                                epaCounts[mId][baseEpa] = (epaCounts[mId][baseEpa] || 0) + 1;
+                            }
                         }
                     }
                 });
@@ -1249,10 +1284,7 @@
                     
                     itemsArray.forEach(item => {
                         let targetId = String(item.id || item.desc).trim();
-                        let fbPass = myEpa[targetId] || 0; 
-                        
-                        // ใช้ยอดจาก Firebase 100%
-                        item.pass = fbPass; 
+                        item.pass = myEpa[targetId] || 0; 
                     });
                 });
 
