@@ -616,7 +616,7 @@ var app = {
         if (document.getElementById(id)) document.getElementById(id).classList.remove('hidden');
     },
 
-	api: async (req, loading = null) => {
+api: async (req, loading = null) => {
         if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
         // 🟢 1. ดักจับ OS
@@ -631,9 +631,22 @@ var app = {
         }
         req.client_os = currentOS;
 
-        // 🟢 2. [เพิ่มใหม่] แอบแนบข้อมูลผู้ใช้ที่กำลังใช้งานระบบอยู่ไปด้วย ถ้ามี
-        if (window.app && app.user) {
-            req.user = app.user;
+        // 🟢 2. [แก้ปัญหา mdid หาย] ระบบควานหาบัตรประจำตัวผู้ใช้แบบครอบจักรวาล
+        let currentUser = (window.app && app.user) ? app.user : null;
+        if (!currentUser) {
+            // ถ้าหาตัวแปร app.user ไม่เจอ ให้ไปงัดจาก localStorage (ที่เก็บตอน Login)
+            for (let i = 0; i < localStorage.length; i++) {
+                try {
+                    let parsed = JSON.parse(localStorage.getItem(localStorage.key(i)));
+                    if (parsed && parsed.mdid && parsed.role) {
+                        currentUser = parsed;
+                        break;
+                    }
+                } catch(e) {}
+            }
+        }
+        if (currentUser) {
+            req.user = currentUser; // บังคับแนบข้อมูลผู้ใช้ไปทุกการกระทำ!
         }
         // ==========================================
 
