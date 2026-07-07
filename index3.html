@@ -616,8 +616,22 @@ var app = {
         if (document.getElementById(id)) document.getElementById(id).classList.remove('hidden');
     },
 
-    api: async (req, loading = null) => {
+	api: async (req, loading = null) => {
         if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        // 🟢 [เพิ่มใหม่] โค้ดดักจับ OS ก่อนส่งข้อมูลไปหลังบ้าน
+        let currentOS = "web";
+        if (window.liff && liff.isInClient()) {
+            currentOS = liff.getOS(); // ดึงค่าจากแอป LINE (ios, android)
+        } else {
+            let ua = navigator.userAgent;
+            if (ua.includes("Mac")) currentOS = "Mac/iOS Browser";
+            else if (ua.includes("Windows")) currentOS = "Windows Browser";
+            else if (ua.includes("Android")) currentOS = "Android Browser";
+        }
+        req.client_os = currentOS; // แนบใส่ Payload ไปด้วย
+        // ==========================================
+
         try {
             const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
             const json = await res.json();
