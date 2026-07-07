@@ -1103,7 +1103,8 @@
             });
 
             // กวาด Activity ทั้งหมด
-            const actMasterRes = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user }) }).then(r => r.json()).catch(()=>null);
+            const actMasterRes = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_manage_activities', user: window.dash.user, client_os: "Admin Dashboard" }) }).then(r => r.json()).catch(()=>null);
+                                       
             let hoursMap = {};
             if (actMasterRes && actMasterRes.activities) {
                 actMasterRes.activities.forEach(a => {
@@ -1136,9 +1137,12 @@
         Swal.fire({ title: 'กำลังโหลด (ระบบประหยัดโควตา)...', didOpen: () => Swal.showLoading() });
         try {
             const [resOverview, resEpa, resAct] = await Promise.all([
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
-                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json())
+                // fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute }) }).then(r => r.json()),
+                //fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json()),
+                //fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json()) 
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_overview', institute: institute, client_os: "Admin Dashboard" }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute , client_os: "Admin Dashboard" }) }).then(r => r.json()),
+                fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute , client_os: "Admin Dashboard" }) }).then(r => r.json()) 
             ]);
 
             if (resOverview && resOverview.success) {
@@ -1193,7 +1197,8 @@
         const tbody = document.getElementById('table-activity');
         if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8">กำลังโหลดข้อมูล...</td></tr>';
         try {
-            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json());
+            //const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute }) }).then(r => r.json());
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_activity', institute: institute , client_os: "Admin Dashboard" }) }).then(r => r.json());
             if (res && res.success) {
                 
                 // 🚀 อ่านสรุปยอดมาใช้ (1 Read)
@@ -1217,7 +1222,9 @@
         const tbody = document.getElementById('table-epa-body');
         if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8">กำลังดึงตาราง Pivot...</td></tr>';
         try {
-            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json());
+            // const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute }) }).then(r => r.json());
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify({ action: 'get_dashboard_epa', institute: institute , client_os: "Admin Dashboard" }) }).then(r => r.json());
+            
             if (res.data && res.data.length > 0) {
                 
                 // 🚀 อ่านสรุปยอดมาใช้ (1 Read)
