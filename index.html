@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.39 logs</title>
+    <title>EPA Skin App 2.40 logs</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.39 logs</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.40 logs</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -542,7 +542,38 @@ const formatThaiDateTime = (isoStr) => {
 const app = {
     user: null, residentContext: null, currentEvalTask: null, currentEvalCriteria: null, dashboardData: null, currentManageAct: null,
     cachedTasks: {}, 
-    
+
+// 🚨 ดักจับ General JavaScript Errors
+window.onerror = function (message, source, lineno, colno, error) {
+    let errorDetails = `Msg: ${message} | Line: ${lineno} | Src: ${source}`;
+    reportClientError(errorDetails);
+    return false; // ปล่อยให้เบราว์เซอร์แสดง error ใน console ตามปกติด้วย
+};
+
+// 🚨 ดักจับ Promise Errors (เช่น การสั่งพวก async/await แล้วพัง)
+window.onunhandledrejection = function (event) {
+    let errorDetails = `Unhandled Promise: ${event.reason}`;
+    reportClientError(errorDetails);
+};
+
+// 📨 ฟังก์ชันส่ง error ไปเก็บที่หลังบ้าน
+async function reportClientError(details) {
+    try {
+        if (window.app && app.api) {
+            // ส่งเข้า API ด้วย action เฉพาะ
+            await app.api({
+                action: 'client_error',
+                payload: {
+                    error_msg: details,
+                    current_view: (window.app && app.currentView) ? app.currentView : "unknown"
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Failed to report error to backend:", e);
+    }
+}
+	
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
