@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.36 logs</title>
+    <title>EPA Skin App 2.37 logs</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -637,7 +637,7 @@ const app = {
 api: async (req, loading = null) => {
         if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
-        // 🟢 1. ดักจับ OS
+        // 🟢 1. โค้ดดักจับ OS เดิมของคุณหมอ (ปล่อยไว้เหมือนเดิม)
         let currentOS = "web";
         if (window.liff && liff.isInClient()) {
             currentOS = liff.getOS(); 
@@ -649,26 +649,32 @@ api: async (req, loading = null) => {
         }
         req.client_os = currentOS;
 
-        // 🟢 2. [แก้ปัญหา mdid หาย] ระบบควานหาบัตรประจำตัวผู้ใช้แบบครอบจักรวาล
+        // 🟢 2. [ส่วนที่เพิ่มใหม่] บังคับยัด mdid, role, institute ไปใน Request เสมอ
         let currentUser = (window.app && app.user) ? app.user : null;
         if (!currentUser) {
-            // ถ้าหาตัวแปร app.user ไม่เจอ ให้ไปงัดจาก localStorage (ที่เก็บตอน Login)
-            for (let i = 0; i < localStorage.length; i++) {
-                try {
+            // ถ้าในแอปยังโหลดไม่เสร็จ ให้ไปงัดจาก localStorage คลังสำรองในเครื่องมาใช้
+            try {
+                // ค้นหา Object ใน localStorage ที่มีข้อมูลผู้ใช้
+                for (let i = 0; i < localStorage.length; i++) {
                     let parsed = JSON.parse(localStorage.getItem(localStorage.key(i)));
-                    if (parsed && parsed.mdid && parsed.role) {
+                    if (parsed && parsed.mdid) {
                         currentUser = parsed;
                         break;
                     }
-                } catch(e) {}
-            }
+                }
+            } catch(e) {}
         }
+
+        // ถ้าเจอตัวตนผู้ใช้ ให้แนบไปกับตัวแปร req ชั้นนอกสุดเลยครับ หลังบ้านจะได้ควานหาเจอง่ายๆ
         if (currentUser) {
-            req.user = currentUser; // บังคับแนบข้อมูลผู้ใช้ไปทุกการกระทำ!
+            req.mdid = currentUser.mdid || "";
+            req.role = currentUser.role || "";
+            req.institute = currentUser.institute || "";
         }
         // ==========================================
 
         try {
+            // 🟢 3. ยิงข้อมูลไปหลังบ้าน
             const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
             const json = await res.json();
             if(loading) Swal.close();
@@ -683,7 +689,7 @@ api: async (req, loading = null) => {
             return null;
         }
     },
-
+	
     init: async () => {
         const LIFF_ID = '2010106383-UKz3SgNA';
         // อย่าลืมเช็ค LIFF_ID ให้ตรงกับของคุณหมอนะครับ
