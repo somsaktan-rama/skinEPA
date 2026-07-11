@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.19 logs</title>
+    <title>skinEPA Dashboard 1.20 logs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -280,7 +280,10 @@
                 if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
                 
                 try {
-                    console.log("เช็คข้อมูล dash.user ก่อนส่ง:", dash.user);
+                    if (window.app && app.user && app.user.mdid) {
+                        dash.user = app.user; 
+                    }
+                    console.log("อัปเดต dash.user แล้ว:", dash.user);
                     const response = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
                         body: JSON.stringify({ 
