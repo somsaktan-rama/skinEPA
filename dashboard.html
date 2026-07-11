@@ -280,14 +280,15 @@
                 if (tbody) tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500">กำลังดึงข้อมูลและสร้างตาราง Pivot... <div class="animate-spin inline-block w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full ml-2"></div></td></tr>';
                 
                 try {
+                    console.log("เช็คข้อมูล dash.user ก่อนส่ง:", dash.user);
                     const response = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
                         body: JSON.stringify({ 
                             action: 'get_dashboard_epa', 
-                            institute: dash.user ? dash.user.institute : '' , 
-                            mdid: dash.user ? dash.user.mdid : '', 
-                            role: dash.user ? dash.user.role : '', 
-                            client_os: "Admin Dashboard"})  
+                            institute: (dash.user && dash.user.institute) ? dash.user.institute : '', 
+                            mdid: (dash.user && dash.user.mdid) ? dash.user.mdid : '', 
+                            role: (dash.user && dash.user.role) ? dash.user.role : '', 
+                            client_os: "Admin Dashboard"
                     });
                     
                     const res = await response.json();
