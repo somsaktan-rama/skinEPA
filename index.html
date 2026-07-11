@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.40B logs</title>
+    <title>EPA Skin App 2.40C logs</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.40B logs</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.40C logs</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -884,7 +884,16 @@ api: async (req, loading = null) => {
         }
     },
 
-    showManual: () => {
+showManual: () => {
+        
+        // 🟢 เพิ่มโค้ดยิง Log แจ้งหลังบ้านแบบเงียบๆ (ไม่ต้องใช้ await หรือ popup โหลด)
+        if (window.app && app.api) {
+            app.api({ 
+                action: 'log_page_view', 
+                payload: { page_name: 'เปิดดูคู่มือการใช้งานและ Calendar' } 
+            });
+        }
+
         // 1. สร้างส่วนของ HTML สำหรับกล่อง Google Calendar (ดึงลิงก์ตามสถาบัน)
         let calendarHtml = '';
         if (app.user && app.user.calendarUrl) {
@@ -958,6 +967,10 @@ api: async (req, loading = null) => {
         document.querySelectorAll('.cb-role').forEach(cb => cb.checked = false);
         // สลับหน้าจอไปยัง UI ของการ Broadcast
         app.showView('view-broadcast');
+		// 🟢 เพิ่มโค้ดยิง Log แจ้งหลังบ้าน
+        if (app.api) {
+            app.api({ action: 'log_page_view', payload: { page_name: 'ส่งข้อความประกาศ (Broadcast)' } });
+        }
     },
 
 // 👨‍🏫 โหลดยอดคำขอรับประเมิน 360° ของนักเรียนในความดูแลที่ยังค้างอยู่
@@ -1217,8 +1230,18 @@ api: async (req, loading = null) => {
         menuArea.innerHTML = html;
     },
 	
-// --- Create Activity (Cache Form Data) ---
-    loadStaffCreateActivity: async () => { 
+	// --- Create Activity (Cache Form Data) ---
+	loadStaffCreateActivity: async () => { 
+        
+        // 🟢 เพิ่มโค้ดยิง Log แจ้งหลังบ้านแบบเงียบๆ เมื่อเข้ามาที่หน้านี้
+        if (window.app && app.api) {
+            // ไม่ต้องใส่ await ปล่อยให้มันยิงเบื้องหลังได้เลย จะได้ไม่เสียเวลาโหลดหน้า
+            app.api({ 
+                action: 'log_page_view', 
+                payload: { page_name: 'เปิดกิจกรรมใหม่ (แบบครั้งเดียว)' } 
+            });
+        }
+
         if (!app.cachedActFormData) {
             app.cachedActFormData = await app.api({ action: 'get_activity_form_data', user: app.user }, 'กำลังเตรียมแบบฟอร์ม...');
         }
@@ -1231,12 +1254,16 @@ api: async (req, loading = null) => {
                 actsToDisplay = actsToDisplay.filter(a => a.id !== 'act09');
             }
 
-const actEl = document.getElementById('create-act-id');
+            const actEl = document.getElementById('create-act-id');
             actEl.innerHTML = '<option value="">-- เลือกกิจกรรม --</option>' + actsToDisplay.map(a => `<option value="${a.id}">${a.id}: ${a.desc}</option>`).join('');
             actEl.setAttribute('onchange', 'app.autoAdjustDuration()'); // 🟢 สั่งให้คำนวณเวลาอัตโนมัติเมื่อเลือกวิชา
 
             // 🟢 ตรวจจับการเปลี่ยนรหัสกิจกรรม เพื่อกรองรายชื่อผู้นำเสนอตามเงื่อนไขใหม่กลุ่มเป้าหมาย
-            actEl.addEventListener('change', function() {
+            // (ล้าง EventListener ตัวเก่าออกก่อนถ้ามี ป้องกันลูปทำงานซ้ำซ้อน)
+            let newActEl = actEl.cloneNode(true);
+            actEl.parentNode.replaceChild(newActEl, actEl);
+            
+            newActEl.addEventListener('change', function() {
                 const selectedAct = this.value ? String(this.value).toUpperCase().trim() : "";
                 const residentActs = ['ACT01', 'ACT02', 'ACT04', 'ACT05'];
                 const fellowActs = ['ACT12', 'ACT13'];
@@ -1245,14 +1272,14 @@ const actEl = document.getElementById('create-act-id');
                 const presenterSelect = document.getElementById('create-act-presenter');
                 
                 if (divPresenter && presenterSelect) {
-				if (residentActs.includes(selectedAct)) {
-                divPresenter.classList.remove('hidden');
-                presenterSelect.innerHTML = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ (R2-R4) --</option>' + 
-                    (data.residents || []).map(r => {
-                        let displayLevel = r.level ? ` (${r.level})` : '';
-                        return `<option value="${r.mdid}">${r.name}${displayLevel}</option>`;
-                    }).join('');
-            } else if (fellowActs.includes(selectedAct)) {
+                    if (residentActs.includes(selectedAct)) {
+                        divPresenter.classList.remove('hidden');
+                        presenterSelect.innerHTML = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ (R2-R4) --</option>' + 
+                            (data.residents || []).map(r => {
+                                let displayLevel = r.level ? ` (${r.level})` : '';
+                                return `<option value="${r.mdid}">${r.name}${displayLevel}</option>`;
+                            }).join('');
+                    } else if (fellowActs.includes(selectedAct)) {
                         divPresenter.classList.remove('hidden');
                         presenterSelect.innerHTML = '<option value="">-- ระบุ Fellow Dermsurg ผู้นำเสนอ --</option>' + 
                             (data.fellows_dermsurg || []).map(f => `<option value="${f.mdid}">${f.name}</option>`).join('');
@@ -1263,11 +1290,12 @@ const actEl = document.getElementById('create-act-id');
                     }
                 }
             });
-			
-			// 👨‍🏫 โค้ดเดิม: โหลดรายชื่ออาจารย์ผู้คุม
+            
+            // 👨‍🏫 โค้ดเดิม: โหลดรายชื่ออาจารย์ผู้คุม
             document.getElementById('create-act-instructor').innerHTML = '<option value="">-- ไม่ระบุ --</option>' + data.instructors.map(i => `<option value="${i.mdid}">อ. ${i.name}</option>`).join('');
 
-            // 🟢 โค้ดใหม่แทรกตรงนี้: โหลดรายชื่อแพทย์ประจำบ้าน (Resident) ลงกล่องผู้นำเสนอ
+            // 🟢 โค้ดใหม่แทรกตรงนี้: โหลดรายชื่อแพทย์ประจำบ้าน (Resident) ลงกล่องผู้นำเสนอ 
+            // (ค่าเริ่มต้นก่อนเลือกวิชา)
             if (data.residents && document.getElementById('create-act-presenter')) {
                 document.getElementById('create-act-presenter').innerHTML = '<option value="">-- ระบุแพทย์ประจำบ้านผู้นำเสนอ --</option>' + data.residents.map(r => `<option value="${r.mdid}">${r.name}</option>`).join('');
             }
@@ -1276,7 +1304,7 @@ const actEl = document.getElementById('create-act-id');
             app.showView('view-staff-create-activity');
         } 
     },
-
+	
     // 🟢 ฟังก์ชันคำนวณเวลาอัตโนมัติสำหรับฟอร์มกิจกรรมเดี่ยว (วางต่อจากด้านบนได้เลยครับ)
     autoAdjustDuration: () => {
         const actId = document.getElementById('create-act-id').value;
@@ -2742,6 +2770,10 @@ closeActivitySession: async () => {
     openSuperstaffView: async () => {
         app.showView('view-superstaff-edit');
         app.fetch360SystemStatus(); // สั่งให้ดึงสถานะทันทีที่เปิดหน้า
+		// 🟢 เพิ่มโค้ดยิง Log แจ้งหลังบ้าน
+        if (app.api) {
+            app.api({ action: 'log_page_view', payload: { page_name: 'จัดการข้อมูลบุคลากร (Superstaff)' } });
+        }
     },
 
     fetch360SystemStatus: async () => {
