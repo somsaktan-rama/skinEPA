@@ -539,7 +539,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         // body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute })
-                           body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute, mdid: dash.user ? dash.user.mdid : '' })    
+                           body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute, mdid: dash.user ? dash.user.mdid : '' , client_os: "Admin Dashboard"})
                     });
                     
                     const res = await response.json();
