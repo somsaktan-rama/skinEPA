@@ -217,6 +217,26 @@
             
             // 🟢 2. อัปเดต loadView (ต้องมี dash.currentView = viewId;)
             loadView: (viewId) => {
+                // 🟢 1. จุดตรวจ: ดักสกัดและเติมข้อมูล User ก่อนเริ่มสลับหน้าและดึงกราฟ
+                if (!dash.user || !dash.user.mdid) {
+                    try {
+                        if (window.app && window.app.user && window.app.user.mdid) {
+                            dash.user = window.app.user; // กรณี SPA
+                        } else if (window.parent && window.parent.app && window.parent.app.user && window.parent.app.user.mdid) {
+                            dash.user = window.parent.app.user; // กรณี iframe
+                        } else {
+                            // กรณีเปิดแท็บใหม่
+                            const savedUser = localStorage.getItem('logged_in_user');
+                            if (savedUser) {
+                                dash.user = JSON.parse(savedUser);
+                            }
+                        }
+                        console.log("📌 อัปเดต dash.user สำเร็จ (จาก loadView):", dash.user);
+                    } catch (e) {
+                        console.error("เกิดข้อผิดพลาดในการดึงข้อมูล User:", e);
+                    }
+                }
+
                 dash.currentView = viewId; // ให้ระบบจำว่าอยู่หน้าไหน
                 
                 const views = ['overview', 'activity', 'eval', 'epa', 'feedback'];
@@ -234,7 +254,9 @@
                     else filterEl.classList.remove('hidden');
                 }
 
-                let inst = dash.user ? dash.user.institute : '';
+                // 🟢 2. ตอนนี้ dash.user มีข้อมูลเต็มเปี่ยมแล้ว ดึงส่งไปหา fetch ได้อย่างสบายใจ
+                let inst = (dash.user && dash.user.institute) ? dash.user.institute : '';
+                
                 if (viewId === 'overview') dash.fetchOverviewData(inst);
                 else if (viewId === 'activity') dash.fetchActivityData(inst);
                 else if (viewId === 'eval') dash.fetchEvalData(inst); 
