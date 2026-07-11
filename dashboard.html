@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.13 logs</title>
+    <title>skinEPA Dashboard 1.14 logs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -282,7 +282,8 @@
                 try {
                     const response = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user ? dash.user.institute : '' , client_os: "Admin Dashboard"})
+                        // body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user ? dash.user.institute : '' , client_os: "Admin Dashboard"})
+                           body: JSON.stringify({ action: 'get_dashboard_epa', institute: dash.user ? dash.user.institute : '', mdid: dash.user ? dash.user.mdid : '', client_os: "Admin Dashboard" })
                     });
                     
                     const res = await response.json();
@@ -415,7 +416,8 @@
                 
                 const res = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_activity', institute: dash.user.institute, client_os: "Admin Dashboard" })
+                    // body: JSON.stringify({ action: 'get_dashboard_activity', institute: dash.user.institute, client_os: "Admin Dashboard" })
+                       body: JSON.stringify({ action: 'get_dashboard_activity', institute: dash.user.institute, mdid: dash.user.mdid, client_os: "Admin Dashboard" })
                 }).then(r => r.json());
 
                 if (res && res.success) {
@@ -536,7 +538,8 @@
                     const response = await fetch(scriptUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute })
+                        // body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute })
+                           body: JSON.stringify({ action: 'get_dashboard_eval', institute: safeInstitute, mdid: dash.user ? dash.user.mdid : '' })    
                     });
                     
                     const res = await response.json();
@@ -659,7 +662,8 @@
                 try {
                     const res = await fetch(GAS_WEBAPP_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user ? dash.user.institute : '' , client_os: "Admin Dashboard"})
+                        //body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user ? dash.user.institute : '' , client_os: "Admin Dashboard"})
+                          body: JSON.stringify({ action: 'get_dashboard_360', institute: dash.user ? dash.user.institute : '', mdid: dash.user ? dash.user.mdid : '', client_os: "Admin Dashboard" })
                     }).then(r => r.json());
 
                     if (res && res.success && res.residents && res.residents.length > 0) {
@@ -989,7 +993,8 @@
                 Swal.fire({ title: 'กำลังดึงข้อมูลภาพรวม...', didOpen: () => Swal.showLoading() });
                 const res = await fetch(GAS_WEBAPP_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'get_dashboard_overview', institute: dash.user.institute, client_os: "Admin Dashboard" })
+                    // body: JSON.stringify({ action: 'get_dashboard_overview', institute: dash.user.institute, client_os: "Admin Dashboard" })
+                    body: JSON.stringify({ action: 'get_dashboard_overview', institute: dash.user.institute, mdid: dash.user.mdid, client_os: "Admin Dashboard" })
                 }).then(r => r.json());
                 Swal.close();
 
