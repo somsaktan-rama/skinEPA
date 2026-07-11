@@ -10,7 +10,7 @@
 
     <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-md">
         <h1 class="text-2xl md:text-3xl font-bold text-teal-800 mb-2 border-b-2 border-teal-200 pb-4">
-            🔧 คู่มือการใช้งานระบบ skinEPA V 2.30
+            🔧 คู่มือการใช้งานระบบ skinEPA V 2.40B
             <span class="block text-lg text-gray-500 mt-2">สำหรับ Superstaff (ผู้ดูแลระบบ)</span>
         </h1>
 
@@ -19,22 +19,22 @@
             <p class="text-gray-700 mb-4">สิทธิ์ระดับรากฐานในการแก้ไขข้อมูลบุคลากรในชีต <code>staff</code> ผ่านหน้ากากแอปพลิเคชัน</p>
             
             <ul class="list-none space-y-4 text-sm text-gray-700">
-                <li class="bg-gray-50 p-3 rounded border"><b class="text-teal-800">Role & Status:</b> ปรับเปลี่ยนระดับสิทธิ์ (เช่น resident3 ไป resident4) หรือเปลี่ยนเป็น ALUMNI</li>
+                <li class="bg-gray-50 p-3 rounded border"><b class="text-teal-800">Role & Status:</b> ปรับเปลี่ยนระดับสิทธิ์ (เช่น resident3 ไป resident4) หรือเปลี่ยนเป็น ALUMNI เมื่อสิ้นสุดปีการศึกษา</li>
                 
                 <li class="bg-red-50 p-3 rounded border border-red-200">
                     <b class="text-red-800">การปลดล็อก LINE UID:</b><br> 
-                    หากผู้ใช้เปลี่ยนเครื่อง ให้ <b>ลบข้อมูลช่อง LINE UID ให้ว่างเปล่า</b> แล้วบันทึก ระบบจะตัดการเชื่อมโยงทันที เพื่อให้เริ่มล็อกอินด้วย RamaID ใหม่ได้
+                    หากผู้ใช้เปลี่ยนเครื่อง ให้ <b>ลบข้อมูลช่อง LINE UID ให้ว่างเปล่า</b> แล้วบันทึก ระบบจะตัดการเชื่อมโยงทันที เพื่อให้เริ่มล็อกอินด้วยสิทธิ์เริ่มต้นใหม่ได้
                 </li>
                 
                 <li class="bg-gray-50 p-3 rounded border">
                     <b class="text-teal-800">Advisor MDID:</b><br>
-                    หากมีอาจารย์ที่ปรึกษาหลายท่าน ให้ใส่ MDID คั่นด้วยคอมมา เช่น <code>24105,11582</code> (ห้ามเว้นวรรค)
+                    หากมีอาจารย์ที่ปรึกษาหลายท่าน ให้ใส่ MDID คั่นด้วยคอมมา เช่น <code>24105,11582</code> (ห้ามมีเว้นวรรค)
                 </li>
             </ul>
         </div>
 
         <div class="mt-8">
-            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">2. Backend Index Table (โครงสร้างฐานข้อมูล)</h2>
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">2. Backend Index Table (โครงสร้างฐานข้อมูลหลัก)</h2>
             
             <div class="overflow-x-auto mt-4">
                 <table class="w-full text-left border-collapse text-sm text-gray-700">
@@ -51,12 +51,30 @@
                         <tr class="border-b"><td class="p-3">D</td><td class="p-3 text-center">3</td><td class="p-3 font-mono text-teal-600">role</td><td class="p-3">สิทธิ์ระบบงาน</td></tr>
                         <tr class="border-b"><td class="p-3">H</td><td class="p-3 text-center">7</td><td class="p-3 font-mono text-teal-600">line_uid</td><td class="p-3 text-red-600 font-bold">รหัสผูกแอปพลิเคชัน LINE</td></tr>
                         <tr class="border-b"><td class="p-3">M</td><td class="p-3 text-center">12</td><td class="p-3 font-mono text-teal-600">status</td><td class="p-3">ACTIVE / ALUMNI</td></tr>
-                        <tr class="border-b bg-yellow-50"><td class="p-3">N</td><td class="p-3 text-center">13</td><td class="p-3 font-mono text-teal-600 font-bold">advisor_mdid</td><td class="p-3 font-bold">รหัสอาจารย์ที่ปรึกษาเช่น 12345,24680</td></tr>
-                        <tr class="border-b bg-yellow-50"><td class="p-3">O</td><td class="p-3 text-center">14</td><td class="p-3 font-mono text-teal-600 font-bold">eval_target</td><td class="p-3 font-bold">ว่าง ประเมิน360ทุกคน หรือเฉพาะ R2,R3,R4</td></tr>
-                        <tr class="border-b bg-yellow-50"><td class="p-3">P</td><td class="p-3 text-center">15</td><td class="p-3 font-mono text-teal-600 font-bold">view_target</td><td class="p-3 font-bold">ว่าง ดูไม่ได้ หรือ ดูเฉพาะ R2,R3,R4</td></tr>
+                        <tr class="border-b bg-yellow-50"><td class="p-3">N</td><td class="p-3 text-center">13</td><td class="p-3 font-mono text-teal-600 font-bold">advisor_mdid</td><td class="p-3 font-bold">รหัสอาจารย์ที่ปรึกษา เช่น 12345,24680</td></tr>
+                        <tr class="border-b bg-yellow-50"><td class="p-3">O</td><td class="p-3 text-center">14</td><td class="p-3 font-mono text-teal-600 font-bold">eval_target</td><td class="p-3 font-bold">ระบุสิทธิ์ประเมิน 360 องศาเป้าหมาย</td></tr>
+                        <tr class="border-b bg-yellow-50"><td class="p-3">P</td><td class="p-3 text-center">15</td><td class="p-3 font-mono text-teal-600 font-bold">view_target</td><td class="p-3 font-bold">ระบุสิทธิ์การส่องผลคะแนน 360 ลูกศิษย์</td></tr>
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-teal-700 mb-4 border-l-4 border-teal-500 pl-3">3. ระบบคัดแยกฐานข้อมูลรายปีการศึกษา (Multi-Year Data Isolation)</h2>
+            <p class="text-gray-700 mb-3">เพื่อรักษาประสิทธิภาพการทำงานและป้องกันปัญหาระบบหน่วง (Execution Timeout) ข้อมูลดิบจะถูกจัดเก็บแยกชีตตามปีการศึกษา (เช่น <code>epa68</code>, <code>activity68</code>) โดยมีโครงสร้างควบคุมดังนี้:</p>
+            
+            <ul class="list-disc pl-6 text-gray-700 space-y-3 text-sm">
+                <li><b>ฟังก์ชันสร้างชีตล่วงหน้าอัตโนมัติ (Time-driven Trigger):</b> สคริปต์หลังบ้านถูกตั้งเวลาให้ทำงานโดยอัตโนมัติใน <b>วันที่ 1 มิถุนายนของทุกปี (ล่วงหน้า 1 เดือนก่อนเปิดภาคเรียนวันที่ 1 กรกฎาคม)</b> เพื่อตรวจคำนวณปีการศึกษาถัดไปและ Duplicate โครงสร้างตารางใหม่ออกมารอรับข้อมูลล่วงหน้า</li>
+                <li><b>การบำรุงรักษาชีตต้นแบบ (Core Templates Requirement):</b> ห้ามทำการลบ ปรับเปลี่ยนชื่อ หรือทำลายโครงสร้างของตารางต้นแบบที่นำหน้าด้วยคำว่า <code>template_</code> เป็นอันขาด เนื่องจากสคริปต์สลับปีจะใช้ตารางเหล่านี้เป็นแม่แบบขยายฐานข้อมูล ประกอบด้วย:
+                    <br><code class="bg-gray-100 px-1 py-0.5 rounded text-teal-700 font-mono">template_epa</code>, 
+                    <code class="bg-gray-100 px-1 py-0.5 rounded text-teal-700 font-mono">template_activity</code>, 
+                    <code class="bg-gray-100 px-1 py-0.5 rounded text-teal-700 font-mono">template_eval360</code>, 
+                    <code class="bg-gray-100 px-1 py-0.5 rounded text-teal-700 font-mono">template_activity_master</code>, 
+                    <code class="bg-gray-100 px-1 py-0.5 rounded text-teal-700 font-mono">template_act_evaluation</code>, 
+                    และ <code class="bg-gray-100 px-1 py-0.5 rounded text-teal-700 font-mono">template_epalogs</code>
+                </li>
+                <li><b>กลไก API Routing:</b> ตัวแปรสัญญลักษณ์ <code class="bg-gray-100 px-1 py-0.5 rounded text-red-600 font-mono">academic_year</code> (เลขปี พ.ศ. สองหลักท้าย เช่น 68, 69) จะถูกประทับลงใน Web Request Payload จากหน้า Frontend ทุกครั้ง เพื่อบังคับทิศทางให้ Google Apps Script เชื่อมโยงเซลล์ข้อมูลเข้าหาตารางประจำปีการศึกษานั้นอย่างแม่นยำ</li>
+            </ul>
         </div>
     </div>
 
