@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.40B logs</title>
+    <title>EPA Skin App 2.41</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.40B logs</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.41</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -130,14 +130,16 @@
     </div>
 </div>
         
-        <div id="view-menu" class="hidden">
-            <div class="mb-6 border-b pb-4">
-                <h2 class="text-xl font-bold text-gray-800">สวัสดี <span id="display-name" class="text-blue-600"></span></h2>
-                <p class="text-sm text-gray-600">สถาบัน: <span id="display-inst"></span> | สิทธิ์: <span id="display-role"></span></p>
-            </div>
-            <div class="space-y-3" id="menu-buttons"></div>
-            <button onclick="app.logout()" class="w-full mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition">ออกจากระบบ</button>
-        </div>
+<div class="mb-6 border-b pb-4 flex justify-between items-start">
+    <div>
+        <h2 class="text-xl font-bold text-gray-800">สวัสดี <span id="display-name" class="text-blue-600"></span></h2>
+        <p class="text-sm text-gray-600">สถาบัน: <span id="display-inst"></span> | สิทธิ์: <span id="display-role"></span></p>
+    </div>
+    <div>
+        <select id="app-academic-year" onchange="app.changeAcademicYear()" class="bg-blue-50 text-blue-800 border border-blue-200 text-sm rounded-lg p-2 font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500">
+            </select>
+    </div>
+</div>
 
 		<div id="view-360-grid" class="hidden">
             <div class="flex justify-between items-center mb-2">
@@ -580,7 +582,7 @@ const app = {
     dashboardData: null, 
     currentManageAct: null,
     cachedTasks: {}, 
-    
+	  
     // 🟢 ประกาศเซ็ตค่าตัวแปรเก็บรหัสความสัมพันธ์ LINE ล่วงหน้า
     lineUid: null, lineName: null,
 
@@ -672,7 +674,51 @@ const app = {
         if (document.getElementById(id)) document.getElementById(id).classList.remove('hidden');
     },
 
-api: async (req, loading = null) => {
+// ==========================================
+    // 🟢 ส่วนที่เพิ่มใหม่: ระบบจัดการปีการศึกษา
+    // ==========================================
+    currentAcademicYear: '', 
+
+    initAcademicYear: () => {
+        let today = new Date();
+        let beYear = today.getFullYear() + 543;
+        let month = today.getMonth() + 1;
+        
+        // 📌 ตัดรอบ 1 ก.ค. (เดือน 7)
+        let currentYearNum = month >= 7 ? beYear : beYear - 1;
+        app.currentAcademicYear = currentYearNum.toString().slice(-2);
+
+        let selectEl = document.getElementById('app-academic-year');
+        if (selectEl) {
+            let html = '';
+            // สร้างตัวเลือกย้อนหลัง 1 ปี และเดินหน้า 2 ปี
+            for (let i = -1; i <= 2; i++) {
+                let yStr = (currentYearNum + i).toString().slice(-2);
+                let isSelected = (yStr === app.currentAcademicYear) ? 'selected' : '';
+                html += `<option value="${yStr}" ${isSelected}>ปีการศึกษา 25${yStr}</option>`;
+            }
+            selectEl.innerHTML = html;
+        }
+    },
+
+    changeAcademicYear: () => {
+        app.currentAcademicYear = document.getElementById('app-academic-year').value;
+        // เคลียร์ Cache ข้อมูลของปีเดิมทิ้ง เพื่อบังคับให้โหลดใหม่
+        app.cachedActFormData = null;
+        app.dashboardData = null;
+        app.cachedTasks = {};
+        
+        Swal.fire({
+            title: 'เปลี่ยนปีการศึกษา',
+            text: `สลับฐานข้อมูลเป็นปีการศึกษา 25${app.currentAcademicYear} แล้ว`,
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    },
+    // ==========================================
+
+    api: async (req, loading = null) => {
         if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
         // 🟢 1. โค้ดดักจับ OS เดิมของคุณหมอ (ปล่อยไว้เหมือนเดิม)
@@ -709,10 +755,13 @@ api: async (req, loading = null) => {
             req.role = currentUser.role || "";
             req.institute = currentUser.institute || "";
         }
+
+        // 🟢 3. แทรกตรงนี้! บังคับส่งปีการศึกษาปัจจุบันไปให้ API ทุกเส้น
+        req.academic_year = app.currentAcademicYear;
         // ==========================================
 
         try {
-            // 🟢 3. ยิงข้อมูลไปหลังบ้าน
+            // 🟢 4. ยิงข้อมูลไปหลังบ้าน
             const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
             const json = await res.json();
             if(loading) Swal.close();
@@ -727,8 +776,11 @@ api: async (req, loading = null) => {
             return null;
         }
     },
-	
+    
     init: async () => {
+        // 🟢 แทรกตรงนี้! สั่งคำนวณและเตรียม Dropdown ปีการศึกษาตั้งแต่เปิดแอป ก่อนยิง Auto Login
+        app.initAcademicYear(); 
+
         const LIFF_ID = '2010106383-UKz3SgNA';
         // อย่าลืมเช็ค LIFF_ID ให้ตรงกับของคุณหมอนะครับ
         const mdidInput = document.getElementById('mdid-input');
