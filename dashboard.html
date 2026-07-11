@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.18 logs</title>
+    <title>skinEPA Dashboard 1.19 logs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -287,7 +287,6 @@
                             institute: dash.user ? dash.user.institute : '' , 
                             mdid: dash.user ? dash.user.mdid : '', 
                             role: dash.user ? dash.user.role : '', 
-                            details: "ความก้าวหน้า EPA",
                             client_os: "Admin Dashboard"})  
                     });
                     
@@ -426,7 +425,6 @@
                         institute: dash.user.institute, 
                         mdid: dash.user ? dash.user.mdid : '', 
                         role: dash.user ? dash.user.role : '', 
-                        details: "สถิติการเข้ากิจกรรม",
                         client_os: "Admin Dashboard" })
                     }).then(r => r.json());
 
@@ -553,7 +551,6 @@
                             institute: safeInstitute, 
                             mdid: dash.user ? dash.user.mdid : '', 
                             role: dash.user ? dash.user.role : '', 
-                            details: "ผลประเมินกิจกรรม",
                             client_os: "Admin Dashboard" 
                         })
                     });
@@ -683,7 +680,6 @@
                             institute: dash.user ? dash.user.institute : '', 
                             mdid: dash.user ? dash.user.mdid : '', 
                             role: dash.user ? dash.user.role : '', 
-                            details: "360° Feedback",
                             client_os: "Admin Dashboard" })
                     }).then(r => r.json());
 
@@ -1027,7 +1023,6 @@
                         institute: dash.user.institute, 
                         mdid: dash.user ? dash.user.mdid : '', 
                         role: dash.user ? dash.user.role : '', 
-                        details: "ภาพรวมความก้าวหน้า",
                         client_os: "Admin Dashboard" })
                 }).then(r => r.json());
                 Swal.close();
