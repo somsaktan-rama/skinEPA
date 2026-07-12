@@ -1024,8 +1024,15 @@ fetchEpaData: async () => {
                                 method: 'POST',
                                 body: JSON.stringify({ 
                                     action: 'login_dashboard', 
-                                    mdid: dash.user ? dash.user.mdid : '', 
-                                    role: dash.user ? dash.user.role : '', 
+                                    
+                                    // 🟢 1. เปลี่ยนมาใช้ loginId ที่ผู้ใช้เพิ่งพิมพ์เข้ามา
+                                    mdid: loginId, 
+                                    
+                                    // 🟢 2. ปล่อย role และ institute ให้ส่งค่าว่างไปก่อน 
+                                    // (หลังบ้าน code.gs ที่เราแก้ไปเมื่อกี้ จะไปค้นหาและเติมเต็มให้เอง)
+                                    role: '', 
+                                    institute: '',
+                                    
                                     client_os: "Admin Dashboard" 
                                 })
                             });
