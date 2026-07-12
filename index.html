@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.50</title>
+    <title>EPA Skin App 2.50 A</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -672,10 +672,10 @@ const app = {
         if (document.getElementById(id)) document.getElementById(id).classList.remove('hidden');
     },
 
-api: async (req, loading = null) => {
+	api: async (req, loading = null) => {
         if(loading) Swal.fire({ title: loading, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
-        // 🟢 1. โค้ดดักจับ OS เดิมของคุณหมอ (ปล่อยไว้เหมือนเดิม)
+        // 🟢 1. โค้ดดักจับ OS เดิมของคุณหมอ
         let currentOS = "web";
         if (window.liff && liff.isInClient()) {
             currentOS = liff.getOS(); 
@@ -687,33 +687,44 @@ api: async (req, loading = null) => {
         }
         req.client_os = currentOS;
 
-        // 🟢 2. [ส่วนที่เพิ่มใหม่] บังคับยัด mdid, role, institute ไปใน Request เสมอ
+        // 🟢 2. [แก้ไขใหม่] บังคับยัด mdid, role, institute อย่างปลอดภัย
         let currentUser = (window.app && app.user) ? app.user : null;
         if (!currentUser) {
-            // ถ้าในแอปยังโหลดไม่เสร็จ ให้ไปงัดจาก localStorage คลังสำรองในเครื่องมาใช้
-            try {
-                // ค้นหา Object ใน localStorage ที่มีข้อมูลผู้ใช้
-                for (let i = 0; i < localStorage.length; i++) {
+            // ค้นหาแบบปลอดภัย: ย้าย try-catch เข้ามา 'ข้างใน' ลูป 
+            // เพื่อให้เวลาเจอข้อมูลที่ไม่ใช่ JSON มันจะแค่ข้ามไป ไม่ทำให้ระบบหยุดทำงาน
+            for (let i = 0; i < localStorage.length; i++) {
+                try {
                     let parsed = JSON.parse(localStorage.getItem(localStorage.key(i)));
                     if (parsed && parsed.mdid) {
                         currentUser = parsed;
                         break;
                     }
+                } catch(e) { 
+                    // ถ้า parse ไม่ได้ (ไม่ใช่ JSON) ให้ปล่อยผ่านแล้ววนลูปหาตัวต่อไป
+                    continue; 
                 }
-            } catch(e) {}
+            }
         }
 
-        // ถ้าเจอตัวตนผู้ใช้ ให้แนบไปกับตัวแปร req ชั้นนอกสุดเลยครับ หลังบ้านจะได้ควานหาเจอง่ายๆ
+        // 🟢 3. ถ้าเจอตัวตนผู้ใช้ ให้แนบไปทุกจุดที่หลังบ้านต้องการ
         if (currentUser) {
+            // สำหรับให้ epalogs ดึงไปบันทึก
             req.mdid = currentUser.mdid || "";
             req.role = currentUser.role || "";
             req.institute = currentUser.institute || "";
+            
+            // 🚨 [สำคัญมาก] แนบก้อน User ไปด้วย เพราะคำสั่งเช่น get_advisor_pending ต้องใช้
+            req.user = currentUser;
+            
+            // กันเหนียวกรณีบางคำสั่งใน code.gs ดึงข้อมูลจากฝั่ง payload
+            if (!req.payload) req.payload = {};
+            req.payload.user = currentUser;
         }
         // ==========================================
 
         try {
-            // 🟢 3. ยิงข้อมูลไปหลังบ้าน
-            const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(req) });
+            // 🟢 4. ยิงข้อมูลไปหลังบ้าน
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(req) }); // ตรวจสอบชื่อตัวแปร URL ให้ตรงกับของคุณหมอด้วยนะครับ (เช่น WEB_APP_URL)
             const json = await res.json();
             if(loading) Swal.close();
             
