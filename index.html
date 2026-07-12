@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.50 B</title>
+    <title>EPA Skin App 2.50 C</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.50</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.50C</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -556,13 +556,14 @@ window.onunhandledrejection = function (event) {
 // 📨 ฟังก์ชันส่ง error ไปเก็บที่หลังบ้าน
 async function reportClientError(details) {
     try {
-        if (window.app && app.api) {
+        if (app && app.api) {
             // ส่งเข้า API ด้วย action เฉพาะ
             await app.api({
                 action: 'client_error',
                 payload: {
                     error_msg: details,
-                    current_view: (window.app && app.currentView) ? app.currentView : "unknown"
+                    // 🟢 ลบ window. ออก เปลี่ยนเป็นตรวจเช็คแค่ app ปกติครับ
+                    current_view: (app && app.currentView) ? app.currentView : "unknown"
                 }
             });
         }
@@ -687,51 +688,33 @@ const app = {
         }
         req.client_os = currentOS;
 
-        // 🟢 2. [แก้ไขใหม่] บังคับยัด mdid, role, institute อย่างปลอดภัย
-        let currentUser = (window.app && app.user) ? app.user : null;
+		// 🟢 2. บังคับยัด mdid, role, institute ไปใน Request เสมอ
+        // 🚨 ลบ window.app ออก ใช้แค่ app.user ก็พอครับ
+        let currentUser = app.user ? app.user : null;
+        
         if (!currentUser) {
-            // ค้นหาแบบปลอดภัย: ย้าย try-catch เข้ามา 'ข้างใน' ลูป 
-            // เพื่อให้เวลาเจอข้อมูลที่ไม่ใช่ JSON มันจะแค่ข้ามไป ไม่ทำให้ระบบหยุดทำงาน
-            for (let i = 0; i < localStorage.length; i++) {
-		try {
-            // 🟢 1. ตรวจสอบชื่อตัวแปร GAS_WEBAPP_URL ให้ตรงกับที่คุณหมอประกาศไว้
-            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(req) }); 
-            const json = await res.json();
-            
-            if(loading) Swal.close();
-            
-            if(!json.success && req.action !== 'auto_login') {
-                Swal.fire('เกิดข้อผิดพลาด', json.message || 'เกิดข้อผิดพลาดในระบบ', 'error');
-            }
-            return json;
-            
-        } catch(e) {
-            // 🟢 2. เพิ่ม console.error เพื่อบังคับให้เบราว์เซอร์คายความลับออกมาว่าพังเพราะอะไร
-            console.error("🔥 ข้อมูล Error จาก Fetch:", e); 
-            
-            if(loading) Swal.close();
-            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
-            return null;
-        }
-            }
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    let parsed = JSON.parse(localStorage.getItem(localStorage.key(i)));
+                    if (parsed && parsed.mdid) {
+                        currentUser = parsed; break;
+                    }
+                }
+            } catch(e) {}
         }
 
-        // 🟢 3. ถ้าเจอตัวตนผู้ใช้ ให้แนบไปทุกจุดที่หลังบ้านต้องการ
         if (currentUser) {
-            // สำหรับให้ epalogs ดึงไปบันทึก
             req.mdid = currentUser.mdid || "";
             req.role = currentUser.role || "";
             req.institute = currentUser.institute || "";
             
-            // 🚨 [สำคัญมาก] แนบก้อน User ไปด้วย เพราะคำสั่งเช่น get_advisor_pending ต้องใช้
+            // 🚨 เติม 2 บรรทัดนี้ด้วยครับ เพื่อส่งไปเลี้ยงฟังก์ชัน get_advisor_pending ให้ทำงานได้
             req.user = currentUser;
-            
-            // กันเหนียวกรณีบางคำสั่งใน code.gs ดึงข้อมูลจากฝั่ง payload
             if (!req.payload) req.payload = {};
             req.payload.user = currentUser;
         }
+		
         // ==========================================
-
         try {
             // 🟢 4. ยิงข้อมูลไปหลังบ้าน
             const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(req) }); // ตรวจสอบชื่อตัวแปร URL ให้ตรงกับของคุณหมอด้วยนะครับ (เช่น GAS_WEBAPP_URL)
@@ -908,7 +891,7 @@ const app = {
 showManual: () => {
         
         // 🟢 เพิ่มโค้ดยิง Log แจ้งหลังบ้านแบบเงียบๆ (ไม่ต้องใช้ await หรือ popup โหลด)
-        if (window.app && app.api) {
+        if (app && app.api) {
             app.api({ 
                 action: 'log_page_view', 
                 payload: { page_name: 'เปิดดูคู่มือการใช้งานและ Calendar' } 
@@ -1255,7 +1238,7 @@ showManual: () => {
 	loadStaffCreateActivity: async () => { 
         
         // 🟢 เพิ่มโค้ดยิง Log แจ้งหลังบ้านแบบเงียบๆ เมื่อเข้ามาที่หน้านี้
-        if (window.app && app.api) {
+        if (app && app.api) {
             // ไม่ต้องใส่ await ปล่อยให้มันยิงเบื้องหลังได้เลย จะได้ไม่เสียเวลาโหลดหน้า
             app.api({ 
                 action: 'log_page_view', 
