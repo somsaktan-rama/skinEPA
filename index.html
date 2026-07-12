@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.50 A</title>
+    <title>EPA Skin App 2.50 B</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -529,7 +529,7 @@
 
 <script>
 // ==========================================
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbywkPtTrKOYA1avNhP63lfYqWorJvX2ykvoVNwt7xIF8BeH76x-4xvXOQ0j52UgE9n3/exec';
 // ==========================================
 
 const formatThaiDateTime = (isoStr) => {
@@ -693,16 +693,26 @@ const app = {
             // ค้นหาแบบปลอดภัย: ย้าย try-catch เข้ามา 'ข้างใน' ลูป 
             // เพื่อให้เวลาเจอข้อมูลที่ไม่ใช่ JSON มันจะแค่ข้ามไป ไม่ทำให้ระบบหยุดทำงาน
             for (let i = 0; i < localStorage.length; i++) {
-                try {
-                    let parsed = JSON.parse(localStorage.getItem(localStorage.key(i)));
-                    if (parsed && parsed.mdid) {
-                        currentUser = parsed;
-                        break;
-                    }
-                } catch(e) { 
-                    // ถ้า parse ไม่ได้ (ไม่ใช่ JSON) ให้ปล่อยผ่านแล้ววนลูปหาตัวต่อไป
-                    continue; 
-                }
+		try {
+            // 🟢 1. ตรวจสอบชื่อตัวแปร GAS_WEBAPP_URL ให้ตรงกับที่คุณหมอประกาศไว้
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(req) }); 
+            const json = await res.json();
+            
+            if(loading) Swal.close();
+            
+            if(!json.success && req.action !== 'auto_login') {
+                Swal.fire('เกิดข้อผิดพลาด', json.message || 'เกิดข้อผิดพลาดในระบบ', 'error');
+            }
+            return json;
+            
+        } catch(e) {
+            // 🟢 2. เพิ่ม console.error เพื่อบังคับให้เบราว์เซอร์คายความลับออกมาว่าพังเพราะอะไร
+            console.error("🔥 ข้อมูล Error จาก Fetch:", e); 
+            
+            if(loading) Swal.close();
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            return null;
+        }
             }
         }
 
@@ -724,7 +734,7 @@ const app = {
 
         try {
             // 🟢 4. ยิงข้อมูลไปหลังบ้าน
-            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(req) }); // ตรวจสอบชื่อตัวแปร URL ให้ตรงกับของคุณหมอด้วยนะครับ (เช่น WEB_APP_URL)
+            const res = await fetch(GAS_WEBAPP_URL, { method: 'POST', body: JSON.stringify(req) }); // ตรวจสอบชื่อตัวแปร URL ให้ตรงกับของคุณหมอด้วยนะครับ (เช่น GAS_WEBAPP_URL)
             const json = await res.json();
             if(loading) Swal.close();
             
