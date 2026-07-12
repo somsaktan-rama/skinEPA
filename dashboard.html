@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>skinEPA Dashboard 1.20B logs</title>
+    <title>skinEPA Dashboard 2.50</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -1038,6 +1038,7 @@ fetchEpaData: async () => {
 
                 if (mdid && mdid.success) {
                     dash.user = mdid.user;
+                    localStorage.setItem('logged_in_user', JSON.stringify(mdid.user));
                     // แสดงข้อมูล User บน Sidebar
                     document.getElementById('display-institute').innerText = 'Institute: ' + dash.user.institute;
                     document.getElementById('display-name').innerText = 'อ. ' + dash.user.name;
