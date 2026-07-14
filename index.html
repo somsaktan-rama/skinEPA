@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EPA Skin App 2.50 C</title>
+    <title>EPA Skin App 2.50 D</title>
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +49,7 @@
     <div class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6" id="app-container">
         
         <div id="view-login">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.50C</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">EPA Skin Tracker 2.50 D</h2>
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">MDID (รหัส ว./เบอร์มือถือ 4-10 หลัก)</label>
                 <input type="text" inputmode="numeric" pattern="\d{4,10}" maxlength="10" id="mdid-input" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
@@ -1760,14 +1760,32 @@ open360Focus: (mdid, name, level, picUrl) => {
         if (available.length === 0) { selInst.innerHTML = '<option value="">-- โควต้าเต็ม --</option>'; selInst.disabled = true; } else { selInst.disabled = false;
         selInst.innerHTML = available.map(i => `<option value="${i.mdid}">${i.name}</option>`).join(''); } 
     },
-    saveEpa: async () => { 
+   
+	saveEpa: async () => { 
         const epa = document.getElementById('sel-epaid').value, inst = document.getElementById('sel-instructor').value;
-        const note = document.getElementById('txt-epanote').value.trim(); if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุ Note ก่อนส่งเสมอ', 'warning');
-        const res = await app.api({ action: 'save_epa', payload: { epaid: epa, epa_desc: document.getElementById('sel-epaid').options[document.getElementById('sel-epaid').selectedIndex].text, epa_note: note, instructor_mdid: inst, user: app.user }});
-        if(res) { document.getElementById('txt-epanote').value = ''; Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
+        const note = document.getElementById('txt-epanote').value.trim(); 
+        
+        if(!epa || !inst || !note) return Swal.fire('ข้อมูลไม่ครบ', 'ระบุ Note ก่อนส่งเสมอ', 'warning');
+        
+        // 🟢 เพิ่มข้อความ 'กำลังส่งข้อมูล...' ต่อท้าย เพื่อสั่งให้ UI ล็อกหน้าจอทันทีที่กดปุ่ม ป้องกันการกดซ้ำ
+        const res = await app.api({ 
+            action: 'save_epa', 
+            payload: { 
+                epaid: epa, 
+                epa_desc: document.getElementById('sel-epaid').options[document.getElementById('sel-epaid').selectedIndex].text, 
+                epa_note: note, 
+                instructor_mdid: inst, 
+                user: app.user 
+            }
+        }, 'กำลังส่งข้อมูล...'); 
+        
+        if(res) { 
+            document.getElementById('txt-epanote').value = ''; 
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => app.showView('view-menu'));
         } 
     },
-    loadResidentHistory: async () => { 
+    
+	loadResidentHistory: async () => { 
         const data = await app.api({ action: 'get_resident_history', user: app.user });
         if(data) { 
             app.showView('view-resident-history'); const container = document.getElementById('resident-history-list');
